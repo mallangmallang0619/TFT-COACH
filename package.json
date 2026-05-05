@@ -4,7 +4,7 @@
   "description": "TFT real-time coaching overlay with screen capture and computer vision",
   "main": "electron/main.js",
   "scripts": {
-    "start": "NODE_ENV=development electron .",
+    "start": "cross-env NODE_ENV=development electron .",
     "dev:frontend": "cd frontend && vite",
     "build:frontend": "cd frontend && vite build",
     "start:backend": "python backend/main.py",
