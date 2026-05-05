@@ -1,0 +1,49 @@
+{
+  "name": "tft-coach-desktop",
+  "version": "0.1.0",
+  "description": "TFT real-time coaching overlay with screen capture and computer vision",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "NODE_ENV=development electron .",
+    "dev:frontend": "cd frontend && vite",
+    "build:frontend": "cd frontend && vite build",
+    "start:backend": "python backend/main.py",
+    "start:demo": "python backend/main.py --demo",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run start:demo\" \"sleep 3 && npm start\"",
+    "package": "electron-builder"
+  },
+  "dependencies": {
+    "electron": "^28.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "concurrently": "^8.2.0",
+    "electron-builder": "^24.9.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vite": "^5.0.0"
+  },
+  "build": {
+    "appId": "com.tftcoach.overlay",
+    "productName": "TFT Coach",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/**/*",
+      "frontend/dist/**/*"
+    ],
+    "extraResources": [
+      "assets/**/*"
+    ],
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}

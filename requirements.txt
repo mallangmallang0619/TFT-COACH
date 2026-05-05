@@ -1,0 +1,21 @@
+# Screen capture
+mss>=9.0.0
+
+# Computer vision
+opencv-python>=4.9.0
+numpy>=1.26.0
+
+# OCR
+pytesseract>=0.3.10
+Pillow>=10.0.0
+
+# WebSocket server
+websockets>=12.0
+
+# Window management (cross-platform)
+pygetwindow>=0.0.9    # Windows
+# For Linux: xdotool (system package)
+# For macOS: pyobjc-framework-Quartz
+
+# Utilities
+pydantic>=2.5.0
