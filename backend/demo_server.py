@@ -38,6 +38,7 @@ from game_state import (
     DetectionConfidence,
 )
 from coach import Coach
+import tftacademy_live
 
 logger = logging.getLogger(__name__)
 
@@ -61,17 +62,27 @@ COMPONENTS = [
     "negatron_cloak", "recurve_bow", "tear", "sparring_gloves",
 ]
 
-CHAMPION_POOL = [
-    ("Warwick", 1, "tank"), ("Darius", 1, "tank"), ("Poppy", 1, "tank"),
-    ("Caitlyn", 1, "carry"), ("Ziggs", 1, "carry"), ("Twisted Fate", 1, "support"),
-    ("Vi", 2, "tank"), ("Shen", 2, "tank"), ("Lux", 2, "support"),
-    ("Zeri", 2, "carry"), ("Kog'Maw", 2, "carry"), ("Vex", 2, "tank"),
-    ("Ekko", 3, "carry"), ("Senna", 3, "carry"), ("Morgana", 3, "support"),
-    ("Cho'Gath", 3, "tank"), ("Illaoi", 3, "tank"), ("LeBlanc", 3, "carry"),
-    ("Jinx", 4, "carry"), ("Jayce", 4, "tank"), ("Jhin", 4, "carry"),
-    ("Zac", 4, "tank"), ("Ahri", 4, "carry"), ("Urgot", 4, "tank"),
-    ("Kai'Sa", 5, "carry"), ("Silco", 5, "support"), ("Viktor", 5, "carry"),
-]
+# Build the champion pool from the live Set 17 CHAMPIONS dict so the demo
+# generates units that the synergy/comp-detection code actually understands.
+# We classify role from traits — units with tank traits go frontline, units
+# with carry-flagged traits go backline.
+def _build_champion_pool():
+    from game_data import CHAMPIONS
+    tank_traits  = {"Bastion", "Brawler", "Vanguard"}
+    carry_traits = {"Sniper", "Fateweaver", "Rogue", "Conduit", "Replicator"}
+    pool = []
+    for name, data in CHAMPIONS.items():
+        traits = set(data.get("traits", []))
+        if traits & tank_traits:
+            role = "tank"
+        elif traits & carry_traits:
+            role = "carry"
+        else:
+            role = "support"
+        pool.append((name, data["cost"], role))
+    return pool
+
+CHAMPION_POOL = _build_champion_pool()
 
 AUGMENTS = [
     ("Cybernetic Implants", "Silver", "combat"),
@@ -379,6 +390,10 @@ class DemoServer:
     async def start(self):
         logger.info(f"Demo server starting on ws://{WEBSOCKET_HOST}:{WEBSOCKET_PORT}")
         self.is_running = True
+        # Kick off a background TFT Academy refresh — this checks the live
+        # tier list and updates META_COMPS if the patch has changed. Safe to
+        # call on every startup; refresh_async is internally debounced.
+        tftacademy_live.schedule_background_refresh(initial_delay_seconds=2.0)
         async with websockets.serve(
             self._handle_client, WEBSOCKET_HOST, WEBSOCKET_PORT, ping_interval=20,
         ):
@@ -394,6 +409,9 @@ class DemoServer:
     async def _handle_client(self, websocket: WebSocketServerProtocol):
         self.clients.add(websocket)
         logger.info(f"Frontend connected. Clients: {len(self.clients)}")
+        # New connection — re-check TFT Academy. Debounced internally, so
+        # rapid reconnects won't hammer the upstream site.
+        tftacademy_live.schedule_background_refresh(initial_delay_seconds=0.0)
         try:
             async for raw in websocket:
                 await self._handle_message(websocket, raw)

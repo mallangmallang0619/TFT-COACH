@@ -31,6 +31,7 @@ from game_data import (
     SHRED_ITEMS,
     BURN_ITEMS,
 )
+from synergy import compute_active_synergies, detect_comp_direction
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,13 @@ class Coach:
         if state.phase == GamePhase.NOT_IN_GAME:
             return advice
 
+        # ── Active Synergies ──────────────────────────────────────────────────
+        # The detector doesn't populate synergies yet — derive them from the
+        # board champions so downstream logic (board power, comp direction,
+        # tips) all sees a consistent view.
+        if not state.active_synergies and state.board_champions:
+            state.active_synergies = compute_active_synergies(state.board_champions)
+
         # ── Board Power ───────────────────────────────────────────────────────
         power, breakdown = self._calculate_board_power(state)
         advice.board_power = round(power, 1)
@@ -80,6 +88,9 @@ class Coach:
 
         # ── Positioning Analysis ──────────────────────────────────────────────
         self._analyze_positioning(state, advice)
+
+        # ── Comp Direction ────────────────────────────────────────────────────
+        self._analyze_comp_direction(state, advice)
 
         # ── Augment Analysis ──────────────────────────────────────────────────
         if state.phase == GamePhase.AUGMENT_SELECT:
@@ -197,12 +208,18 @@ class Coach:
             )
 
         # Low-HP escalation
-        if state.player_hp <= 40 and advice.slam_urgency_level in ("low", "medium"):
-            advice.slam_urgency_level = "high"
-            advice.slam_urgency_message = (
-                "Low HP — you need to stabilize NOW. Slam any shred, burn, or "
-                "carry item onto a synergy-active unit to start winning rounds."
-            )
+        if state.player_hp <= 40:
+            if advice.slam_urgency_level in ("low", "medium"):
+                advice.slam_urgency_level = "high"
+                advice.slam_urgency_message = (
+                    "Low HP — you need to stabilize NOW. Slam any shred, burn, or "
+                    "carry item onto a synergy-active unit to start winning rounds."
+                )
+            # Even at "high" urgency level, the per-item `urgency` value may
+            # be < 7, leaving B/C-tier items in the "hold" branch below. At
+            # low HP, holding any item is wrong — bump the floor so every
+            # craftable goes through the slam_now path.
+            urgency = max(urgency, 7)
 
         # ── Find synergy-active board champions ───────────────────────────────
         synergy_carry_names = self._synergy_active_carries(state)
@@ -393,6 +410,63 @@ class Coach:
         )
         total_pairs = len(positions) * (len(positions) - 1) / 2
         return (close_pairs / total_pairs) > 0.7 if total_pairs > 0 else False
+
+    # ── Comp Direction Analysis ───────────────────────────────────────────────
+
+    def _analyze_comp_direction(self, state: GameState, advice: CoachingAdvice):
+        """
+        Identify which comps the current board is matching, surface them as
+        suggestions, and add a top-line tip when a clear primary comp emerges.
+        """
+        # Skip the very early game — too few units to draw conclusions
+        if len(state.board_champions) < 2:
+            return
+
+        suggestions = detect_comp_direction(
+            state.active_synergies,
+            state.board_champions,
+            state.bench_champions,
+        )
+        if not suggestions:
+            return
+
+        advice.comp_suggestions = suggestions
+        primary = suggestions[0]
+
+        # Promote the primary comp's direction tip into the visible tips list
+        if primary.match_score >= 0.45:
+            advice.tips.append(f"Comp direction: {primary.direction_tip}")
+        elif primary.match_score >= 0.25 and len(state.board_champions) >= 4:
+            # Lower confidence — phrase as a flexible suggestion
+            advice.tips.append(
+                f"Possible comp direction ({primary.progress}): "
+                f"{primary.direction_tip}"
+            )
+
+        # If a low-tier comp ranks first AND a higher-tier comp is also viable,
+        # nudge the player toward the better choice on TFT Academy's list.
+        better = self._find_better_meta_alternative(suggestions)
+        if better:
+            advice.tips.append(
+                f"Heads up: {better.tftacademy_name} ({better.tftacademy_tier}-tier "
+                f"on TFT Academy) is a stronger pivot than {primary.name} "
+                f"({primary.tftacademy_tier or '—'}-tier) if you can hit it."
+            )
+
+    @staticmethod
+    def _find_better_meta_alternative(suggestions):
+        """Return a non-primary suggestion that ranks higher on TFT Academy's tier list."""
+        if not suggestions:
+            return None
+        primary = suggestions[0]
+        primary_tier = primary.tftacademy_tier
+        # Only nudge when the primary is clearly suboptimal (C/X tier on TFT Academy)
+        if primary_tier not in ("C", "X"):
+            return None
+        for s in suggestions[1:]:
+            if s.tftacademy_tier in ("S", "A") and s.match_score >= primary.match_score - 0.15:
+                return s
+        return None
 
     # ── Augment Analysis ──────────────────────────────────────────────────────
 

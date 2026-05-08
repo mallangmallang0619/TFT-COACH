@@ -92,9 +92,16 @@ const POSITIONING_TEMPLATES = [
   },
 ];
 
-const TIER_COLORS = { S: "#ff4757", A: "#ffa502", B: "#2ed573", C: "#747d8c" };
+const TIER_COLORS = { S: "#ff4757", A: "#ffa502", B: "#2ed573", C: "#747d8c", X: "#5a5e6b" };
 const ACCENT = "#00d2ff";
 const ACCENT2 = "#7c5cfc";
+
+// Trend marker shown next to TFT Academy tier badges
+const TREND_GLYPH = {
+  rising:  { icon: "▲", color: "#2ed573", label: "rising" },
+  falling: { icon: "▼", color: "#ff6348", label: "falling" },
+  new:     { icon: "✦", color: "#ffd32a", label: "new" },
+};
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
@@ -192,6 +199,166 @@ function TabBtn({ active, onClick, children }) {
   );
 }
 
+// Compact pill showing a trait's current count vs. the next breakpoint.
+// Active traits (count >= first breakpoint) are highlighted in accent color.
+function SynergyPill({ synergy }) {
+  const active = synergy.is_active;
+  const reachedBp = synergy.count >= synergy.breakpoint;
+  const color = active ? ACCENT : "#8b8fa3";
+  return (
+    <div style={{
+      display: "inline-flex", alignItems: "center", gap: "6px",
+      padding: "5px 10px", borderRadius: "6px",
+      border: `1px solid ${active ? `${ACCENT}55` : "#2a2d35"}`,
+      background: active ? `${ACCENT}10` : "rgba(0,0,0,0.2)",
+      fontFamily: "var(--mono)",
+    }}>
+      <span style={{
+        fontSize: "11px", color, fontWeight: active ? 700 : 500,
+      }}>
+        {synergy.name}
+      </span>
+      <span style={{
+        fontSize: "10px",
+        color: reachedBp ? "#2ed573" : color,
+        opacity: 0.85,
+      }}>
+        {synergy.count}/{synergy.breakpoint}
+      </span>
+    </div>
+  );
+}
+
+// TFT Academy tier badge with optional trend marker (rising/falling/new).
+function MetaTierBadge({ tier, trend }) {
+  const color = TIER_COLORS[tier] || "#555";
+  const t = TREND_GLYPH[trend];
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: "4px",
+      padding: "2px 8px", borderRadius: "4px",
+      background: `${color}18`, border: `1px solid ${color}55`,
+      fontFamily: "var(--mono)", fontSize: "9px", fontWeight: 800,
+      letterSpacing: "1px",
+    }}>
+      <span style={{ color }}>{tier}</span>
+      <span style={{ color: "#666", fontSize: "8px" }}>TFT.A</span>
+      {t && (
+        <span title={t.label} style={{
+          color: t.color, fontSize: "9px", fontWeight: 700,
+        }}>
+          {t.icon}
+        </span>
+      )}
+    </span>
+  );
+}
+
+// Single-pixel progress bar visualizing match_score (0-1).
+function MatchScoreBar({ score }) {
+  const pct = Math.max(0, Math.min(1, score)) * 100;
+  return (
+    <div style={{
+      width: "60px", height: "4px", borderRadius: "2px",
+      background: "#1a1b21", overflow: "hidden",
+    }}>
+      <div style={{
+        width: `${pct}%`, height: "100%",
+        background: `linear-gradient(90deg, ${ACCENT2}, ${ACCENT})`,
+      }} />
+    </div>
+  );
+}
+
+// Comp suggestion card: shows comp name, internal+TFT Academy tier,
+// progress, held/missing units, and the composed direction tip.
+function CompCard({ comp, primary }) {
+  const accent = primary ? ACCENT : "#5a5e6b";
+  return (
+    <div className="card" style={{
+      marginBottom: "8px",
+      borderColor: primary ? `${ACCENT}55` : "#2a2d35",
+      borderLeft: `3px solid ${accent}`,
+    }}>
+      <div style={{
+        display: "flex", alignItems: "center", gap: "8px",
+        marginBottom: "6px", flexWrap: "wrap",
+      }}>
+        <span style={{
+          fontWeight: 700, fontSize: primary ? "14px" : "12px",
+          color: primary ? "#e4e5ea" : "#c8cad0",
+        }}>
+          {comp.name}
+        </span>
+        {comp.tftacademy_tier && (
+          <MetaTierBadge tier={comp.tftacademy_tier} trend={comp.tftacademy_trend} />
+        )}
+        <div style={{ flex: 1 }} />
+        <MatchScoreBar score={comp.match_score} />
+        <span style={{
+          fontFamily: "var(--mono)", fontSize: "10px", color: "#8b8fa3",
+        }}>
+          {Math.round((comp.match_score || 0) * 100)}%
+        </span>
+      </div>
+
+      {comp.progress && (
+        <div style={{
+          fontSize: "10px", color: "#8b8fa3", fontFamily: "var(--mono)",
+          marginBottom: "6px",
+        }}>
+          {comp.progress}
+        </div>
+      )}
+
+      {comp.held_units && comp.held_units.length > 0 && (
+        <div style={{
+          display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "6px",
+        }}>
+          {comp.held_units.map((u, i) => (
+            <span key={i} style={{
+              fontSize: "10px", padding: "2px 6px", borderRadius: "4px",
+              background: `${ACCENT}10`, border: `1px solid ${ACCENT}33`,
+              color: ACCENT,
+            }}>
+              {u}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {comp.missing_units && comp.missing_units.length > 0 && (
+        <div style={{
+          display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "6px",
+        }}>
+          <span style={{
+            fontSize: "9px", color: "#666", fontFamily: "var(--mono)",
+            alignSelf: "center", letterSpacing: "1px",
+          }}>NEED:</span>
+          {comp.missing_units.slice(0, 5).map((u, i) => (
+            <span key={i} style={{
+              fontSize: "10px", padding: "2px 6px", borderRadius: "4px",
+              background: "rgba(0,0,0,0.25)", border: "1px solid #2a2d35",
+              color: "#8b8fa3",
+            }}>
+              {u}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {comp.direction_tip && primary && (
+        <p style={{
+          fontSize: "11px", color: "#a0a3b0", lineHeight: 1.45,
+          marginTop: "4px",
+        }}>
+          💡 {comp.direction_tip}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── MAIN APP ────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -226,6 +393,8 @@ export default function App() {
   const slamRecs = backendAdvice?.slam_recommendations || [];
   const tips = backendAdvice?.tips || [];
   const augmentRatings = backendAdvice?.augment_ratings || [];
+  const compSuggestions = backendAdvice?.comp_suggestions || [];
+  const activeSynergies = isLive ? (gameState?.active_synergies || []) : [];
 
   const craftableItems = useMemo(
     () => getCraftableItems(componentIds, itemRecipes),
@@ -323,6 +492,9 @@ export default function App() {
           {/* ── TAB NAV ── */}
           <div style={{ padding: "10px 16px", display: "flex", gap: "6px", borderBottom: "1px solid #1e2028", flexWrap: "wrap" }}>
             <TabBtn active={tab === "items"} onClick={() => setTab("items")}>⚔️ Items</TabBtn>
+            <TabBtn active={tab === "comp"} onClick={() => setTab("comp")}>
+              🎯 Comp{compSuggestions.length > 0 && ` (${compSuggestions.length})`}
+            </TabBtn>
             <TabBtn active={tab === "position"} onClick={() => setTab("position")}>🗺️ Position</TabBtn>
             <TabBtn active={tab === "augments"} onClick={() => setTab("augments")}>🔮 Augments</TabBtn>
             {tips.length > 0 && (
@@ -501,6 +673,79 @@ export default function App() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ═══ COMP TAB ═══ */}
+            {tab === "comp" && (
+              <div style={{ animation: "slideIn 0.25s ease" }}>
+
+                {/* Active Synergies */}
+                <div style={{
+                  fontSize: "9px", color: "#8b8fa3", marginBottom: "8px",
+                  fontFamily: "var(--mono)", letterSpacing: "2px",
+                }}>
+                  ACTIVE SYNERGIES ({activeSynergies.filter(s => s.is_active).length} active)
+                </div>
+
+                {activeSynergies.length === 0 ? (
+                  <div className="card" style={{
+                    textAlign: "center", padding: "16px", color: "#555",
+                    fontSize: "11px", marginBottom: "12px",
+                  }}>
+                    {isLive
+                      ? "Place units on the board to see active traits."
+                      : "Connect backend for live synergy detection."}
+                  </div>
+                ) : (
+                  <div className="card" style={{ marginBottom: "14px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                      {activeSynergies.map((s, i) => (
+                        <SynergyPill key={i} synergy={s} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Comp Suggestions */}
+                <div style={{
+                  fontSize: "9px", color: "#8b8fa3", marginBottom: "8px",
+                  fontFamily: "var(--mono)", letterSpacing: "2px",
+                }}>
+                  COMP DIRECTION
+                </div>
+
+                {compSuggestions.length === 0 ? (
+                  <div className="card" style={{
+                    textAlign: "center", padding: "30px", color: "#555",
+                  }}>
+                    <div style={{ fontSize: "28px", marginBottom: "8px" }}>🎯</div>
+                    <div style={{ fontSize: "12px", lineHeight: 1.5 }}>
+                      Comp suggestions appear once you have a few units on the board.
+                      {!isLive && " (connect backend for live detection)"}
+                    </div>
+                  </div>
+                ) : (
+                  compSuggestions.map((c, i) => (
+                    <CompCard key={i} comp={c} primary={c.is_primary} />
+                  ))
+                )}
+
+                {/* Footnote when at least one comp had a TFT Academy match */}
+                {compSuggestions.some(c => c.tftacademy_tier) && (
+                  <div style={{
+                    marginTop: "8px", padding: "8px 10px",
+                    fontSize: "10px", color: "#5a5e6b", fontFamily: "var(--mono)",
+                    textAlign: "right",
+                  }}>
+                    Tier ratings from{" "}
+                    <a href="https://tftacademy.com/tierlist/comps"
+                       target="_blank" rel="noreferrer"
+                       style={{ color: "#7a8090", textDecoration: "underline" }}>
+                      tftacademy.com
+                    </a>
                   </div>
                 )}
               </div>

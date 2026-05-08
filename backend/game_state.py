@@ -100,6 +100,31 @@ class BoardPowerBreakdown(BaseModel):
     total: float = 0.0
 
 
+class CompSuggestion(BaseModel):
+    """
+    A comp the player appears to be building — or could pivot into —
+    based on their currently fielded champions and active synergies.
+    """
+    name: str                                  # e.g., "5 Meeple Reroll"
+    match_score: float = 0.0                   # 0.0 - 1.0, how well the board matches this comp
+    is_primary: bool = False                   # True for the top-ranked comp this round
+    progress: str = ""                         # e.g., "3 / 5 Meeple, 2 / 4 Stargazer"
+    held_units: list[str] = Field(default_factory=list)   # Comp units already on board
+    missing_units: list[str] = Field(default_factory=list) # Comp units still to find
+    next_breakpoint: Optional[int] = None      # Units needed for next trait tier
+    next_breakpoint_trait: Optional[str] = None
+    power_at_next_breakpoint: float = 0.0      # Estimated synergy power gained
+    direction_tip: str = ""                    # Human-readable advice
+
+    # ── External tier list (TFT Academy) ────────────────────────────────
+    # Populated when this suggestion can be matched to an entry in META_COMPS.
+    # `tftacademy_name` may differ from `name` (TFT Academy uses carry-centric
+    # labels like "Yi Marawlers"; our internal names are trait-centric).
+    tftacademy_name: Optional[str] = None
+    tftacademy_tier: Optional[str] = None      # S / A / B / C / X
+    tftacademy_trend: Optional[str] = None     # rising / falling / new / ""
+
+
 class CoachingAdvice(BaseModel):
     """Complete coaching output for the current game state."""
     # Board power estimate (no positioning factor)
@@ -117,6 +142,9 @@ class CoachingAdvice(BaseModel):
 
     # Augment advice (only populated during augment selection)
     augment_ratings: list[dict] = Field(default_factory=list)
+
+    # Comp direction (populated from board champions + active synergies)
+    comp_suggestions: list[CompSuggestion] = Field(default_factory=list)
 
     # General tips
     tips: list[str] = Field(default_factory=list)

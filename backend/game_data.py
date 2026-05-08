@@ -410,6 +410,186 @@ TRAITS: dict[str, dict] = {
 }
 
 
+# ── Comp Templates  (Set 17: Space Gods) ─────────────────────────────────────
+# Each comp lists the traits it wants and the key champions that fill it.
+# `target_traits` are (trait_name, target_count) — the headline breakpoint
+# the comp aims to hit. `core_units` are the carries / keystone units; the
+# comp is identifiable as soon as 2-3 of these are on the board.
+# `flex_units` round out the comp once the cores are found.
+#
+# !! UPDATE per patch as the meta shifts !!
+
+COMPS: list[dict] = [
+    {
+        "name": "5 Meeple Reroll",
+        "target_traits": [("Meeple", 5)],
+        "core_units": ["Veigar", "Poppy", "Gnar", "Fizz", "Meepsie"],
+        "flex_units": ["Corki", "Rammus", "Bard"],
+        "playstyle": "Slow-roll level 6-7 to 3-star Meeple 1-cost units. Meeps stack damage on abilities — itemize Veigar or Fizz as primary carry.",
+        "items": ["Jeweled Gauntlet", "Spear of Shojin", "Crownguard"],
+    },
+    {
+        "name": "6 Dark Star",
+        "target_traits": [("Dark Star", 6)],
+        "core_units": ["Kai'Sa", "Karma", "Jhin"],
+        "flex_units": ["Lissandra", "Mordekaiser", "Bard"],
+        "playstyle": "Fast-8 comp. Black holes execute low-HP enemies and supermassive units carry late game. Jhin/Kai'Sa as carries.",
+        "items": ["Guinsoo's Rageblade", "Last Whisper", "Infinity Edge"],
+    },
+    {
+        "name": "5 Space Groove",
+        "target_traits": [("Space Groove", 5)],
+        "core_units": ["Samira", "Ornn", "Nami"],
+        "flex_units": ["Nasus", "Teemo", "Gwen", "Blitzcrank"],
+        "playstyle": "Stacking AS/AD/AP scales hard the longer combat goes. Frontline-heavy comp — itemize Samira or Gwen as primary carry.",
+        "items": ["Guinsoo's Rageblade", "Bloodthirster", "Sterak's Gage"],
+    },
+    {
+        "name": "5 N.O.V.A.",
+        "target_traits": [("N.O.V.A.", 5)],
+        "core_units": ["Kindred", "Akali", "Maokai"],
+        "flex_units": ["Aatrox", "Caitlyn"],
+        "playstyle": "Pick a Striker (usually Kindred or Akali) for the chosen-Strike at 5-trait. Surge timing wins fights at 6 seconds.",
+        "items": ["Giant Slayer", "Infinity Edge", "Spear of Shojin"],
+    },
+    {
+        "name": "6 Brawler",
+        "target_traits": [("Brawler", 6)],
+        "core_units": ["Tahm Kench", "Urgot", "Maokai"],
+        "flex_units": ["Cho'Gath", "Rek'Sai", "Gragas", "Pantheon"],
+        "playstyle": "65% bonus HP makes any unit a tank. Stack a 4-cost AD carry like Urgot or splash a backline carry behind 6 Brawler frontline.",
+        "items": ["Warmog's Armor", "Sunfire Cape", "Bramble Vest"],
+    },
+    {
+        "name": "Stargazer Sniper",
+        "target_traits": [("Stargazer", 5), ("Sniper", 4)],
+        "core_units": ["Xayah", "Samira"],
+        "flex_units": ["Talon", "Twisted Fate", "Jax", "Lulu", "Nunu", "Gnar", "Ezreal"],
+        "playstyle": "Constellation-buffed Xayah carry from the corner. Snipers amp damage by hex distance — keep her far from melee.",
+        "items": ["Giant Slayer", "Last Whisper", "Infinity Edge"],
+    },
+    {
+        "name": "Anima Loss-Streak",
+        "target_traits": [("Anima", 6)],
+        "core_units": ["Jinx", "Aurora", "Illaoi"],
+        "flex_units": ["Briar"],
+        "playstyle": "Loss-streak through stage 2-3 to stack Tech, then transition. Jinx with Anima Weapons is a primary carry late.",
+        "items": ["Guinsoo's Rageblade", "Last Whisper", "Bloodthirster"],
+    },
+    {
+        "name": "6 Vanguard",
+        "target_traits": [("Vanguard", 6), ("Bastion", 4)],
+        "core_units": ["Blitzcrank", "Nunu", "Mordekaiser"],
+        "flex_units": ["Leona", "Nasus", "Illaoi"],
+        "playstyle": "Wall of shields. Pair with a flex 4-5-cost backline carry — itemize the carry, not the tanks.",
+        "items": ["Crownguard", "Sunfire Cape", "Protector's Vow"],
+    },
+    {
+        "name": "Mecha Voyagers",
+        "target_traits": [("Mecha", 4), ("Voyager", 4)],
+        "core_units": ["Aurelion Sol", "The Mighty Mech", "Urgot"],
+        "flex_units": ["Pyke", "Meepsie", "Karma"],
+        "playstyle": "Mecha Ultimate Form (4) makes The Mighty Mech a monster. Voyager (4) shields tanks and amps backline. Itemize Aurelion Sol.",
+        "items": ["Jeweled Gauntlet", "Rabadon's Deathcap", "Spear of Shojin"],
+    },
+    {
+        "name": "4 Psionic",
+        "target_traits": [("Psionic", 4)],
+        "core_units": ["Viktor", "Sona", "Master Yi"],
+        "flex_units": ["Gragas", "Pyke"],
+        "playstyle": "Free Psionic items at 2 and 4 traits — they grow stronger on Psionic units. Viktor or Master Yi as carry.",
+        "items": ["Jeweled Gauntlet", "Hand of Justice", "Quicksilver"],
+    },
+    {
+        "name": "Marauder Reroll",
+        "target_traits": [("Marauder", 6)],
+        "core_units": ["Akali", "Bel'Veth", "Urgot"],
+        "flex_units": ["Master Yi", "Fiora"],
+        "playstyle": "Reroll level 7 for 2-cost Marauder 3-stars. Omnivamp + AD scaling makes Bel'Veth a frontline-bruiser carry.",
+        "items": ["Bloodthirster", "Sterak's Gage", "Hand of Justice"],
+    },
+    {
+        "name": "Gun Goddess Flex",
+        "target_traits": [("Gun Goddess", 1)],
+        "core_units": ["Miss Fortune"],
+        "flex_units": ["Samira", "Caitlyn", "Gnar", "Xayah", "Ezreal"],
+        "playstyle": "Miss Fortune picks a mode (Conduit/Challenger/Replicator) — build her trait around it. Versatile flex carry into many trait shells.",
+        "items": ["Spear of Shojin", "Guinsoo's Rageblade", "Last Whisper"],
+    },
+]
+
+
+# ── TFT Academy Tier Data  (Set 17: Space Gods, Patch 17.2b) ─────────────────
+# Source: tftacademy.com/tierlist/comps
+# Last synced: 2026-05-08
+#
+# Their tier list is curated by Frodan/Dishsoap and updated each patch. Refresh
+# by running:  python scripts/sync_tftacademy.py
+#
+# Notes on the ratings:
+#   tier:   S / A / B / C / X (X = situational / portal-only / niche carry)
+#   trend:  rising / falling / new / "" (no marker on TFT Academy)
+#   carry:  primary carry the comp is built around — used to match this entry
+#           against detected board champions
+#   match_traits: which trait names are diagnostic of this comp; helps map
+#           detected synergies onto the right entry when names diverge
+#
+# !! KEEP NAMES EXACTLY AS THEY APPEAR ON TFT ACADEMY so the sync script can
+#    update entries in place rather than introducing duplicates !!
+
+TFTACADEMY_PATCH = "17.2b"
+TFTACADEMY_LAST_SYNCED = "2026-05-08"
+TFTACADEMY_SOURCE_URL = "https://tftacademy.com/tierlist/comps"
+
+META_COMPS: list[dict] = [
+    # ── S Tier ────────────────────────────────────────────────────────────────
+    {"name": "Yi Marawlers",       "tier": "S", "trend": "rising",  "carry": "Master Yi",     "match_traits": ["Marauder", "Psionic"]},
+    {"name": "Dark Star",          "tier": "S", "trend": "rising",  "carry": "Jhin",          "match_traits": ["Dark Star"]},
+    {"name": "Primordian Reroll",  "tier": "S", "trend": "",        "carry": "Briar",         "match_traits": ["Primordian"]},
+
+    # ── A Tier ────────────────────────────────────────────────────────────────
+    {"name": "Fountain Lulu",      "tier": "A", "trend": "rising",  "carry": "Lulu",          "match_traits": ["Stargazer"]},
+    {"name": "Vanguard Teemo",     "tier": "A", "trend": "",        "carry": "Teemo",         "match_traits": ["Vanguard", "Space Groove"]},
+    {"name": "TF Reroll",          "tier": "A", "trend": "",        "carry": "Twisted Fate",  "match_traits": ["Stargazer", "Fateweaver"]},
+    {"name": "Corki Riven",        "tier": "A", "trend": "rising",  "carry": "Corki",         "match_traits": ["Meeple", "Fateweaver"]},
+    {"name": "Graves Vex 9.5",     "tier": "A", "trend": "falling", "carry": "Vex",           "match_traits": ["Doomer", "Factory New"]},
+
+    # ── B Tier ────────────────────────────────────────────────────────────────
+    {"name": "Voyager Crab",       "tier": "B", "trend": "falling", "carry": "Urgot",         "match_traits": ["Voyager", "Mecha"]},
+    {"name": "Fast 9 Jhin Stargazer","tier": "B","trend": "falling","carry": "Xayah",         "match_traits": ["Stargazer", "Sniper"]},
+    {"name": "Kaisa Karma",        "tier": "B", "trend": "new",     "carry": "Kai'Sa",        "match_traits": ["Dark Star"]},
+    {"name": "Veigar Printer",     "tier": "B", "trend": "",        "carry": "Veigar",        "match_traits": ["Meeple", "Replicator"]},
+    {"name": "Samira Knock-Up",    "tier": "B", "trend": "falling", "carry": "Samira",        "match_traits": ["Space Groove", "Sniper"]},
+
+    # ── C Tier ────────────────────────────────────────────────────────────────
+    {"name": "Karma LB Duo",       "tier": "C", "trend": "",        "carry": "LeBlanc",       "match_traits": ["Dark Star", "Arbiter"]},
+    {"name": "Mecha Sol",          "tier": "C", "trend": "",        "carry": "Aurelion Sol",  "match_traits": ["Mecha", "Conduit"]},
+    {"name": "Ez Cho",             "tier": "C", "trend": "",        "carry": "Cho'Gath",      "match_traits": ["Brawler", "Dark Star"]},
+    {"name": "Karnami Flex",       "tier": "C", "trend": "",        "carry": "Karma",         "match_traits": ["Dark Star", "Space Groove"]},
+    {"name": "In the Groove",      "tier": "C", "trend": "falling", "carry": "Nami",          "match_traits": ["Space Groove"]},
+    {"name": "Vanguard Zoe",       "tier": "C", "trend": "",        "carry": "Zoe",           "match_traits": ["Vanguard", "Arbiter"]},
+    {"name": "Viktor B4L",         "tier": "C", "trend": "falling", "carry": "Viktor",        "match_traits": ["Psionic", "Conduit"]},
+    {"name": "Anima Reroll",       "tier": "C", "trend": "",        "carry": "Aurora",        "match_traits": ["Anima"]},
+
+    # ── X Tier (situational / portal-or-augment-only carries) ─────────────────
+    {"name": "Invader Zed",            "tier": "X", "trend": "", "carry": "Zed",          "match_traits": ["Galaxy Hunter"]},
+    {"name": "Shieldmaiden Leona",     "tier": "X", "trend": "", "carry": "Leona",        "match_traits": ["Arbiter", "Vanguard"]},
+    {"name": "Self-Destruct Gragas",   "tier": "X", "trend": "", "carry": "Gragas",       "match_traits": ["Psionic", "Brawler"]},
+    {"name": "Terminal Velocity Poppy","tier": "X", "trend": "", "carry": "Poppy",        "match_traits": ["Meeple", "Bastion"]},
+    {"name": "Bonk Nasus",             "tier": "X", "trend": "", "carry": "Nasus",        "match_traits": ["Space Groove", "Vanguard"]},
+    {"name": "Contract Killer Pyke",   "tier": "X", "trend": "", "carry": "Pyke",         "match_traits": ["Psionic", "Voyager"]},
+    {"name": "The Big Bang Meepsie",   "tier": "X", "trend": "", "carry": "Meepsie",      "match_traits": ["Meeple"]},
+    {"name": "Stellar Combo Aatrox",   "tier": "X", "trend": "", "carry": "Aatrox",       "match_traits": ["N.O.V.A.", "Bastion"]},
+    {"name": "Reach for the Stars Jax","tier": "X", "trend": "", "carry": "Jax",          "match_traits": ["Stargazer", "Bastion"]},
+    {"name": "Heat Death Mordekaiser", "tier": "X", "trend": "", "carry": "Mordekaiser",  "match_traits": ["Dark Star", "Vanguard"]},
+]
+
+# Helpers built off META_COMPS — derived once at import.
+META_COMPS_BY_CARRY: dict[str, list[dict]] = {}
+for _entry in META_COMPS:
+    META_COMPS_BY_CARRY.setdefault(_entry["carry"], []).append(_entry)
+
+
 # ── Augment Ratings  (Set 17: Space Gods, Patch 17.2b) ───────────────────────
 # rating: S / A / B / C
 # tip:    concise strategic advice for this augment
@@ -455,4 +635,22 @@ AUGMENT_RATINGS: dict[str, dict] = {
     "Item Grab Bag":        {"rating": "B", "tip": "Components mid-game. Not as efficient as Heroic Grab Bag but fine in a pinch."},
     "Electrocharge":        {"rating": "B", "tip": "AoE damage. Better with Ionic Spark/Evenshroud shred already on your board."},
     "Pandora's Items":      {"rating": "B", "tip": "Randomizes items each round. High variance — avoid if you need specific items."},
+
+    # ── X Tier (Carry-Specific / Situational — from TFT Academy comps page) ──
+    # These augments enable specific situational comps from TFT Academy's X-tier.
+    # Only take them if you can commit to the carry they unlock.
+    "Aura Farming":         {"rating": "A", "tip": "Enables Graves Vex 9.5 — a 4-cost carry comp that's currently A-tier on TFT Academy. Take it if you can fast-9 with Graves."},
+    "Portable Forge":       {"rating": "A", "tip": "Free artifact item — strong with Voyager Crab Urgot. B-tier carry comp on TFT Academy."},
+    "Two Tanky":            {"rating": "B", "tip": "Bonus tank stats. Pairs with Samira Knock-Up B-tier comp on TFT Academy."},
+    "Expedition":           {"rating": "B", "tip": "Mecha Sol enabler — currently C-tier on TFT Academy. Niche pick."},
+    "Invader Zed":          {"rating": "B", "tip": "Carry augment — turns Zed into a viable carry. Situational X-tier on TFT Academy."},
+    "Shieldmaiden":         {"rating": "B", "tip": "Carry augment — Leona becomes a frontline carry. Situational X-tier on TFT Academy."},
+    "Self-Destruct":        {"rating": "B", "tip": "Carry augment — Gragas detonates. Pairs with Sympathetic Implant Mod radiant."},
+    "Terminal Velocity":    {"rating": "B", "tip": "Carry augment — turns Poppy into a carry. Situational X-tier on TFT Academy."},
+    "Bonk":                 {"rating": "A", "tip": "Trait carry bonus — also enables Bonk Nasus comp. Excellent when committed to a synergy."},
+    "Contract Killer":      {"rating": "B", "tip": "Carry augment — enables Pyke as a primary carry. Situational X-tier on TFT Academy."},
+    "The Big Bang":         {"rating": "B", "tip": "Carry augment — Ivern's minion (via Meepsie) becomes a carry. Niche."},
+    "Stellar Combo":        {"rating": "B", "tip": "Carry augment — Aatrox combo carry. Situational X-tier on TFT Academy."},
+    "Reach for the Stars":  {"rating": "B", "tip": "Carry augment — Jax becomes a primary carry. Situational X-tier on TFT Academy."},
+    "Heat Death":           {"rating": "B", "tip": "Carry augment — Mordekaiser carry. Situational X-tier on TFT Academy."},
 }

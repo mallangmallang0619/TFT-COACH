@@ -18,6 +18,8 @@ Uses an electron shell that has a react frontend. The react frontend connects to
  `detector.py`        | OpenCV template matching + Tesseract OCR for game state     
  `game_state.py`      | Data model for the full game state                          
  `coach.py`           | Coaching logic — generates advice from game state          
+ `synergy.py`         | Active synergy + comp-direction detection from board state  
+ `tftacademy_live.py` | Background sync of TFT Academy's comp tier list             
  `websocket_server.py`| Async WebSocket server pushing state to frontend            
  `config.py`          | Resolution presets, ROI coordinates, thresholds       
        
@@ -82,6 +84,44 @@ Edit `backend/config.py` to match your setup:
 - `CONFIDENCE_THRESHOLD`: Template matching confidence (default: 0.8)
 - `WEBSOCKET_PORT`: Port for frontend connection (default: 8765)
 
+## Tier-List Data (TFT Academy)
+
+The coach cross-references each detected comp against [TFT Academy's curated
+comp tier list](https://tftacademy.com/tierlist/comps) so suggestions show
+the meta tier (S/A/B/C/X) and patch trend (rising / falling / new).
+
+### How auto-sync works
+
+`backend/tftacademy_live.py` keeps the tier list current without you having
+to think about it:
+
+| When | What happens |
+|------|--------------|
+| Backend imports the module | Loads `assets/tftacademy_cache.json` into `META_COMPS` (instant, no network) |
+| Backend startup | Schedules one async refresh (debounced, non-blocking) |
+| Each WebSocket client connects | Triggers another refresh check — debounced, so opening the overlay 10× in a row hits the network at most once |
+| Refresh fires | Fetches `tftacademy.com/tierlist/comps`, compares the live patch number against the cache. If different, re-parses the page, merges with curated `carry`/`match_traits` metadata, writes a new cache, and updates `META_COMPS` in place — running coaching code sees the new ratings immediately |
+| Network error or parse failure | Logs a warning and keeps using the cached data — never crashes the app |
+
+The refresh is debounced to **once every 30 minutes** by default. You can
+force a fresh check at any time by running:
+
+```bash
+python scripts/sync_tftacademy.py --write   # also re-fetches now
+python scripts/sync_tftacademy.py --force --write   # bypass debounce
+python scripts/sync_tftacademy.py            # dry-run preview
+```
+
+### Augments page caveat
+
+TFT Academy's augments and items pages are JavaScript-rendered, so urllib
+can't extract their data. Augments referenced by the comps page (Aura
+Farming, Portable Forge, Bonk, etc.) are baked into `AUGMENT_RATINGS`.
+For full augment coverage, edit that dict by hand — the schema is
+`{augment_name: {"rating": "S/A/B/C", "tip": "..."}}`.
+
+The sync script prints a clear note about this every time it runs.
+
 ## How Detection Works
 
 ### Component Detection
@@ -111,6 +151,6 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [ ] Template image generation wizard
 - [ ] Champion portrait database
 - [ ] Augment OCR + database
-- [ ] Comp detection from active synergies
+- [x] Comp detection from active synergies
 - [ ] Multi-resolution support
 - [ ] Auto-update for new patches

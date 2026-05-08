@@ -23,6 +23,7 @@ from detector import Detector, TemplateStore
 from coach import Coach
 from game_state import GameState, GamePhase
 from game_data import ITEM_RECIPES, COMPONENT_IDS, COMPONENT_NAMES, SHRED_ITEMS, BURN_ITEMS
+import tftacademy_live
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,10 @@ class TFTCoachServer:
         # Load templates
         logger.info("Loading template images...")
         self.templates.load()
+
+        # Background refresh of the TFT Academy tier list (cache-checked,
+        # debounced — does nothing if recently refreshed).
+        tftacademy_live.schedule_background_refresh(initial_delay_seconds=2.0)
 
         # Start WebSocket server and capture loop concurrently
         self.is_running = True
@@ -106,6 +111,10 @@ class TFTCoachServer:
         self.clients.add(websocket)
         client_id = id(websocket)
         logger.info(f"Frontend connected (client {client_id}). Total clients: {len(self.clients)}")
+
+        # Re-check TFT Academy when the overlay opens. Debounced internally
+        # so frequent reconnects don't hammer the upstream site.
+        tftacademy_live.schedule_background_refresh(initial_delay_seconds=0.0)
 
         try:
             # Push game data first so the frontend can update its recipe table
