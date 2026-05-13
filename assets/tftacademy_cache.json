@@ -1,7 +1,7 @@
 {
   "patch": "17.2b",
   "synced_at": "2026-05-13T09:43:44.979861Z",
-  "last_checked_at": "2026-05-13T09:43:46.776183Z",
+  "last_checked_at": "2026-05-13T09:58:13.757065Z",
   "source_url": "https://tftacademy.com/tierlist/comps",
   "comps": [
     {
@@ -674,7 +674,199 @@
       "carry": "Lulu",
       "match_traits": [
         "Stargazer"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Aatrox",
+            "name": "Aatrox",
+            "boardIndex": 5,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Jax",
+            "name": "Jax",
+            "boardIndex": 2,
+            "items": [
+              {
+                "apiName": "TFT_Item_Crownguard",
+                "name": "Crownguard"
+              },
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Milio",
+            "name": "Milio",
+            "boardIndex": 22,
+            "items": [
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              },
+              {
+                "apiName": "TFT_Item_Morellonomicon",
+                "name": "Morellonomicon"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Maokai",
+            "name": "Maokai",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Lulu",
+            "name": "Lulu",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_TwistedFate",
+            "name": "Twisted Fate",
+            "boardIndex": 26,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Milio",
+            "name": "Milio",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Lulu",
+            "name": "Lulu",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_PatienceIsAVirtue",
+            "name": "Patience Is AVirtue"
+          },
+          {
+            "apiName": "TFT6_Augment_CalculatedLoss",
+            "name": "Calculated Loss"
+          },
+          {
+            "apiName": "TFT10_Augment_HeroicGrabBag",
+            "name": "Heroic Grab Bag"
+          },
+          {
+            "apiName": "TFT9_Augment_JeweledLotus",
+            "name": "Jeweled Lotus"
+          },
+          {
+            "apiName": "TFT9_Augment_ArmyBuilding",
+            "name": "Army Building"
+          },
+          {
+            "apiName": "TFT_Augment_ForgeRod",
+            "name": "Forge Rod"
+          },
+          {
+            "apiName": "TFT_Augment_GlassCannonII",
+            "name": "Glass Cannon II"
+          },
+          {
+            "apiName": "TFT_Augment_ShimmerscaleEssence",
+            "name": "Shimmerscale Essence"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_Leviathan",
+            "name": "Leviathan"
+          },
+          {
+            "apiName": "TFT_Item_JeweledGauntlet",
+            "name": "Jeweled Gauntlet"
+          },
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          },
+          {
+            "apiName": "TFT_Item_NeedlesslyLargeRod",
+            "name": "Needlessly Large Rod"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Lulu",
+          "name": "Lulu",
+          "cost": 3
+        },
+        "tip": "Best on Serpent = Mountain > Medallion >> Huntress > Boar Stargazer. If on Medallion, Lulu still prints gold on casts even if Stargazer is not active. Your tank will likely change every game depending on what's available / contested (Jax 3 > Maokai 3 > Pantheon 3). Horizon Focus Lulu on Mountain = insta top 2 hard force.",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:27.194173Z"
+      }
     },
     {
       "name": "Vanguard Teemo",
@@ -685,7 +877,207 @@
       "match_traits": [
         "Vanguard",
         "Space Groove"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 17,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nasus",
+            "name": "Nasus",
+            "boardIndex": 18,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": 26,
+            "items": [
+              {
+                "apiName": "TFT_Item_Morellonomicon",
+                "name": "Morellonomicon"
+              },
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": 3,
+            "items": [
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "TFT_Item_WarmogsArmor",
+                "name": "Warmog's Armor"
+              },
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Teemo",
+            "name": "Teemo",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 16,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Zoe",
+            "name": "Zoe",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": 19,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Nasus",
+            "name": "Nasus",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Teemo",
+            "name": "Teemo",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Zoe",
+            "name": "Zoe",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_WorthTheWaitGold",
+            "name": "Worth The Wait Gold"
+          },
+          {
+            "apiName": "TFT9_Augment_MissedConnections",
+            "name": "Missed Connections"
+          },
+          {
+            "apiName": "TFT9_Augment_Commander_Ascension",
+            "name": "Commander_Ascension"
+          },
+          {
+            "apiName": "TFT9_Augment_JeweledLotus",
+            "name": "Jeweled Lotus"
+          },
+          {
+            "apiName": "TFT_Augment_GlassCannonII",
+            "name": "Glass Cannon II"
+          },
+          {
+            "apiName": "TFT11_Augment_Buildabud",
+            "name": "Buildabud"
+          },
+          {
+            "apiName": "TFT_Augment_ItemGargoyleStoneplate",
+            "name": "Item Gargoyle Stoneplate"
+          },
+          {
+            "apiName": "TFT_Augment_ShimmerscaleEssence",
+            "name": "Shimmerscale Essence"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_GuinsoosRageblade",
+            "name": "Guinsoo's Rageblade"
+          },
+          {
+            "apiName": "TFT_Item_GargoyleStoneplate",
+            "name": "Gargoyle Stoneplate"
+          },
+          {
+            "apiName": "TFT_Item_NeedlesslyLargeRod",
+            "name": "Needlessly Large Rod"
+          },
+          {
+            "apiName": "TFT_Item_BFSword",
+            "name": "BFSword"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Teemo",
+          "name": "Teemo",
+          "cost": 1
+        },
+        "tip": "Play when you have lots of early copies of Teemo / Leona. Preferably choose a tanky or permanent HP scaling Arbiter trait for Leona. True BIS Leona is 3x Stoneplate but don't overgreed for it. Nasus 3 is nice, but not necessary.",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:28.710935Z"
+      }
     },
     {
       "name": "Tf Reroll",
@@ -693,7 +1085,217 @@
       "slug": "set-17-tf-reroll",
       "trend": "",
       "carry": "?",
-      "match_traits": []
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Aatrox",
+            "name": "Aatrox",
+            "boardIndex": 18,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_TwistedFate",
+            "name": "Twisted Fate",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Jax",
+            "name": "Jax",
+            "boardIndex": 3,
+            "items": [
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "TFT_Item_Crownguard",
+                "name": "Crownguard"
+              },
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Rhaast",
+            "name": "Rhaast",
+            "boardIndex": 17,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Caitlyn",
+            "name": "Caitlyn",
+            "boardIndex": 23,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_Deathblade",
+                "name": "Deathblade"
+              },
+              {
+                "apiName": "TFT_Item_RunaansHurricane",
+                "name": "Runaans Hurricane"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Talon",
+            "name": "Talon",
+            "boardIndex": 15,
+            "items": [
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_RapidFireCannon",
+                "name": "Rapid Fire Cannon"
+              },
+              {
+                "apiName": "TFT_Item_GuardianAngel",
+                "name": "Guardian Angel"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Gwen",
+            "name": "Gwen",
+            "boardIndex": 25,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Aatrox",
+            "name": "Aatrox",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Caitlyn",
+            "name": "Caitlyn",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TwistedFate",
+            "name": "Twisted Fate",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Jax",
+            "name": "Jax",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT7_Augment_PandorasBench",
+            "name": "Pandoras Bench"
+          },
+          {
+            "apiName": "TFT6_Augment_PandorasItems",
+            "name": "Pandoras Items"
+          },
+          {
+            "apiName": "TFT_Augment_Waverider",
+            "name": "Waverider"
+          },
+          {
+            "apiName": "TFT6_Augment_TradeSector",
+            "name": "Trade Sector"
+          },
+          {
+            "apiName": "TFT6_Augment_GachaAddict",
+            "name": "Gacha Addict"
+          },
+          {
+            "apiName": "TFT_Augment_EarlyLearning",
+            "name": "Early Learning"
+          },
+          {
+            "apiName": "TFT_Augment_NoScoutNoPivot",
+            "name": "No Scout No Pivot"
+          },
+          {
+            "apiName": "TFT9_Augment_MissedConnections",
+            "name": "Missed Connections"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_GargoyleStoneplate",
+            "name": "Gargoyle Stoneplate"
+          },
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          },
+          {
+            "apiName": "TFT_Item_NeedlesslyLargeRod",
+            "name": "Needlessly Large Rod"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_TwistedFate",
+          "name": "Twisted Fate",
+          "cost": 1
+        },
+        "tip": "Best on Altar > Serpent > Boar = Medallion = Mountain > Huntress. Item priority: Jax / TF > Talon > Caitlyn. Always tank Jax even if you have Jax 2 + Aatrox 3. 4 Fateweaver is a consideration if carrying Caitlyn and not Talon. ",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:30.228682Z"
+      }
     },
     {
       "name": "Corki Riven",
@@ -704,7 +1306,220 @@
       "match_traits": [
         "Meeple",
         "Fateweaver"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Poppy",
+            "name": "Poppy",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": 6,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Milio",
+            "name": "Milio",
+            "boardIndex": 27,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Fizz",
+            "name": "Fizz",
+            "boardIndex": 5,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Galio",
+            "name": "Galio",
+            "boardIndex": 3,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Corki",
+            "name": "Corki",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "TFT_Item_LastWhisper",
+                "name": "Last Whisper"
+              },
+              {
+                "apiName": "TFT_Item_Deathblade",
+                "name": "Deathblade"
+              },
+              {
+                "apiName": "TFT_Item_PowerGauntlet",
+                "name": "Power Gauntlet"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Rammus",
+            "name": "Rammus",
+            "boardIndex": 2,
+            "items": [
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              },
+              {
+                "apiName": "TFT_Item_AdaptiveHelm",
+                "name": "Adaptive Helm"
+              },
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Riven",
+            "name": "Riven",
+            "boardIndex": 22,
+            "items": [
+              {
+                "apiName": "TFT_Item_SteraksGage",
+                "name": "Sterak's Gage"
+              },
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              },
+              {
+                "apiName": "TFT_Flex",
+                "name": "Flex"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Ezreal",
+            "name": "Ezreal",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_LastWhisper",
+                "name": "Last Whisper"
+              },
+              {
+                "apiName": "TFT_Item_Deathblade",
+                "name": "Deathblade"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Gnar",
+            "name": "Gnar",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              },
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_ComponentQuestSword",
+            "name": "Component Quest Sword"
+          },
+          {
+            "apiName": "TFT_Augment_TraitTree",
+            "name": "Trait Tree"
+          },
+          {
+            "apiName": "TFT_Augment_SpreadingRoots",
+            "name": "Spreading Roots"
+          },
+          {
+            "apiName": "TFT_Augment_HomeCooking",
+            "name": "Home Cooking"
+          },
+          {
+            "apiName": "TFT9_Augment_BigGrabBag",
+            "name": "Big Grab Bag"
+          },
+          {
+            "apiName": "TFT_Augment_SwordOverflow",
+            "name": "Sword Overflow"
+          },
+          {
+            "apiName": "TFT_Augment_ForgeSword",
+            "name": "Forge Sword"
+          },
+          {
+            "apiName": "TFT6_Augment_Electrocharge2",
+            "name": "Electrocharge 2"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_BFSword",
+            "name": "BFSword"
+          },
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          },
+          {
+            "apiName": "TFT_Item_SparringGloves",
+            "name": "Sparring Gloves"
+          },
+          {
+            "apiName": "TFT_Item_ChainVest",
+            "name": "Chain Vest"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Corki",
+          "name": "Corki",
+          "cost": 4
+        },
+        "tip": "Use Timebreaker to push levels. Riven items are flexible, but make sure to have Sterak or IE or DB on her to activate AD form. DO NOT play Bard at lvl 8 over Voyager, add him on lvl 9 with Shen over Poppy. Fateweavers can inherently crit, but IE is still acceptable on Corki if your items end up that way.",
+        "difficulty": "MEDIUM",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:31.743651Z"
+      }
     },
     {
       "name": "Graves Vex 9 5",
@@ -712,7 +1527,234 @@
       "slug": "set-17-graves-vex-9-5",
       "trend": "",
       "carry": "?",
-      "match_traits": []
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Relic",
+            "name": "Relic",
+            "boardIndex": 11,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Aatrox",
+            "name": "Aatrox",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Akali",
+            "name": "Akali",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Rhaast",
+            "name": "Rhaast",
+            "boardIndex": 12,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nunu",
+            "name": "Nunu",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              },
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Shen",
+            "name": "Shen",
+            "boardIndex": 10,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Blitzcrank",
+            "name": "Blitzcrank",
+            "boardIndex": 2,
+            "items": [
+              {
+                "apiName": "TFT_Item_ThiefsGloves",
+                "name": "Thief's Gloves"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Fiora",
+            "name": "Fiora",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "TFT_Item_ThiefsGloves",
+                "name": "Thief's Gloves"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Graves",
+            "name": "Graves",
+            "boardIndex": 19,
+            "items": [
+              {
+                "apiName": "TFT_Item_Quicksilver",
+                "name": "Quicksilver"
+              },
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              },
+              {
+                "apiName": "TFT_Item_SteraksGage",
+                "name": "Sterak's Gage"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Vex",
+            "name": "Vex",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Briar",
+            "name": "Briar",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_SteraksGage",
+                "name": "Sterak's Gage"
+              },
+              {
+                "apiName": "TFT_Item_Quicksilver",
+                "name": "Quicksilver"
+              },
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Belveth",
+            "name": "Bel'Veth",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_AuraFarming",
+            "name": "Aura Farming"
+          },
+          {
+            "apiName": "TFT_Augment_GildedSteel",
+            "name": "Gilded Steel"
+          },
+          {
+            "apiName": "TFT_Augment_DuoQueue",
+            "name": "Duo Queue"
+          },
+          {
+            "apiName": "TFT11_Augment_Calltochaos",
+            "name": "Calltochaos"
+          },
+          {
+            "apiName": "TFT7_Augment_LategameSpecialist",
+            "name": "Lategame Specialist"
+          },
+          {
+            "apiName": "TFT6_Augment_OneTwoFive",
+            "name": "One Two Five"
+          },
+          {
+            "apiName": "TFT6_Augment_BandOfThieves2Plus",
+            "name": "Band Of Thieves 2Plus"
+          },
+          {
+            "apiName": "TFT_Augment_ExplosiveGrowthPlus",
+            "name": "Explosive Growth Plus"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          },
+          {
+            "apiName": "TFT_Item_BFSword",
+            "name": "BFSword"
+          },
+          {
+            "apiName": "TFT_Item_NegatronCloak",
+            "name": "Negatron Cloak"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Vex",
+          "name": "Vex",
+          "cost": 5
+        },
+        "tip": "Commonly you only play around either Vex / Graves but if highrolling hard or extremely rich you can play for both on your rolldown. Graves build: Assault frame -> Buckshot -> Choke -> Buckshot+ -> Buy whatever expensive upgrades available.",
+        "difficulty": "HARD",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:33.261043Z"
+      }
     },
     {
       "name": "Voyager Crab",
@@ -723,7 +1765,183 @@
       "match_traits": [
         "Voyager",
         "Mecha"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Akali",
+            "name": "Akali",
+            "boardIndex": 20,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Rhaast",
+            "name": "Rhaast",
+            "boardIndex": 6,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Aurora",
+            "name": "Aurora",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "TFT_Item_Morellonomicon",
+                "name": "Morellonomicon"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Maokai",
+            "name": "Maokai",
+            "boardIndex": 1,
+            "items": [
+              {
+                "apiName": "TFT_Item_SpectralGauntlet",
+                "name": "Spectral Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_WarmogsArmor",
+                "name": "Warmog's Armor"
+              },
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Urgot",
+            "name": "Urgot",
+            "boardIndex": 0,
+            "items": [
+              {
+                "apiName": "TFT_Item_Quicksilver",
+                "name": "Quicksilver"
+              },
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              },
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Galio",
+            "name": "Galio",
+            "boardIndex": 5,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Belveth",
+            "name": "Bel'Veth",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Milio",
+            "name": "Milio",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Urgot",
+            "name": "Urgot",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_LegionOfThrees",
+            "name": "Legion Of Threes"
+          },
+          {
+            "apiName": "TFT_Augment_PatienceIsAVirtue",
+            "name": "Patience Is AVirtue"
+          },
+          {
+            "apiName": "TFT9_Augment_ArmyBuilding",
+            "name": "Army Building"
+          },
+          {
+            "apiName": "TFT9_Augment_LongTimeCrafting",
+            "name": "Long Time Crafting"
+          },
+          {
+            "apiName": "TFT6_Augment_CalculatedLoss",
+            "name": "Calculated Loss"
+          },
+          {
+            "apiName": "TFT6_Augment_PortableForge",
+            "name": "Portable Forge"
+          },
+          {
+            "apiName": "TFT_Augment_ForgedInStrength",
+            "name": "Forged In Strength"
+          },
+          {
+            "apiName": "TFT6_Augment_GachaAddict",
+            "name": "Gacha Addict"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_Quicksilver",
+            "name": "Quicksilver"
+          },
+          {
+            "apiName": "TFT_Item_SpectralGauntlet",
+            "name": "Spectral Gauntlet"
+          },
+          {
+            "apiName": "TFT_Item_InfinityEdge",
+            "name": "Infinity Edge"
+          },
+          {
+            "apiName": "TFT_Item_SparringGloves",
+            "name": "Sparring Gloves"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Urgot",
+          "name": "Urgot",
+          "cost": 3
+        },
+        "tip": "+1 tier in strength with Artifacts. IE is BIS even though Akali gives precision because it maxes Crit on Urgot. Position Urgot top left (A1) or top right (A7) as shown here. Can also play Urgot B1 / B7 if playing against melee carries. Tank items are flexible. If HP items, tank Maokai. Otherwise, tank Rhaast. But always put items on the one you 3star first. ",
+        "difficulty": "MEDIUM",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:34.777324Z"
+      }
     },
     {
       "name": "Fast 9 Jhin Stargazer Version",
@@ -731,7 +1949,213 @@
       "slug": "set-17-fast-9-jhin-stargazer-version",
       "trend": "",
       "carry": "?",
-      "match_traits": []
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Gnar",
+            "name": "Gnar",
+            "boardIndex": 23,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Jax",
+            "name": "Jax",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Rhaast",
+            "name": "Rhaast",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Rammus",
+            "name": "Rammus",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nunu",
+            "name": "Nunu",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "TFT_Item_Redemption",
+                "name": "Redemption"
+              },
+              {
+                "apiName": "TFT_Item_SpectralGauntlet",
+                "name": "Spectral Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_NightHarvester",
+                "name": "Night Harvester"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Xayah",
+            "name": "Xayah",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_RunaansHurricane",
+                "name": "Runaans Hurricane"
+              },
+              {
+                "apiName": "TFT_Item_RapidFireCannon",
+                "name": "Rapid Fire Cannon"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Bard",
+            "name": "Bard",
+            "boardIndex": 25,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Jhin",
+            "name": "Jhin",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "TFT_Item_Deathblade",
+                "name": "Deathblade"
+              },
+              {
+                "apiName": "TFT_Item_HextechGunblade",
+                "name": "Hextech Gunblade"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Aatrox",
+            "name": "Aatrox",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TwistedFate",
+            "name": "Twisted Fate",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Caitlyn",
+            "name": "Caitlyn",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_RunaansHurricane",
+                "name": "Runaans Hurricane"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Jax",
+            "name": "Jax",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_ShimmerscaleEssence",
+            "name": "Shimmerscale Essence"
+          },
+          {
+            "apiName": "TFT9_Augment_LearningFromExperience2",
+            "name": "Learning From Experience 2"
+          },
+          {
+            "apiName": "TFT_Augment_ComponentQuestBow",
+            "name": "Component Quest Bow"
+          },
+          {
+            "apiName": "TFT6_Augment_PandorasItems",
+            "name": "Pandoras Items"
+          },
+          {
+            "apiName": "TFT7_Augment_ClutteredMind",
+            "name": "Cluttered Mind"
+          },
+          {
+            "apiName": "TFT_Augment_MayTheFoursBeWithYou",
+            "name": "May The Fours Be With You"
+          },
+          {
+            "apiName": "TFT_Augment_TheBaronsLair",
+            "name": "The Barons Lair"
+          },
+          {
+            "apiName": "TFT_Augment_ComebackStory",
+            "name": "Comeback Story"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_GuinsoosRageblade",
+            "name": "Guinsoo's Rageblade"
+          },
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          },
+          {
+            "apiName": "TFT_Item_NegatronCloak",
+            "name": "Negatron Cloak"
+          },
+          {
+            "apiName": "TFT_Item_BFSword",
+            "name": "BFSword"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Xayah",
+          "name": "Xayah",
+          "cost": 4
+        },
+        "tip": "Only strong with with Boar, Serpent, and Altar Stargazers. Mountain is only good if you have Stargazer on 2-1. Medallion is C tier. Meeple package is flexible - can replace with 5 costs, TK + Brawler, or whatever frontline necessary to stall. ",
+        "difficulty": "MEDIUM",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:36.294087Z"
+      }
     },
     {
       "name": "Kaisa Karma",
@@ -741,7 +2165,204 @@
       "carry": "Kai'Sa",
       "match_traits": [
         "Dark Star"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Gwen",
+            "name": "Gwen",
+            "boardIndex": 20,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Rhaast",
+            "name": "Rhaast",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_SpectralGauntlet",
+                "name": "Spectral Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_Crownguard",
+                "name": "Crownguard"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Kaisa",
+            "name": "Kai'Sa",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Karma",
+            "name": "Karma",
+            "boardIndex": 25,
+            "items": [
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Briar",
+            "name": "Briar",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Belveth",
+            "name": "Bel'Veth",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Kaisa",
+            "name": "Kai'Sa",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT10_Augment_HeroicGrabBag",
+            "name": "Heroic Grab Bag"
+          },
+          {
+            "apiName": "TFT6_Augment_TradeSector",
+            "name": "Trade Sector"
+          },
+          {
+            "apiName": "TFT6_Augment_GachaAddict",
+            "name": "Gacha Addict"
+          },
+          {
+            "apiName": "TFT9_Augment_JeweledLotus",
+            "name": "Jeweled Lotus"
+          },
+          {
+            "apiName": "TFT_Augment_PatienceIsAVirtue",
+            "name": "Patience Is AVirtue"
+          },
+          {
+            "apiName": "TFT_Augment_MagicRoll",
+            "name": "Magic Roll"
+          },
+          {
+            "apiName": "TFT_Augment_HomeCooking",
+            "name": "Home Cooking"
+          },
+          {
+            "apiName": "TFT_Augment_ExclusiveCustomization",
+            "name": "Exclusive Customization"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_TearOfTheGoddess",
+            "name": "Tear Of The Goddess"
+          },
+          {
+            "apiName": "TFT_Item_BFSword",
+            "name": "BFSword"
+          },
+          {
+            "apiName": "TFT_Item_SparringGloves",
+            "name": "Sparring Gloves"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Kaisa",
+          "name": "Kai'Sa",
+          "cost": 3
+        },
+        "tip": "There are two ways to play this: Roll on 7 for Kai'Sa and Illaoi 3 / Rhaast 3 (either works as primary tank) or push levels with 2* and aim for Jhin cap with 5 costs (Sona > Lissandra). Karma is primary duo carry but if excess AD items look for Riven > Gwen.",
+        "difficulty": "MEDIUM",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:37.810220Z"
+      }
     },
     {
       "name": "Veigar Printer",
@@ -752,7 +2373,209 @@
       "match_traits": [
         "Meeple",
         "Replicator"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Veigar",
+            "name": "Veigar",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Poppy",
+            "name": "Poppy",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              },
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              },
+              {
+                "apiName": "TFT_Item_Crownguard",
+                "name": "Crownguard"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Rammus",
+            "name": "Rammus",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Bard",
+            "name": "Bard",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": 25,
+            "items": [
+              {
+                "apiName": "TFT_Item_Morellonomicon",
+                "name": "Morellonomicon"
+              },
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              }
+            ],
+            "stars": 3
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Ezreal",
+            "name": "Ezreal",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Veigar",
+            "name": "Veigar",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_ItemGargoyleStoneplate",
+            "name": "Item Gargoyle Stoneplate"
+          },
+          {
+            "apiName": "TFT9_Augment_MissedConnections",
+            "name": "Missed Connections"
+          },
+          {
+            "apiName": "TFT6_Augment_TradeSector",
+            "name": "Trade Sector"
+          },
+          {
+            "apiName": "TFT9_Augment_GreaterJeweledLotus",
+            "name": "Greater Jeweled Lotus"
+          },
+          {
+            "apiName": "TFT_Augment_SmallGrabBag",
+            "name": "Small Grab Bag"
+          },
+          {
+            "apiName": "TFT_Augment_EpicRolldown",
+            "name": "Epic Rolldown"
+          },
+          {
+            "apiName": "TFT_Augment_ComponentQuestRod",
+            "name": "Component Quest Rod"
+          },
+          {
+            "apiName": "TFT_Augment_EarlyLearning",
+            "name": "Early Learning"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          },
+          {
+            "apiName": "TFT_Item_NeedlesslyLargeRod",
+            "name": "Needlessly Large Rod"
+          },
+          {
+            "apiName": "TFT_Item_SparringGloves",
+            "name": "Sparring Gloves"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Veigar",
+          "name": "Veigar",
+          "cost": 1
+        },
+        "tip": "This comp is played in two ways: Standard 1 cost reroll of slow rolling above 50 at levels 4/5 or push for 7 Meeple to print Veigar 3 (example: Worth the Wait Poppy). Then move down to 5 Meeple for the board once you finish 3* Veigar.",
+        "difficulty": "MEDIUM",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:39.326818Z"
+      }
     },
     {
       "name": "Samira Knock Up Copy",
@@ -760,7 +2583,198 @@
       "slug": "set-17-samira-knock-up-copy",
       "trend": "",
       "carry": "?",
-      "match_traits": []
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Jax",
+            "name": "Jax",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Ornn",
+            "name": "Ornn",
+            "boardIndex": 6,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Samira",
+            "name": "Samira",
+            "boardIndex": 26,
+            "items": [
+              {
+                "apiName": "TFT_Item_LastWhisper",
+                "name": "Last Whisper"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Ornn",
+            "name": "Ornn",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "TFT_Item_Redemption",
+                "name": "Redemption"
+              },
+              {
+                "apiName": "TFT_Item_NightHarvester",
+                "name": "Night Harvester"
+              },
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Samira",
+            "name": "Samira",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_Deathblade",
+                "name": "Deathblade"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Nunu",
+            "name": "Nunu",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Xayah",
+            "name": "Xayah",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Blitzcrank",
+            "name": "Blitzcrank",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Ezreal",
+            "name": "Ezreal",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Samira",
+            "name": "Samira",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT10_Augment_HeroicGrabBag",
+            "name": "Heroic Grab Bag"
+          },
+          {
+            "apiName": "TFT6_Augment_TradeSector",
+            "name": "Trade Sector"
+          },
+          {
+            "apiName": "TFT6_Augment_CalculatedLoss",
+            "name": "Calculated Loss"
+          },
+          {
+            "apiName": "TFT_Augment_ExclusiveCustomization",
+            "name": "Exclusive Customization"
+          },
+          {
+            "apiName": "TFT_Augment_PatienceIsAVirtue",
+            "name": "Patience Is AVirtue"
+          },
+          {
+            "apiName": "TFT_Augment_LegionOfThrees",
+            "name": "Legion Of Threes"
+          },
+          {
+            "apiName": "TFT_Augment_SpreadingRoots",
+            "name": "Spreading Roots"
+          },
+          {
+            "apiName": "TFT_Augment_TwoTanky",
+            "name": "Two Tanky"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_InfinityEdge",
+            "name": "Infinity Edge"
+          },
+          {
+            "apiName": "TFT_Item_SpearOfShojin",
+            "name": "Spear of Shojin"
+          },
+          {
+            "apiName": "TFT_Item_SparringGloves",
+            "name": "Sparring Gloves"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Samira",
+          "name": "Samira",
+          "cost": 3
+        },
+        "tip": "Only play this version with augment \"Two Tanky\". You can also go for alternative double tank if Ornn is too contested, such as Jax 3 + Jax 2 or two Nunus. ",
+        "difficulty": "MEDIUM",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:40.841331Z"
+      }
     },
     {
       "name": "Dark Star Lissandra",
@@ -768,7 +2782,197 @@
       "slug": "set-17-dark-star-lissandra",
       "trend": "",
       "carry": "?",
-      "match_traits": []
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Karma",
+            "name": "Karma",
+            "boardIndex": 25,
+            "items": [
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              },
+              {
+                "apiName": "TFT_Item_Morellonomicon",
+                "name": "Morellonomicon"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Kaisa",
+            "name": "Kai'Sa",
+            "boardIndex": 23,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Jhin",
+            "name": "Jhin",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Chogath",
+            "name": "Cho'Gath",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              },
+              {
+                "apiName": "TFT_Item_Redemption",
+                "name": "Redemption"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Galio",
+            "name": "Galio",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Chogath",
+            "name": "Cho'Gath",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Ezreal",
+            "name": "Ezreal",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_ItemGargoyleStoneplate",
+            "name": "Item Gargoyle Stoneplate"
+          },
+          {
+            "apiName": "TFT9_Augment_MissedConnections",
+            "name": "Missed Connections"
+          },
+          {
+            "apiName": "TFT9_Augment_GreaterJeweledLotus",
+            "name": "Greater Jeweled Lotus"
+          },
+          {
+            "apiName": "TFT_Augment_SmallGrabBag",
+            "name": "Small Grab Bag"
+          },
+          {
+            "apiName": "TFT_Augment_ComponentQuestRod",
+            "name": "Component Quest Rod"
+          },
+          {
+            "apiName": "TFT_Augment_EarlyLearning",
+            "name": "Early Learning"
+          },
+          {
+            "apiName": "TFT_Augment_WorthTheWaitGold",
+            "name": "Worth The Wait Gold"
+          },
+          {
+            "apiName": "TFT_Augment_ConstructACompanion",
+            "name": "Construct ACompanion"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          },
+          {
+            "apiName": "TFT_Item_NeedlesslyLargeRod",
+            "name": "Needlessly Large Rod"
+          },
+          {
+            "apiName": "TFT_Item_SparringGloves",
+            "name": "Sparring Gloves"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Lissandra",
+          "name": "Lissandra",
+          "cost": 1
+        },
+        "tip": "Play when you have lots of copies of Lissandra + good encounter / God boon for reroll (Varus). Dark Star emblem is good so you can 6 Dark Star on level 8. ",
+        "difficulty": "MEDIUM",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:42.357936Z"
+      }
     },
     {
       "name": "Anima Reroll",
@@ -778,7 +2982,204 @@
       "carry": "Aurora",
       "match_traits": [
         "Anima"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": 5,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Jinx",
+            "name": "Jinx",
+            "boardIndex": 27,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Aurora",
+            "name": "Aurora",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_Morellonomicon",
+                "name": "Morellonomicon"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Diana",
+            "name": "Diana",
+            "boardIndex": 0,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_TitansResolve",
+                "name": "Titan's Resolve"
+              },
+              {
+                "apiName": "TFT17_Item_ShieldTankEmblemItem",
+                "name": "Shield Tank Emblem Item"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": 1,
+            "items": [
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              },
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              },
+              {
+                "apiName": "TFT_Item_IonicSpark",
+                "name": "Ionic Spark"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Leblanc",
+            "name": "LeBlanc",
+            "boardIndex": 25,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nunu",
+            "name": "Nunu",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Zoe",
+            "name": "Zoe",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Diana",
+            "name": "Diana",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT10_Augment_HeroicGrabBag",
+            "name": "Heroic Grab Bag"
+          },
+          {
+            "apiName": "TFT_Augment_MagicRoll",
+            "name": "Magic Roll"
+          },
+          {
+            "apiName": "TFT_Augment_PatienceIsAVirtue",
+            "name": "Patience Is AVirtue"
+          },
+          {
+            "apiName": "TFT_Augment_BoxingLessons",
+            "name": "Boxing Lessons"
+          },
+          {
+            "apiName": "TFT_Augment_TreasureHunt",
+            "name": "Treasure Hunt"
+          },
+          {
+            "apiName": "TFT_Augment_SpreadingRoots",
+            "name": "Spreading Roots"
+          },
+          {
+            "apiName": "TFT_Augment_TraitTree",
+            "name": "Trait Tree"
+          },
+          {
+            "apiName": "TFT_Augment_MagicRollMinus",
+            "name": "Magic Roll Minus"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_GuinsoosRageblade",
+            "name": "Guinsoo's Rageblade"
+          },
+          {
+            "apiName": "TFT_Item_TitansResolve",
+            "name": "Titan's Resolve"
+          },
+          {
+            "apiName": "TFT_Item_NeedlesslyLargeRod",
+            "name": "Needlessly Large Rod"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Diana",
+          "name": "Diana",
+          "cost": 3
+        },
+        "tip": "Optimized version still being tested. Can also play for Zoe 3* or Challenger Miss Fortune 3* if you get excess sword / bow items and no Anima. Look for Arbiter that gives Resists or permanent HP per 3 attacks / 4 seconds / damage 10 times. Anima cash out is optional, but nice to hit extra copies of Illaoi / Aurora. ",
+        "difficulty": "HARD",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:43.874040Z"
+      }
     },
     {
       "name": "Karma Lb Duo",
@@ -786,7 +3187,213 @@
       "slug": "set-17-karma-lb-duo",
       "trend": "",
       "carry": "?",
-      "match_traits": []
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nunu",
+            "name": "Nunu",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              },
+              {
+                "apiName": "TFT_Item_IonicSpark",
+                "name": "Ionic Spark"
+              },
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Zoe",
+            "name": "Zoe",
+            "boardIndex": 25,
+            "items": [
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_Morellonomicon",
+                "name": "Morellonomicon"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": 5,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Karma",
+            "name": "Karma",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Leblanc",
+            "name": "LeBlanc",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              },
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Zoe",
+            "name": "Zoe",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT9_Augment_JeweledLotus",
+            "name": "Jeweled Lotus"
+          },
+          {
+            "apiName": "TFT9_Augment_LearningFromExperience2",
+            "name": "Learning From Experience 2"
+          },
+          {
+            "apiName": "TFT11_Augment_Slammin",
+            "name": "Slammin"
+          },
+          {
+            "apiName": "TFT_Augment_SliceOfLife",
+            "name": "Slice Of Life"
+          },
+          {
+            "apiName": "TFT_Augment_MagicRoll",
+            "name": "Magic Roll"
+          },
+          {
+            "apiName": "TFT_Augment_HomeCooking",
+            "name": "Home Cooking"
+          },
+          {
+            "apiName": "TFT6_Augment_SecondWind1",
+            "name": "Second Wind 1"
+          },
+          {
+            "apiName": "TFT_Augment_ShimmerscaleEssence",
+            "name": "Shimmerscale Essence"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_GuinsoosRageblade",
+            "name": "Guinsoo's Rageblade"
+          },
+          {
+            "apiName": "TFT_Item_MadredsBloodrazor",
+            "name": "Madreds Bloodrazor"
+          },
+          {
+            "apiName": "TFT_Item_NeedlesslyLargeRod",
+            "name": "Needlessly Large Rod"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Leblanc",
+          "name": "LeBlanc",
+          "cost": 4
+        },
+        "tip": "Best with Arbiter that scales Leblanc's AP or AS > 50 mana spent gain Permanent HP > gain copies of Leona. End game you can cap your board with Vex who holds Leblanc's items. Zoe 2 could be better than Karma 2 in some spots.",
+        "difficulty": "MEDIUM",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:45.391286Z"
+      }
     },
     {
       "name": "Mecha Sol",
@@ -797,7 +3404,197 @@
       "match_traits": [
         "Mecha",
         "Conduit"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Urgot",
+            "name": "Urgot",
+            "boardIndex": 24,
+            "items": [
+              {
+                "apiName": "TFT_Item_LastWhisper",
+                "name": "Last Whisper"
+              },
+              {
+                "apiName": "TFT_Item_UnstableConcoction",
+                "name": "Unstable Concoction"
+              },
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TahmKench",
+            "name": "Tahm Kench",
+            "boardIndex": 16,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Karma",
+            "name": "Karma",
+            "boardIndex": 25,
+            "items": [
+              {
+                "apiName": "TFT_Item_Morellonomicon",
+                "name": "Morellonomicon"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_AurelionSol",
+            "name": "Aurelion Sol",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              },
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              },
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Galio",
+            "name": "Galio",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "TFT_Item_SteraksGage",
+                "name": "Sterak's Gage"
+              },
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "TFT_Item_TitansResolve",
+                "name": "Titan's Resolve"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Fiora",
+            "name": "Fiora",
+            "boardIndex": 23,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TwistedFate",
+            "name": "Twisted Fate",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Milio",
+            "name": "Milio",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT11_Augment_Reinfourcement",
+            "name": "Reinfourcement"
+          },
+          {
+            "apiName": "TFT_Augment_PatienceIsAVirtue",
+            "name": "Patience Is AVirtue"
+          },
+          {
+            "apiName": "TFT_Augment_TwinGuardians",
+            "name": "Twin Guardians"
+          },
+          {
+            "apiName": "TFT_Augment_ItemGargoyleStoneplate",
+            "name": "Item Gargoyle Stoneplate"
+          },
+          {
+            "apiName": "TFT_Augment_Expedition",
+            "name": "Expedition"
+          },
+          {
+            "apiName": "TFT_Augment_ForgedInStrength",
+            "name": "Forged In Strength"
+          },
+          {
+            "apiName": "TFT7_Augment_LivingForge",
+            "name": "Living Forge"
+          },
+          {
+            "apiName": "TFT9_Augment_Commander_Ascension",
+            "name": "Commander_Ascension"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_GargoyleStoneplate",
+            "name": "Gargoyle Stoneplate"
+          },
+          {
+            "apiName": "TFT_Item_SteraksGage",
+            "name": "Sterak's Gage"
+          },
+          {
+            "apiName": "TFT_Item_RabadonsDeathcap",
+            "name": "Rabadon's Deathcap"
+          },
+          {
+            "apiName": "TFT_Item_StatikkShiv",
+            "name": "Statikk Shiv"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_AurelionSol",
+          "name": "Aurelion Sol",
+          "cost": 4
+        },
+        "tip": "Ideally played with some special item (Anima cash out, Radiant item, 2+ Artifacts, etc) + Combat augment. Always keep everything in Mecha form. Can play Kench + Fiora/Yi instead of the N.O.V.A units (usually only with early kench 2). ",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:47.413495Z"
+      }
     },
     {
       "name": "Ez Cho",
@@ -808,7 +3605,211 @@
       "match_traits": [
         "Brawler",
         "Dark Star"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Chogath",
+            "name": "Cho'Gath",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "TFT_Item_Redemption",
+                "name": "Redemption"
+              },
+              {
+                "apiName": "TFT_Item_DragonsClaw",
+                "name": "Dragon's Claw"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Ezreal",
+            "name": "Ezreal",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "TFT_Item_Deathblade",
+                "name": "Deathblade"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Milio",
+            "name": "Milio",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": 3,
+            "items": [
+              {
+                "apiName": "TFT_Item_SpectralGauntlet",
+                "name": "Spectral Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Maokai",
+            "name": "Maokai",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Riven",
+            "name": "Riven",
+            "boardIndex": 19,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TahmKench",
+            "name": "Tahm Kench",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Jhin",
+            "name": "Jhin",
+            "boardIndex": 24,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Chogath",
+            "name": "Cho'Gath",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Ezreal",
+            "name": "Ezreal",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Gnar",
+            "name": "Gnar",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT6_Augment_GachaAddict",
+            "name": "Gacha Addict"
+          },
+          {
+            "apiName": "TFT9_Augment_MissedConnections",
+            "name": "Missed Connections"
+          },
+          {
+            "apiName": "TFT6_Augment_TradeSector",
+            "name": "Trade Sector"
+          },
+          {
+            "apiName": "TFT_Augment_EarlyLearning",
+            "name": "Early Learning"
+          },
+          {
+            "apiName": "TFT_Augment_NoScoutNoPivot",
+            "name": "No Scout No Pivot"
+          },
+          {
+            "apiName": "TFT_Augment_ConstructACompanion",
+            "name": "Construct ACompanion"
+          },
+          {
+            "apiName": "TFT_Augment_SwordOverflow",
+            "name": "Sword Overflow"
+          },
+          {
+            "apiName": "TFT_Augment_TreasureHunt",
+            "name": "Treasure Hunt"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_GargoyleStoneplate",
+            "name": "Gargoyle Stoneplate"
+          },
+          {
+            "apiName": "TFT_Item_SpearOfShojin",
+            "name": "Spear of Shojin"
+          },
+          {
+            "apiName": "TFT_Item_InfinityEdge",
+            "name": "Infinity Edge"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Chogath",
+          "name": "Cho'Gath",
+          "cost": 1
+        },
+        "tip": "Yasuo God Hex buffs can be very good for Cho'Gath. Ezreal and Cho'Gath permanently scales with takedowns so killing units early is good. Rush 4 Timebreaker after hitting to push levels.",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:49.435547Z"
+      }
     },
     {
       "name": "Karnami Flex",
@@ -819,7 +3820,217 @@
       "match_traits": [
         "Dark Star",
         "Space Groove"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT_Flex_Lv7",
+            "name": "Flex_Lv 7",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT_Flex_Lv8",
+            "name": "Flex_Lv 8",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": 5,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Karma",
+            "name": "Karma",
+            "boardIndex": 24,
+            "items": [
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nami",
+            "name": "Nami",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nunu",
+            "name": "Nunu",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_DragonsClaw",
+                "name": "Dragon's Claw"
+              },
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Teemo",
+            "name": "Teemo",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Zoe",
+            "name": "Zoe",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT6_Augment_TradeSector2",
+            "name": "Trade Sector 2"
+          },
+          {
+            "apiName": "TFT11_Augment_Reinfourcement",
+            "name": "Reinfourcement"
+          },
+          {
+            "apiName": "TFT_Augment_TheBaronsLair",
+            "name": "The Barons Lair"
+          },
+          {
+            "apiName": "TFT_Augment_BronzeForLifeI",
+            "name": "Bronze For Life I"
+          },
+          {
+            "apiName": "TFT_Augment_BronzeForLife2",
+            "name": "Bronze For Life 2"
+          },
+          {
+            "apiName": "TFT_Augment_SmallGrabBag",
+            "name": "Small Grab Bag"
+          },
+          {
+            "apiName": "TFT_Augment_ForgeRod",
+            "name": "Forge Rod"
+          },
+          {
+            "apiName": "TFT9_Augment_BigGrabBag",
+            "name": "Big Grab Bag"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_TearOfTheGoddess",
+            "name": "Tear Of The Goddess"
+          },
+          {
+            "apiName": "TFT_Item_NeedlesslyLargeRod",
+            "name": "Needlessly Large Rod"
+          },
+          {
+            "apiName": "TFT_Item_SparringGloves",
+            "name": "Sparring Gloves"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Karma",
+          "name": "Karma",
+          "cost": 4
+        },
+        "tip": "Last 2 slots are highly flexible. Most common setup will be 4 Vanguard, but you can also play Bastions, 5 costs, Voyagers, etc. Always prioritize whoever you 2* first on the rolldown. Composition needs lots of items so prioritize item Gods / augments.",
+        "difficulty": "HARD",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:51.457188Z"
+      }
     },
     {
       "name": "In The Groove",
@@ -827,7 +4038,233 @@
       "slug": "set-17-in-the-groove",
       "trend": "",
       "carry": "?",
-      "match_traits": []
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Relic",
+            "name": "Relic",
+            "boardIndex": 15,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nasus",
+            "name": "Nasus",
+            "boardIndex": 13,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Gwen",
+            "name": "Gwen",
+            "boardIndex": 22,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": 5,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Ornn",
+            "name": "Ornn",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nami",
+            "name": "Nami",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Riven",
+            "name": "Riven",
+            "boardIndex": 14,
+            "items": [
+              {
+                "apiName": "TFT17_Item_SpaceGrooveEmblemItem",
+                "name": "Space Groove Emblem Item"
+              },
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              },
+              {
+                "apiName": "TFT_Item_SteraksGage",
+                "name": "Sterak's Gage"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TahmKench",
+            "name": "Tahm Kench",
+            "boardIndex": 2,
+            "items": [
+              {
+                "apiName": "TFT_Item_NightHarvester",
+                "name": "Night Harvester"
+              },
+              {
+                "apiName": "TFT_Item_Redemption",
+                "name": "Redemption"
+              },
+              {
+                "apiName": "TFT_Item_Crownguard",
+                "name": "Crownguard"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Shen",
+            "name": "Shen",
+            "boardIndex": 16,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Blitzcrank",
+            "name": "Blitzcrank",
+            "boardIndex": 3,
+            "items": [
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              },
+              {
+                "apiName": "TFT_Item_IonicSpark",
+                "name": "Ionic Spark"
+              },
+              {
+                "apiName": "TFT_Item_Morellonomicon",
+                "name": "Morellonomicon"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Nasus",
+            "name": "Nasus",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Teemo",
+            "name": "Teemo",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Gwen",
+            "name": "Gwen",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_BranchingOut",
+            "name": "Branching Out"
+          },
+          {
+            "apiName": "TFT_Augment_SpreadingRoots",
+            "name": "Spreading Roots"
+          },
+          {
+            "apiName": "TFT_Augment_TraitTree",
+            "name": "Trait Tree"
+          },
+          {
+            "apiName": "TFT_Augment_ClimbTheLadder1",
+            "name": "Climb The Ladder 1"
+          },
+          {
+            "apiName": "TFT9_Augment_Commander_Ascension",
+            "name": "Commander_Ascension"
+          },
+          {
+            "apiName": "TFT_Augment_GildedSteel",
+            "name": "Gilded Steel"
+          },
+          {
+            "apiName": "TFT16_Augment_UltraRapidFire",
+            "name": "Ultra Rapid Fire"
+          },
+          {
+            "apiName": "TFT11_Augment_Reinfourcement",
+            "name": "Reinfourcement"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_Leviathan",
+            "name": "Leviathan"
+          },
+          {
+            "apiName": "TFT_Item_JeweledGauntlet",
+            "name": "Jeweled Gauntlet"
+          },
+          {
+            "apiName": "TFT_Item_SparringGloves",
+            "name": "Sparring Gloves"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Nami",
+          "name": "Nami",
+          "cost": 4
+        },
+        "tip": "S tier Space Groove Emblem only. Space Groove emblem = cut Nasus for Nunu. Leftover items on Riven. Use Blitzcrank to displace the enemy primary tank so Riven can potentially wrap backline. Can also primary tank Ornn.",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:52.974190Z"
+      }
     },
     {
       "name": "Vanguard Zoe",
@@ -838,7 +4275,211 @@
       "match_traits": [
         "Vanguard",
         "Arbiter"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 17,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": 25,
+            "items": [
+              {
+                "apiName": "TFT_Item_Morellonomicon",
+                "name": "Morellonomicon"
+              },
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": 3,
+            "items": [
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "TFT_Item_WarmogsArmor",
+                "name": "Warmog's Armor"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 19,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Zoe",
+            "name": "Zoe",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_PowerGauntlet",
+                "name": "Power Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": 16,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Leblanc",
+            "name": "LeBlanc",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nunu",
+            "name": "Nunu",
+            "boardIndex": 18,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Zoe",
+            "name": "Zoe",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              },
+              {
+                "apiName": "TFT_Item_Morellonomicon",
+                "name": "Morellonomicon"
+              },
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT9_Augment_Commander_RollingForDays",
+            "name": "Commander_Rolling For Days"
+          },
+          {
+            "apiName": "TFT_Augment_MagicRoll",
+            "name": "Magic Roll"
+          },
+          {
+            "apiName": "TFT_Augment_KickStart",
+            "name": "Kick Start"
+          },
+          {
+            "apiName": "TFT9_Augment_BardPlaybook1",
+            "name": "Bard Playbook 1"
+          },
+          {
+            "apiName": "TFT6_Augment_TradeSector",
+            "name": "Trade Sector"
+          },
+          {
+            "apiName": "TFT_Augment_MagicRollMinus",
+            "name": "Magic Roll Minus"
+          },
+          {
+            "apiName": "TFT_Augment_AnExaltedAdventure",
+            "name": "An Exalted Adventure"
+          },
+          {
+            "apiName": "TFT_Augment_ItemGargoyleStoneplate",
+            "name": "Item Gargoyle Stoneplate"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_GargoyleStoneplate",
+            "name": "Gargoyle Stoneplate"
+          },
+          {
+            "apiName": "TFT_Item_ChainVest",
+            "name": "Chain Vest"
+          },
+          {
+            "apiName": "TFT_Item_NegatronCloak",
+            "name": "Negatron Cloak"
+          },
+          {
+            "apiName": "TFT_Item_TearOfTheGoddess",
+            "name": "Tear Of The Goddess"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Zoe",
+          "name": "Zoe",
+          "cost": 2
+        },
+        "tip": "There is a strong Arbiter build with Deal damage 10 times -> Mana gain. If you have this, play the Ekko Patience Alt Build shown on Zoe for infinite casting loop. Otherwise, take 50 Mana Spent -> Shield > Copies of Leona > permanent HP. Can also play for Leblanc as the duo carry if you can't find Lissandra 3.",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:54.490978Z"
+      }
     },
     {
       "name": "Viktor B4l",
@@ -846,7 +4487,209 @@
       "slug": "set-17-viktor-b4l",
       "trend": "",
       "carry": "?",
-      "match_traits": []
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pyke",
+            "name": "Pyke",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Rhaast",
+            "name": "Rhaast",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_DragonsClaw",
+                "name": "Dragon's Claw"
+              },
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Viktor",
+            "name": "Viktor",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT17_Item_PsyOps_DroneMod",
+                "name": "Psy Ops_Drone Mod"
+              },
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Nami",
+            "name": "Nami",
+            "boardIndex": 25,
+            "items": [
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Zoe",
+            "name": "Zoe",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Viktor",
+            "name": "Viktor",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT17_Item_PsyOps_DroneMod",
+                "name": "Psy Ops_Drone Mod"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_BronzeForLifeI",
+            "name": "Bronze For Life I"
+          },
+          {
+            "apiName": "TFT_Augment_BronzeForLife2",
+            "name": "Bronze For Life 2"
+          },
+          {
+            "apiName": "TFT_Augment_PatienceIsAVirtue",
+            "name": "Patience Is AVirtue"
+          },
+          {
+            "apiName": "TFT6_Augment_TradeSector2",
+            "name": "Trade Sector 2"
+          },
+          {
+            "apiName": "TFT_Augment_LegionOfThrees",
+            "name": "Legion Of Threes"
+          },
+          {
+            "apiName": "TFT6_Augment_Diversify1",
+            "name": "Diversify 1"
+          },
+          {
+            "apiName": "TFT_Augment_GlassCannonII",
+            "name": "Glass Cannon II"
+          },
+          {
+            "apiName": "TFT9_Augment_JeweledLotus",
+            "name": "Jeweled Lotus"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_RabadonsDeathcap",
+            "name": "Rabadon's Deathcap"
+          },
+          {
+            "apiName": "TFT_Item_NeedlesslyLargeRod",
+            "name": "Needlessly Large Rod"
+          },
+          {
+            "apiName": "TFT_Item_SparringGloves",
+            "name": "Sparring Gloves"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Viktor",
+          "name": "Viktor",
+          "cost": 3
+        },
+        "tip": "Must have Psionic Drone for Viktor. Best played with Bronze 4 Life augment since you have many active traits, but not mandatory. Nami / Lulu take leftover AP and utility items. Often you will be contested so level to 8 and play for 2* only -> aim for Top 4.",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:56.007705Z"
+      }
     },
     {
       "name": "Invader Zed",
@@ -856,7 +4699,206 @@
       "carry": "Zed",
       "match_traits": [
         "Galaxy Hunter"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Akali",
+            "name": "Akali",
+            "boardIndex": 27,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Rhaast",
+            "name": "Rhaast",
+            "boardIndex": 6,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Relic",
+            "name": "Relic",
+            "boardIndex": 8,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TahmKench",
+            "name": "Tahm Kench",
+            "boardIndex": 1,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              },
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Aatrox",
+            "name": "Aatrox",
+            "boardIndex": 5,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Zed",
+            "name": "Zed",
+            "boardIndex": 7,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuardianAngel",
+                "name": "Guardian Angel"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_AdaptiveHelm",
+                "name": "Adaptive Helm"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Maokai",
+            "name": "Maokai",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Fiora",
+            "name": "Fiora",
+            "boardIndex": 9,
+            "items": [
+              {
+                "apiName": "TFT_Item_ThiefsGloves",
+                "name": "Thief's Gloves"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Shen",
+            "name": "Shen",
+            "boardIndex": 16,
+            "items": [
+              {
+                "apiName": "TFT_Item_ThiefsGloves",
+                "name": "Thief's Gloves"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Briar",
+            "name": "Briar",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Akali",
+            "name": "Akali",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Belveth",
+            "name": "Bel'Veth",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuardianAngel",
+                "name": "Guardian Angel"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT17_Augment_InvaderZed",
+            "name": "Invader Zed"
+          },
+          {
+            "apiName": "TFT_Augment_OneBuffTwoBuff",
+            "name": "One Buff Two Buff"
+          },
+          {
+            "apiName": "TFT_Augment_DuoQueue",
+            "name": "Duo Queue"
+          },
+          {
+            "apiName": "TFT11_Augment_Calltochaos",
+            "name": "Calltochaos"
+          },
+          {
+            "apiName": "TFT6_Augment_PortableForge",
+            "name": "Portable Forge"
+          },
+          {
+            "apiName": "TFT17_Augment_ApotheoticForge",
+            "name": "Apotheotic Forge"
+          },
+          {
+            "apiName": "TFT_Augment_Misfits",
+            "name": "Misfits"
+          },
+          {
+            "apiName": "TFT6_Augment_OneTwoFive",
+            "name": "One Two Five"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_GuardianAngel",
+            "name": "Guardian Angel"
+          },
+          {
+            "apiName": "TFT_Item_AdaptiveHelm",
+            "name": "Adaptive Helm"
+          },
+          {
+            "apiName": "TFT_Item_SparringGloves",
+            "name": "Sparring Gloves"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Zed",
+          "name": "Zed",
+          "cost": 5
+        },
+        "tip": "Situational comp played with Invader Zed augment. Zed can fit in a lot of comps as long as your frontline is strong (TK 2 + Maokai > Nunu 2 + Blitz). Zed is very good with Brawler or Meeple emblem (make sure to play 3+ Meeple). ",
+        "difficulty": "HARD",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:57.524355Z"
+      }
     },
     {
       "name": "Shieldmaiden Leona",
@@ -867,7 +4909,206 @@
       "match_traits": [
         "Arbiter",
         "Vanguard"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": 6,
+            "items": [
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              },
+              {
+                "apiName": "TFT_Item_SteraksGage",
+                "name": "Sterak's Gage"
+              },
+              {
+                "apiName": "TFT_Item_TitansResolve",
+                "name": "Titan's Resolve"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Zoe",
+            "name": "Zoe",
+            "boardIndex": 25,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Leblanc",
+            "name": "LeBlanc",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              },
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nunu",
+            "name": "Nunu",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_SpectralGauntlet",
+                "name": "Spectral Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Nasus",
+            "name": "Nasus",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Teemo",
+            "name": "Teemo",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_TitansResolve",
+                "name": "Titan's Resolve"
+              },
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Zoe",
+            "name": "Zoe",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT17_Augment_LeonaCarry",
+            "name": "Leona Carry"
+          },
+          {
+            "apiName": "TFT9_Augment_MissedConnections",
+            "name": "Missed Connections"
+          },
+          {
+            "apiName": "TFT9_Augment_Commander_Ascension",
+            "name": "Commander_Ascension"
+          },
+          {
+            "apiName": "TFT_Augment_TheBaronsLair",
+            "name": "The Barons Lair"
+          },
+          {
+            "apiName": "TFT6_Augment_SecondWind2",
+            "name": "Second Wind 2"
+          },
+          {
+            "apiName": "TFT_Augment_JustSlayer",
+            "name": "Just Slayer"
+          },
+          {
+            "apiName": "TFT_Augment_TheDarkinBlade",
+            "name": "The Darkin Blade"
+          },
+          {
+            "apiName": "TFT_Augment_BoxingLessons",
+            "name": "Boxing Lessons"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_Bloodthirster",
+            "name": "Bloodthirster"
+          },
+          {
+            "apiName": "TFT_Item_TitansResolve",
+            "name": "Titan's Resolve"
+          },
+          {
+            "apiName": "TFT_Item_SteraksGage",
+            "name": "Sterak's Gage"
+          },
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Leona",
+          "name": "Leona",
+          "cost": 1
+        },
+        "tip": "Best with Arbiters that can print Leona so you can push levels and play a standard LeBlanc tempo board. Vex 2 / Bard 2 can replace backline Arbiters end game (especially if Leona print is your Arbiter since its irrelevant late game).",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:54:59.546550Z"
+      }
     },
     {
       "name": "Self Destruct Gragas",
@@ -875,7 +5116,213 @@
       "slug": "set-17-self-destruct-gragas",
       "trend": "",
       "carry": "?",
-      "match_traits": []
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Chogath",
+            "name": "Cho'Gath",
+            "boardIndex": 18,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pyke",
+            "name": "Pyke",
+            "boardIndex": 27,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pantheon",
+            "name": "Pantheon",
+            "boardIndex": 2,
+            "items": [
+              {
+                "apiName": "TFT_Item_IonicSpark",
+                "name": "Ionic Spark"
+              },
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Gragas",
+            "name": "Gragas",
+            "boardIndex": 3,
+            "items": [
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_UnstableConcoction",
+                "name": "Unstable Concoction"
+              },
+              {
+                "apiName": "TFT17_Item_PsyOps_SympatheticImplantMod_Radiant",
+                "name": "Psy Ops_Sympathetic Implant Mod_Radiant"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Maokai",
+            "name": "Maokai",
+            "boardIndex": 17,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Urgot",
+            "name": "Urgot",
+            "boardIndex": 16,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TahmKench",
+            "name": "Tahm Kench",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_MasterYi",
+            "name": "Master Yi",
+            "boardIndex": 14,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuardianAngel",
+                "name": "Guardian Angel"
+              },
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              },
+              {
+                "apiName": "TFT17_Item_HPTankEmblemItem",
+                "name": "HPTank Emblem Item"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Sona",
+            "name": "Sona",
+            "boardIndex": 24,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pyke",
+            "name": "Pyke",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Gragas",
+            "name": "Gragas",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_UnstableConcoction",
+                "name": "Unstable Concoction"
+              },
+              {
+                "apiName": "TFT17_Item_PsyOps_SympatheticImplantMod",
+                "name": "Psy Ops_Sympathetic Implant Mod"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_BoxingLessons",
+            "name": "Boxing Lessons"
+          },
+          {
+            "apiName": "TFT_Augment_GuardbreakerSpirit",
+            "name": "Guardbreaker Spirit"
+          },
+          {
+            "apiName": "TFT_Augment_GroupHug2",
+            "name": "Group Hug 2"
+          },
+          {
+            "apiName": "TFT_Augment_HeroicGrabBagPlus",
+            "name": "Heroic Grab Bag Plus"
+          },
+          {
+            "apiName": "TFT9_Augment_JeweledLotus",
+            "name": "Jeweled Lotus"
+          },
+          {
+            "apiName": "TFT_Augment_MagicRoll",
+            "name": "Magic Roll"
+          },
+          {
+            "apiName": "TFT_Augment_ChargeTransfer1",
+            "name": "Charge Transfer 1"
+          },
+          {
+            "apiName": "TFT17_Augment_GragasCarry",
+            "name": "Gragas Carry"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT17_Item_PsyOps_SympatheticImplantMod_Radiant",
+            "name": "Psy Ops_Sympathetic Implant Mod_Radiant"
+          },
+          {
+            "apiName": "TFT_Item_JeweledGauntlet",
+            "name": "Jeweled Gauntlet"
+          },
+          {
+            "apiName": "TFT_Item_UnstableConcoction",
+            "name": "Unstable Concoction"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Gragas",
+          "name": "Gragas",
+          "cost": 2
+        },
+        "tip": "Gragas Hero Augment required. +1 tier in strength when played with Sympathetic Implant for Gragas. Also good with +1 Bruiser Emblem so you can fit 6 Bruiser / 4 Psionic quicker. Bruiser emblem goes on Yi. Pyke 3 is only worth chasing if you have excess items. ",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:55:01.568548Z"
+      }
     },
     {
       "name": "Termeepnal Velocity Poppy",
@@ -883,7 +5330,235 @@
       "slug": "set-17-termeepnal-velocity-poppy",
       "trend": "",
       "carry": "?",
-      "match_traits": []
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Poppy",
+            "name": "Poppy",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "TFT_Item_BlueBuff",
+                "name": "Blue Buff"
+              },
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Milio",
+            "name": "Milio",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Fizz",
+            "name": "Fizz",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Rhaast",
+            "name": "Rhaast",
+            "boardIndex": 22,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Riven",
+            "name": "Riven",
+            "boardIndex": 2,
+            "items": [
+              {
+                "apiName": "TFT_Item_ThiefsGloves",
+                "name": "Thief's Gloves"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Corki",
+            "name": "Corki",
+            "boardIndex": 25,
+            "items": [
+              {
+                "apiName": "TFT_Item_Deathblade",
+                "name": "Deathblade"
+              },
+              {
+                "apiName": "TFT_Item_LastWhisper",
+                "name": "Last Whisper"
+              },
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Rammus",
+            "name": "Rammus",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "TFT_Item_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "TFT_Item_Crownguard",
+                "name": "Crownguard"
+              },
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Bard",
+            "name": "Bard",
+            "boardIndex": 26,
+            "items": [
+              {
+                "apiName": "TFT_Item_Morellonomicon",
+                "name": "Morellonomicon"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Blitzcrank",
+            "name": "Blitzcrank",
+            "boardIndex": 0,
+            "items": [
+              {
+                "apiName": "TFT_Item_ThiefsGloves",
+                "name": "Thief's Gloves"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Aatrox",
+            "name": "Aatrox",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Veigar",
+            "name": "Veigar",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Poppy",
+            "name": "Poppy",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "TFT_Item_BlueBuff",
+                "name": "Blue Buff"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT17_Augment_PoppyCarry",
+            "name": "Poppy Carry"
+          },
+          {
+            "apiName": "TFT9_Augment_MissedConnections",
+            "name": "Missed Connections"
+          },
+          {
+            "apiName": "TFT_Augment_HeroicGrabBagPlus",
+            "name": "Heroic Grab Bag Plus"
+          },
+          {
+            "apiName": "TFT9_Augment_JeweledLotus",
+            "name": "Jeweled Lotus"
+          },
+          {
+            "apiName": "TFT_Augment_HeavyIsTheCrown",
+            "name": "Heavy Is The Crown"
+          },
+          {
+            "apiName": "TFT6_Augment_SecondWind1",
+            "name": "Second Wind 1"
+          },
+          {
+            "apiName": "TFT9_Augment_Commander_Ascension",
+            "name": "Commander_Ascension"
+          },
+          {
+            "apiName": "TFT_Augment_ForgeAFriend",
+            "name": "Forge AFriend"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_InfinityEdge",
+            "name": "Infinity Edge"
+          },
+          {
+            "apiName": "TFT_Item_BlueBuff",
+            "name": "Blue Buff"
+          },
+          {
+            "apiName": "TFT_Item_MadredsBloodrazor",
+            "name": "Madreds Bloodrazor"
+          },
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Poppy",
+          "name": "Poppy",
+          "cost": 1
+        },
+        "tip": "Don't reroll on low levels. Instead, use the 2 star to tempo win streak and finish printing the 3 star with 7 meeple -> go fast 9 and 10. Board shown is only the end game cap so it's important to flex Stage 4 with units like Mighty Mech + Meepsie.",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:55:03.590584Z"
+      }
     },
     {
       "name": "Bonk Nasus",
@@ -894,7 +5569,217 @@
       "match_traits": [
         "Space Groove",
         "Vanguard"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_DragonsClaw",
+                "name": "Dragon's Claw"
+              },
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Nasus",
+            "name": "Nasus",
+            "boardIndex": 6,
+            "items": [
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              },
+              {
+                "apiName": "TFT_Item_TitansResolve",
+                "name": "Titan's Resolve"
+              },
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Teemo",
+            "name": "Teemo",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_HextechGunblade",
+                "name": "Hextech Gunblade"
+              },
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Leblanc",
+            "name": "LeBlanc",
+            "boardIndex": 24,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nunu",
+            "name": "Nunu",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Blitzcrank",
+            "name": "Blitzcrank",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Leona",
+            "name": "Leona",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nasus",
+            "name": "Nasus",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              },
+              {
+                "apiName": "TFT_Item_TitansResolve",
+                "name": "Titan's Resolve"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Zoe",
+            "name": "Zoe",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT17_Augment_NasusCarry",
+            "name": "Nasus Carry"
+          },
+          {
+            "apiName": "TFT9_Augment_MissedConnections",
+            "name": "Missed Connections"
+          },
+          {
+            "apiName": "TFT17_Augment_ApotheoticForge",
+            "name": "Apotheotic Forge"
+          },
+          {
+            "apiName": "TFT6_Augment_PortableForge",
+            "name": "Portable Forge"
+          },
+          {
+            "apiName": "TFT_Augment_GroupHug1",
+            "name": "Group Hug 1"
+          },
+          {
+            "apiName": "TFT_Augment_Lineup",
+            "name": "Lineup"
+          },
+          {
+            "apiName": "TFT9_Augment_Commander_Ascension",
+            "name": "Commander_Ascension"
+          },
+          {
+            "apiName": "TFT9_Augment_JeweledLotus",
+            "name": "Jeweled Lotus"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_GuinsoosRageblade",
+            "name": "Guinsoo's Rageblade"
+          },
+          {
+            "apiName": "TFT_Item_Bloodthirster",
+            "name": "Bloodthirster"
+          },
+          {
+            "apiName": "TFT_Item_TitansResolve",
+            "name": "Titan's Resolve"
+          },
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Nasus",
+          "name": "Nasus",
+          "cost": 1
+        },
+        "tip": "Always aim for 6 Vanguard. If you can't hit Teemo 3, push levels for Leblanc instead. Preferably choose a tanky Arbiter trait. If you have Space Groove emblem, you can drop Leblanc for Nami. ",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:55:05.613093Z"
+      }
     },
     {
       "name": "Contract Killer Pyke",
@@ -905,7 +5790,213 @@
       "match_traits": [
         "Psionic",
         "Voyager"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": 24,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Gragas",
+            "name": "Gragas",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "TFT_Item_Crownguard",
+                "name": "Crownguard"
+              },
+              {
+                "apiName": "TFT_Item_SpectralGauntlet",
+                "name": "Spectral Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Pyke",
+            "name": "Pyke",
+            "boardIndex": 6,
+            "items": [
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "TFT_Item_UnstableConcoction",
+                "name": "Unstable Concoction"
+              },
+              {
+                "apiName": "TFT17_Item_PsyOps_TargetlockMod_Radiant",
+                "name": "Psy Ops_Targetlock Mod_Radiant"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_MasterYi",
+            "name": "Master Yi",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TahmKench",
+            "name": "Tahm Kench",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Karma",
+            "name": "Karma",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_ArchangelsStaff",
+                "name": "Archangel's Staff"
+              },
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Sona",
+            "name": "Sona",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Chogath",
+            "name": "Cho'Gath",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Gragas",
+            "name": "Gragas",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pyke",
+            "name": "Pyke",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "TFT_Item_UnstableConcoction",
+                "name": "Unstable Concoction"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT17_Augment_PykeCarry",
+            "name": "Pyke Carry"
+          },
+          {
+            "apiName": "TFT9_Augment_JeweledLotus",
+            "name": "Jeweled Lotus"
+          },
+          {
+            "apiName": "TFT_Augment_HeroicGrabBagPlus",
+            "name": "Heroic Grab Bag Plus"
+          },
+          {
+            "apiName": "TFT_Augment_HomeCooking",
+            "name": "Home Cooking"
+          },
+          {
+            "apiName": "TFT9_Augment_HealingOrbsII",
+            "name": "Healing Orbs II"
+          },
+          {
+            "apiName": "TFT_Augment_ExclusiveCustomization",
+            "name": "Exclusive Customization"
+          },
+          {
+            "apiName": "TFT_Augment_ForgeSword",
+            "name": "Forge Sword"
+          },
+          {
+            "apiName": "TFT_Augment_AwakenedSoul",
+            "name": "Awakened Soul"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_InfinityEdge",
+            "name": "Infinity Edge"
+          },
+          {
+            "apiName": "TFT_Item_UnstableConcoction",
+            "name": "Unstable Concoction"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          },
+          {
+            "apiName": "TFT_Item_TearOfTheGoddess",
+            "name": "Tear Of The Goddess"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Pyke",
+          "name": "Pyke",
+          "cost": 2
+        },
+        "tip": "If you don't have good Psionic item, replace with Edge of Night. Comp is flexible with number of Voyagers. Gragas 3 is not necessary since Brawler can be hard to fit unless you hit Tahm Kench. ",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:55:07.635519Z"
+      }
     },
     {
       "name": "The Big Bang Meepsie",
@@ -915,7 +6006,197 @@
       "carry": "Meepsie",
       "match_traits": [
         "Meeple"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": 13,
+            "items": [
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_UnstableConcoction",
+                "name": "Unstable Concoction"
+              },
+              {
+                "apiName": "TFT_Item_GuardianAngel",
+                "name": "Guardian Angel"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Viktor",
+            "name": "Viktor",
+            "boardIndex": 27,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 6,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Pyke",
+            "name": "Pyke",
+            "boardIndex": 23,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuardianAngel",
+                "name": "Guardian Angel"
+              },
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "TFT17_Item_PsyOps_TargetlockMod",
+                "name": "Psy Ops_Targetlock Mod"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Karma",
+            "name": "Karma",
+            "boardIndex": 22,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 7,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Poppy",
+            "name": "Poppy",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Veigar",
+            "name": "Veigar",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Pyke",
+            "name": "Pyke",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_UnstableConcoction",
+                "name": "Unstable Concoction"
+              },
+              {
+                "apiName": "TFT_Item_GuardianAngel",
+                "name": "Guardian Angel"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT17_Augment_IvernMinionCarry",
+            "name": "Ivern Minion Carry"
+          },
+          {
+            "apiName": "TFT_Augment_HeroicGrabBagPlus",
+            "name": "Heroic Grab Bag Plus"
+          },
+          {
+            "apiName": "TFT9_Augment_ArmyBuilding",
+            "name": "Army Building"
+          },
+          {
+            "apiName": "TFT_Augment_HomeCooking",
+            "name": "Home Cooking"
+          },
+          {
+            "apiName": "TFT_Augment_ExclusiveCustomization",
+            "name": "Exclusive Customization"
+          },
+          {
+            "apiName": "TFT6_Augment_ThriftShop",
+            "name": "Thrift Shop"
+          },
+          {
+            "apiName": "TFT6_Augment_ForceOfNature",
+            "name": "Force Of Nature"
+          },
+          {
+            "apiName": "TFT7_Augment_CursedCrown",
+            "name": "Cursed Crown"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_JeweledGauntlet",
+            "name": "Jeweled Gauntlet"
+          },
+          {
+            "apiName": "TFT_Item_UnstableConcoction",
+            "name": "Unstable Concoction"
+          },
+          {
+            "apiName": "TFT_Item_GuardianAngel",
+            "name": "Guardian Angel"
+          },
+          {
+            "apiName": "TFT_Item_NeedlesslyLargeRod",
+            "name": "Needlessly Large Rod"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_IvernMinion",
+          "name": "Ivern Minion",
+          "cost": 2
+        },
+        "tip": "Positioning is key to get the middle of the board open for Pyke to jump on enemy carries. Good with extra team slots to play more Voyagers. Can also play Viktor as duo carry if your Psionic item is good for him (Drone > Implant). Rhaast and Nami can go in on at 8.",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:55:09.151745Z"
+      }
     },
     {
       "name": "Stellar Combo Aatrox",
@@ -926,7 +6207,223 @@
       "match_traits": [
         "N.O.V.A.",
         "Bastion"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Talon",
+            "name": "Talon",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Aatrox",
+            "name": "Aatrox",
+            "boardIndex": 6,
+            "items": [
+              {
+                "apiName": "TFT_Item_SteraksGage",
+                "name": "Sterak's Gage"
+              },
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              },
+              {
+                "apiName": "TFT_Item_TitansResolve",
+                "name": "Titan's Resolve"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Caitlyn",
+            "name": "Caitlyn",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_RunaansHurricane",
+                "name": "Runaans Hurricane"
+              },
+              {
+                "apiName": "TFT_Item_PowerGauntlet",
+                "name": "Power Gauntlet"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_TwistedFate",
+            "name": "Twisted Fate",
+            "boardIndex": 26,
+            "items": [
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Akali",
+            "name": "Akali",
+            "boardIndex": 7,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Jax",
+            "name": "Jax",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_DragonsClaw",
+                "name": "Dragon's Claw"
+              },
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Maokai",
+            "name": "Maokai",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Kindred",
+            "name": "Kindred",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Caitlyn",
+            "name": "Caitlyn",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TwistedFate",
+            "name": "Twisted Fate",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Aatrox",
+            "name": "Aatrox",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              },
+              {
+                "apiName": "TFT_Item_TitansResolve",
+                "name": "Titan's Resolve"
+              },
+              {
+                "apiName": "TFT_Item_SteraksGage",
+                "name": "Sterak's Gage"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Jax",
+            "name": "Jax",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT17_Augment_AatroxCarry",
+            "name": "Aatrox Carry"
+          },
+          {
+            "apiName": "TFT9_Augment_MissedConnections",
+            "name": "Missed Connections"
+          },
+          {
+            "apiName": "TFT17_Augment_ApotheoticForge",
+            "name": "Apotheotic Forge"
+          },
+          {
+            "apiName": "TFT6_Augment_PortableForge",
+            "name": "Portable Forge"
+          },
+          {
+            "apiName": "TFT6_Augment_GachaAddict",
+            "name": "Gacha Addict"
+          },
+          {
+            "apiName": "TFT_Augment_Waverider",
+            "name": "Waverider"
+          },
+          {
+            "apiName": "TFT_Augment_HomeCooking",
+            "name": "Home Cooking"
+          },
+          {
+            "apiName": "TFT_Augment_ForgeSword",
+            "name": "Forge Sword"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_TitansResolve",
+            "name": "Titan's Resolve"
+          },
+          {
+            "apiName": "TFT_Item_Bloodthirster",
+            "name": "Bloodthirster"
+          },
+          {
+            "apiName": "TFT_Item_SteraksGage",
+            "name": "Sterak's Gage"
+          },
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Aatrox",
+          "name": "Aatrox",
+          "cost": 1
+        },
+        "tip": "Ideally played on 3* buff Stargazer. Always NOVA select Aatrox. Once you finish your core, push levels for NOVA or more Stargazer. NOVA provides Shred/Sunder built into trait.",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:55:11.173696Z"
+      }
     },
     {
       "name": "Reach For The Stars Jax",
@@ -934,7 +6431,212 @@
       "slug": "set-17-reach-for-the-stars-jax",
       "trend": "",
       "carry": "?",
-      "match_traits": []
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Talon",
+            "name": "Talon",
+            "boardIndex": 4,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Caitlyn",
+            "name": "Caitlyn",
+            "boardIndex": 25,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_RunaansHurricane",
+                "name": "Runaans Hurricane"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Aatrox",
+            "name": "Aatrox",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_DragonsClaw",
+                "name": "Dragon's Claw"
+              },
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_TwistedFate",
+            "name": "Twisted Fate",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_Leviathan",
+                "name": "Leviathan"
+              },
+              {
+                "apiName": "TFT_Item_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Gwen",
+            "name": "Gwen",
+            "boardIndex": 18,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Jax",
+            "name": "Jax",
+            "boardIndex": 12,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_TitansResolve",
+                "name": "Titan's Resolve"
+              },
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Rhaast",
+            "name": "Rhaast",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Aatrox",
+            "name": "Aatrox",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Talon",
+            "name": "Talon",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TwistedFate",
+            "name": "Twisted Fate",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Jax",
+            "name": "Jax",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              },
+              {
+                "apiName": "TFT_Item_TitansResolve",
+                "name": "Titan's Resolve"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT17_Augment_JaxCarry",
+            "name": "Jax Carry"
+          },
+          {
+            "apiName": "TFT_Augment_HeroicGrabBagPlus",
+            "name": "Heroic Grab Bag Plus"
+          },
+          {
+            "apiName": "TFT_Augment_Waverider",
+            "name": "Waverider"
+          },
+          {
+            "apiName": "TFT6_Augment_GachaAddict",
+            "name": "Gacha Addict"
+          },
+          {
+            "apiName": "TFT9_Augment_MissedConnections",
+            "name": "Missed Connections"
+          },
+          {
+            "apiName": "TFT_Augment_BronzeForLife2",
+            "name": "Bronze For Life 2"
+          },
+          {
+            "apiName": "TFT6_Augment_SecondWind1",
+            "name": "Second Wind 1"
+          },
+          {
+            "apiName": "TFT_Augment_ClockworkAccelerator",
+            "name": "Clockwork Accelerator"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_GuinsoosRageblade",
+            "name": "Guinsoo's Rageblade"
+          },
+          {
+            "apiName": "TFT_Item_Bloodthirster",
+            "name": "Bloodthirster"
+          },
+          {
+            "apiName": "TFT_Item_TitansResolve",
+            "name": "Titan's Resolve"
+          },
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Jax",
+          "name": "Jax",
+          "cost": 2
+        },
+        "tip": "Best on 3* buff Stargazer Constellation. Take lots of item and econ augments to hit the board. Many games you won't be able to fully itemize both TF and Caitlyn in the back so only prioritize one of them.",
+        "difficulty": "EASY",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:55:13.196229Z"
+      }
     },
     {
       "name": "Heat Death Mordekaiser",
@@ -945,7 +6647,217 @@
       "match_traits": [
         "Dark Star",
         "Vanguard"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Summon",
+            "name": "Summon",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Chogath",
+            "name": "Cho'Gath",
+            "boardIndex": 5,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_IvernMinion",
+            "name": "Ivern Minion",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 3,
+            "items": [
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              },
+              {
+                "apiName": "TFT_Item_GuardianAngel",
+                "name": "Guardian Angel"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Kaisa",
+            "name": "Kai'Sa",
+            "boardIndex": 25,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_BrambleVest",
+                "name": "Bramble Vest"
+              },
+              {
+                "apiName": "TFT_Item_DragonsClaw",
+                "name": "Dragon's Claw"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Karma",
+            "name": "Karma",
+            "boardIndex": 23,
+            "items": [
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_StatikkShiv",
+                "name": "Statikk Shiv"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Jhin",
+            "name": "Jhin",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              },
+              {
+                "apiName": "TFT_Item_Deathblade",
+                "name": "Deathblade"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Lissandra",
+            "name": "Lissandra",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Teemo",
+            "name": "Teemo",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Illaoi",
+            "name": "Illaoi",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT17_Augment_MordekaiserCarry",
+            "name": "Mordekaiser Carry"
+          },
+          {
+            "apiName": "TFT_Augment_HeroicGrabBagPlus",
+            "name": "Heroic Grab Bag Plus"
+          },
+          {
+            "apiName": "TFT_Augment_BoxingLessons",
+            "name": "Boxing Lessons"
+          },
+          {
+            "apiName": "TFT9_Augment_Commander_Ascension",
+            "name": "Commander_Ascension"
+          },
+          {
+            "apiName": "TFT9_Augment_JeweledLotus",
+            "name": "Jeweled Lotus"
+          },
+          {
+            "apiName": "TFT_Augment_FindYourCenter",
+            "name": "Find Your Center"
+          },
+          {
+            "apiName": "TFT7_Augment_UrfsGrabBag2",
+            "name": "Urfs Grab Bag 2"
+          },
+          {
+            "apiName": "TFT16_Augment_UltraRapidFire",
+            "name": "Ultra Rapid Fire"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_JeweledGauntlet",
+            "name": "Jeweled Gauntlet"
+          },
+          {
+            "apiName": "TFT_Item_Bloodthirster",
+            "name": "Bloodthirster"
+          },
+          {
+            "apiName": "TFT_Item_GuardianAngel",
+            "name": "Guardian Angel"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Mordekaiser",
+          "name": "Mordekaiser",
+          "cost": 2
+        },
+        "tip": "Mordekaiser Hero Augment required. Much stronger with Dark Star Emblem so consider taking things that give a Spatula. You can also duo carry Lissandra 3 > Karma if you find her rolling on 6. Leftover AD on Jhin.",
+        "difficulty": "CONDITIONAL",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:55:14.713092Z"
+      }
     }
   ]
 }

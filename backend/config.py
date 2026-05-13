@@ -4,6 +4,10 @@ Configuration
 All pixel coordinates are defined as ratios (0.0 - 1.0) of the game window
 dimensions so they scale across resolutions. The capture module converts
 these to absolute pixel values at runtime.
+
+Change GAME_RESOLUTION to match your monitor/game resolution. All ROI
+conversions default to it; live captures override it with the actual
+frame dimensions automatically.
 """
 
 from dataclasses import dataclass, field
@@ -25,6 +29,20 @@ UI_TEMPLATE_DIR = TEMPLATE_DIR / "ui"
 
 WEBSOCKET_HOST = "localhost"
 WEBSOCKET_PORT = 8765
+
+
+# ── Resolution ────────────────────────────────────────────────────────────────
+
+@dataclass
+class Resolution:
+    width: int
+    height: int
+
+    def __iter__(self):
+        return iter((self.width, self.height))
+
+
+GAME_RESOLUTION = Resolution(2560, 1440)  # Change to match your game resolution
 
 
 # ── Capture ───────────────────────────────────────────────────────────────────
@@ -58,13 +76,22 @@ class RegionOfInterest:
     w: float  # Width     (0.0 - 1.0)
     h: float  # Height    (0.0 - 1.0)
 
-    def to_pixels(self, window_w: int, window_h: int) -> tuple[int, int, int, int]:
-        """Convert ratios to absolute pixel coordinates (x, y, w, h)."""
+    def to_pixels(
+        self,
+        window_w: int | None = None,
+        window_h: int | None = None,
+    ) -> tuple[int, int, int, int]:
+        """Convert ratios to absolute pixel coordinates (x, y, w, h).
+
+        Defaults to GAME_RESOLUTION when no dimensions are provided.
+        """
+        w = window_w if window_w is not None else GAME_RESOLUTION.width
+        h = window_h if window_h is not None else GAME_RESOLUTION.height
         return (
-            int(self.x * window_w),
-            int(self.y * window_h),
-            int(self.w * window_w),
-            int(self.h * window_h),
+            int(self.x * w),
+            int(self.y * h),
+            int(self.w * w),
+            int(self.h * h),
         )
 
 
