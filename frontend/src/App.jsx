@@ -64,37 +64,84 @@ const STAGES = [
   "1-1","2-1","2-3","2-5","3-1","3-2","3-5","4-1","4-2","4-5","5-1","5-5"
 ];
 
-//TODO: NEED TO CHANGE POSITIONING TEMPLATES AS THIS DOESN'T WORK... just a temp work
+// Layout convention:
+//   Row 0 = top of display = your FRONT row (closest to enemy → tanks)
+//   Row 3 = bottom of display = your BACK row (farthest from enemy → carries)
 const POSITIONING_TEMPLATES = [
   {
     name: "Standard Frontline",
-    desc: "2-3 tanks front, carries backline corners",
-    layout: [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,"S","S",0],["T","T","T",0,0,"C","C"]],
-    tips: ["Main carry in far corner (bottom-right)","Tanks absorb aggro and buy time","Support units adjacent to carry for aura items"],
+    desc: "Tanks front, carry safe in back corner",
+    layout: [
+      ["T","T","T",0,0,0,0],
+      [0,0,0,0,0,0,0],
+      [0,0,0,0,"S","S",0],
+      [0,0,0,0,0,0,"C"],
+    ],
+    tips: [
+      "Main carry in far back corner — maximum distance from enemy melee",
+      "Tanks across the front row absorb aggro for your backline",
+      "Supports adjacent to carry let aura items (Protector's Vow, Evenshroud) reach them",
+    ],
   },
   {
     name: "Anti-Assassin",
-    desc: "Clump in corner to block assassin jumps",
-    layout: [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,"S","T","T"],[0,0,0,0,"S","C","T"]],
-    tips: ["Assassins target furthest unit — cornering protects carry","Surround carry so assassins can't reach","Consider Quicksilver on carry for CC immunity"],
+    desc: "Clump the corner so assassins can't reach your carry",
+    layout: [
+      [0,0,0,0,0,"T","T"],
+      [0,0,0,0,0,"T","S"],
+      [0,0,0,0,0,0,"S"],
+      [0,0,0,0,0,0,"C"],
+    ],
+    tips: [
+      "Assassins jump to the farthest unit — surround your carry to block paths",
+      "Quicksilver on the carry blocks the CC chain that usually kills them",
+      "Counters Diana, Kai'Sa, and other Rogue/Challenger divers",
+    ],
   },
   {
     name: "Spread",
-    desc: "Spread to minimize AoE damage",
-    layout: [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,"S",0,"S",0,"C",0],["T",0,"T",0,"T",0,0]],
-    tips: ["Counters AoE abilities and burn items","Leave gaps between units to limit splash","Sacrifice some synergy for survivability"],
+    desc: "Maximize spacing vs AoE / burn comps",
+    layout: [
+      ["T",0,"T",0,"T",0,0],
+      [0,0,0,0,0,0,0],
+      [0,"S",0,"S",0,0,"S"],
+      ["C",0,0,0,0,0,"C"],
+    ],
+    tips: [
+      "Counters Morellonomicon, Sunfire Cape, and other AoE/burn damage",
+      "Leave at least one hex of gap between units to limit splash",
+      "Sacrifice some adjacency synergy for survivability",
+    ],
   },
   {
     name: "Backline Stack",
-    desc: "All units back row for max distance",
-    layout: [[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],["T","T",0,"S","S","C","C"]],
-    tips: ["Maximizes time before melee contact","Works best with strong CC or shields","Vulnerable to Zephyr — scout opponents"],
+    desc: "All units back row for maximum distance",
+    layout: [
+      [0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0],
+      ["T","T","S","S","C","C","T"],
+    ],
+    tips: [
+      "Maximizes time before melee can reach your carries",
+      "Best paired with displacement (knock-ups, stuns) to disrupt approach",
+      "Vulnerable to Zephyr — scout opponents' items before committing",
+    ],
   },
 ];
 
 const TIER_COLORS = { S: "#ff4757", A: "#ffa502", B: "#2ed573", C: "#747d8c", X: "#5a5e6b" };
 const ACCENT = "#00d2ff";
 const ACCENT2 = "#7c5cfc";
+
+// TFT cost-tier colors used to outline unit chips and cells
+const COST_COLORS = {
+  1: "#9ca3af", 2: "#1f9d55", 3: "#2563eb", 4: "#9333ea", 5: "#d97706",
+};
+const STAR_COLORS = { 1: "#9ca3af", 2: "#fbbf24", 3: "#fb923c" };
+
+// Tips that talk about positioning — surfaced inside the Position tab.
+const POSITIONING_KEYWORDS = /\b(front\s*row|backline|frontline|spread|clump|corner|position|move\s+(?:your|the|at)|carry|tank|assassin|aoe|column|row|adjacent|hex|zephyr)\b/i;
 
 // Trend marker shown next to TFT Academy tier badges
 const TREND_GLYPH = {
@@ -164,6 +211,156 @@ function StatBox({ label, value, color }) {
     <div style={{ textAlign: "center" }}>
       <div style={{ fontSize: "10px", color: "#8b8fa3", fontFamily: "var(--mono)", letterSpacing: "1px" }}>{label}</div>
       <div style={{ fontSize: "18px", fontWeight: 700, color }}>{value}</div>
+    </div>
+  );
+}
+
+// Card-style chip showing a single champion with their stars, cost color, and items.
+function UnitChip({ unit, itemIcons = {}, dim = false }) {
+  if (!unit) return null;
+  const cost = unit.cost || 1;
+  const stars = unit.star_level || 1;
+  const costColor = COST_COLORS[cost] || "#666";
+  const starColor = STAR_COLORS[stars] || "#fbbf24";
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column",
+      padding: "5px 7px", borderRadius: "6px",
+      background: dim ? "rgba(0,0,0,0.2)" : `${costColor}15`,
+      border: `1px solid ${costColor}55`,
+      opacity: dim ? 0.75 : 1,
+      minWidth: "78px", maxWidth: "140px",
+    }}>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        gap: "4px",
+      }}>
+        <span style={{
+          fontSize: "11px", fontWeight: 600, color: "#e4e5ea",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>
+          {unit.name}
+        </span>
+        <span style={{
+          fontSize: "8px", color: starColor, fontFamily: "var(--mono)",
+          flexShrink: 0, letterSpacing: "-1px",
+        }}>
+          {"★".repeat(stars)}
+        </span>
+      </div>
+      {unit.items && unit.items.length > 0 && (
+        <div style={{ display: "flex", gap: "2px", marginTop: "3px", flexWrap: "wrap" }}>
+          {unit.items.map((it, i) => (
+            <span key={i} style={{ fontSize: "11px" }} title={it}>
+              {itemIcons[it] || "🔧"}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Renders the player's actual board (4 rows × 7 cols) using detected champions.
+// Convention: row 0 = top of display = closest to enemy (your frontline).
+function LiveBoard({ champions, itemIcons = {}, highlightTemplate = null }) {
+  const grid = Array.from({ length: 4 }, () => Array(7).fill(null));
+  for (const c of champions || []) {
+    if (c.board_row == null || c.board_col == null) continue;
+    const r = Math.max(0, Math.min(3, c.board_row));
+    const col = Math.max(0, Math.min(6, c.board_col));
+    grid[r][col] = c;
+  }
+  return (
+    <div style={{
+      background: "#0a0b0f", borderRadius: "8px", padding: "12px",
+      border: "1px solid #1e2028",
+    }}>
+      <div style={{
+        fontSize: "8px", color: "#ff475744",
+        fontFamily: "var(--mono)", letterSpacing: "2px",
+        textAlign: "center", marginBottom: "8px",
+      }}>
+        ▲ ENEMY ▲
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "3px", alignItems: "center" }}>
+        {grid.map((row, ri) => (
+          <div key={ri} style={{
+            display: "flex", gap: "3px",
+            marginLeft: ri % 2 === 1 ? "22px" : "0",
+          }}>
+            {row.map((cell, ci) => {
+              const isUnit = !!cell;
+              const cost = cell?.cost || 1;
+              const color = isUnit ? (COST_COLORS[cost] || "#9ca3af") : "transparent";
+              const ghost = !isUnit && highlightTemplate?.[ri]?.[ci];
+              const ghostColor = ghost === "T" ? "#ff6348"
+                : ghost === "C" ? "#ffd32a"
+                : ghost === "S" ? "#2ed573"
+                : "transparent";
+              return (
+                <div key={ci} style={{
+                  width: "46px", height: "46px", borderRadius: "6px",
+                  border: isUnit ? `2px solid ${color}`
+                    : ghost ? `1px dashed ${ghostColor}66`
+                    : "1px solid #1a1b21",
+                  background: isUnit ? `${color}18`
+                    : ghost ? `${ghostColor}06`
+                    : "#13141a",
+                  display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center",
+                  padding: "2px",
+                }}>
+                  {isUnit ? (
+                    <>
+                      <span style={{
+                        fontSize: "8px", fontWeight: 700, color,
+                        fontFamily: "var(--mono)", lineHeight: 1,
+                        width: "42px", textAlign: "center",
+                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                      }}>
+                        {cell.name}
+                      </span>
+                      {cell.star_level > 1 && (
+                        <span style={{
+                          fontSize: "7px", marginTop: "1px",
+                          color: STAR_COLORS[cell.star_level] || "#fbbf24",
+                          letterSpacing: "-1px",
+                        }}>
+                          {"★".repeat(cell.star_level)}
+                        </span>
+                      )}
+                      {cell.items && cell.items.length > 0 && (
+                        <div style={{ display: "flex", gap: "1px", marginTop: "1px" }}>
+                          {cell.items.slice(0, 3).map((it, i) => (
+                            <span key={i} style={{ fontSize: "7px" }} title={it}>
+                              {itemIcons[it] || "•"}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : ghost ? (
+                    <span style={{
+                      fontSize: "7px", color: `${ghostColor}99`,
+                      fontFamily: "var(--mono)", letterSpacing: "0.5px",
+                    }}>
+                      {ghost === "T" ? "TANK" : ghost === "C" ? "CARRY" : "SUPP"}
+                    </span>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <div style={{
+        fontSize: "8px", color: `${ACCENT}55`,
+        fontFamily: "var(--mono)", letterSpacing: "2px",
+        textAlign: "center", marginTop: "8px",
+      }}>
+        ▼ YOUR SIDE ▼
+      </div>
     </div>
   );
 }
@@ -395,6 +592,27 @@ export default function App() {
   const augmentRatings = backendAdvice?.augment_ratings || [];
   const compSuggestions = backendAdvice?.comp_suggestions || [];
   const activeSynergies = isLive ? (gameState?.active_synergies || []) : [];
+
+  // Champion data for the Comp/Position tabs
+  const boardChampions = isLive ? (gameState?.board_champions || []) : [];
+  const benchChampions = isLive ? (gameState?.bench_champions || []) : [];
+
+  // Positioning-specific data (drives the Position tab)
+  const recommendedTemplateName = backendAdvice?.positioning_template || null;
+  const positioningTips = useMemo(
+    () => tips.filter(t => POSITIONING_KEYWORDS.test(t)),
+    [tips]
+  );
+  const positioningSuggestions = backendAdvice?.positioning_suggestions || [];
+
+  // When the backend recommends a template, auto-select it
+  useEffect(() => {
+    if (!recommendedTemplateName) return;
+    const idx = POSITIONING_TEMPLATES.findIndex(
+      t => t.name.toLowerCase() === recommendedTemplateName.toLowerCase()
+    );
+    if (idx >= 0) setSelectedTemplate(idx);
+  }, [recommendedTemplateName]);
 
   const craftableItems = useMemo(
     () => getCraftableItems(componentIds, itemRecipes),
@@ -682,6 +900,54 @@ export default function App() {
             {tab === "comp" && (
               <div style={{ animation: "slideIn 0.25s ease" }}>
 
+                {/* Your Current Units */}
+                <div style={{
+                  fontSize: "9px", color: "#8b8fa3", marginBottom: "8px",
+                  fontFamily: "var(--mono)", letterSpacing: "2px",
+                }}>
+                  YOUR UNITS ({boardChampions.length} board{benchChampions.length > 0 ? ` · ${benchChampions.length} bench` : ""})
+                </div>
+
+                {boardChampions.length === 0 && benchChampions.length === 0 ? (
+                  <div className="card" style={{
+                    textAlign: "center", padding: "16px", color: "#555",
+                    fontSize: "11px", marginBottom: "12px",
+                  }}>
+                    {isLive
+                      ? "No units detected yet — buy or place units to see your roster."
+                      : "Connect backend to see your live roster."}
+                  </div>
+                ) : (
+                  <div className="card" style={{ marginBottom: "14px" }}>
+                    {boardChampions.length > 0 && (
+                      <>
+                        <div style={{
+                          fontSize: "8px", color: "#666", marginBottom: "6px",
+                          fontFamily: "var(--mono)", letterSpacing: "2px",
+                        }}>BOARD</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                          {boardChampions.map((u, i) => (
+                            <UnitChip key={`b-${i}`} unit={u} itemIcons={ITEM_ICONS} />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                    {benchChampions.length > 0 && (
+                      <>
+                        <div style={{
+                          fontSize: "8px", color: "#666", margin: "10px 0 6px",
+                          fontFamily: "var(--mono)", letterSpacing: "2px",
+                        }}>BENCH</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
+                          {benchChampions.map((u, i) => (
+                            <UnitChip key={`be-${i}`} unit={u} itemIcons={ITEM_ICONS} dim />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {/* Active Synergies */}
                 <div style={{
                   fontSize: "9px", color: "#8b8fa3", marginBottom: "8px",
@@ -754,17 +1020,134 @@ export default function App() {
             {/* ═══ POSITIONING TAB ═══ */}
             {tab === "position" && (
               <div style={{ animation: "slideIn 0.25s ease" }}>
+
+                {/* ── LIVE BOARD ── */}
+                {isLive && boardChampions.length > 0 ? (
+                  <>
+                    <div style={{
+                      fontSize: "9px", color: "#8b8fa3", marginBottom: "8px",
+                      fontFamily: "var(--mono)", letterSpacing: "2px",
+                      display: "flex", alignItems: "center", gap: "8px",
+                    }}>
+                      <span style={{ color: "#2ed573" }}>●</span>
+                      YOUR CURRENT BOARD ({boardChampions.filter(c => c.board_row != null).length} placed)
+                    </div>
+                    <div className="card" style={{ marginBottom: "14px" }}>
+                      <LiveBoard
+                        champions={boardChampions}
+                        itemIcons={ITEM_ICONS}
+                        highlightTemplate={
+                          recommendedTemplateName
+                            ? POSITIONING_TEMPLATES[selectedTemplate]?.layout
+                            : null
+                        }
+                      />
+                      {recommendedTemplateName && (
+                        <div style={{
+                          marginTop: "10px", padding: "6px 10px",
+                          background: `${ACCENT}10`, border: `1px solid ${ACCENT}33`,
+                          borderRadius: "5px", fontSize: "10px",
+                          color: ACCENT, fontFamily: "var(--mono)",
+                          display: "flex", alignItems: "center", gap: "6px",
+                        }}>
+                          <span>💡</span>
+                          <span>Coach suggests: <strong>{recommendedTemplateName}</strong> — see dashed cells for target positions.</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ── LIVE POSITIONING ADVICE ── */}
+                    {(positioningTips.length > 0 || positioningSuggestions.length > 0) && (
+                      <>
+                        <div style={{
+                          fontSize: "9px", color: ACCENT, marginBottom: "8px",
+                          fontFamily: "var(--mono)", letterSpacing: "2px",
+                        }}>
+                          COACH SAYS
+                        </div>
+                        <div className="card" style={{
+                          marginBottom: "14px", borderLeft: `3px solid ${ACCENT}`,
+                        }}>
+                          {positioningSuggestions.map((s, i) => (
+                            <div key={`s-${i}`} style={{
+                              display: "flex", gap: "8px", padding: "6px 0",
+                              borderBottom: i < positioningSuggestions.length - 1 ? "1px solid #1e2028" : "none",
+                            }}>
+                              <span style={{
+                                fontSize: "10px", color: ACCENT2, fontWeight: 700,
+                                fontFamily: "var(--mono)", flexShrink: 0,
+                              }}>
+                                {s.champion_name}
+                              </span>
+                              <span style={{ fontSize: "11px", color: "#b0b3bf", lineHeight: 1.4 }}>
+                                → ({s.to_row}, {s.to_col}): {s.reason}
+                              </span>
+                            </div>
+                          ))}
+                          {positioningTips.map((tip, i) => (
+                            <div key={`t-${i}`} style={{
+                              display: "flex", gap: "8px", padding: "6px 0",
+                              borderTop: (i > 0 || positioningSuggestions.length > 0) ? "1px solid #1e2028" : "none",
+                            }}>
+                              <span style={{
+                                color: ACCENT, fontSize: "10px", fontWeight: 700,
+                                fontFamily: "var(--mono)", flexShrink: 0,
+                              }}>
+                                ▸
+                              </span>
+                              <span style={{ fontSize: "11px", color: "#b0b3bf", lineHeight: 1.4 }}>
+                                {tip}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="card" style={{
+                    textAlign: "center", padding: "20px", marginBottom: "14px",
+                    color: "#666", fontSize: "11px",
+                  }}>
+                    {isLive
+                      ? "Place units on the board to see live positioning analysis."
+                      : "Connect backend for live positioning advice. Reference templates below."}
+                  </div>
+                )}
+
+                {/* ── REFERENCE TEMPLATES ── */}
+                <div style={{
+                  fontSize: "9px", color: "#8b8fa3", marginBottom: "8px",
+                  fontFamily: "var(--mono)", letterSpacing: "2px",
+                }}>
+                  REFERENCE TEMPLATES
+                </div>
+
                 <div style={{ display: "flex", gap: "6px", marginBottom: "12px", flexWrap: "wrap" }}>
-                  {POSITIONING_TEMPLATES.map((t, i) => (
-                    <button key={i} onClick={() => setSelectedTemplate(i)} style={{
-                      padding: "7px 12px", borderRadius: "6px", fontSize: "11px",
-                      cursor: "pointer", transition: "all 0.15s",
-                      border: selectedTemplate === i ? `1px solid ${ACCENT2}` : "1px solid #2a2d35",
-                      background: selectedTemplate === i ? `${ACCENT2}15` : "transparent",
-                      color: selectedTemplate === i ? ACCENT2 : "#8b8fa3",
-                      fontWeight: selectedTemplate === i ? 700 : 400,
-                    }}>{t.name}</button>
-                  ))}
+                  {POSITIONING_TEMPLATES.map((t, i) => {
+                    const isRecommended = recommendedTemplateName
+                      && t.name.toLowerCase() === recommendedTemplateName.toLowerCase();
+                    return (
+                      <button key={i} onClick={() => setSelectedTemplate(i)} style={{
+                        padding: "7px 12px", borderRadius: "6px", fontSize: "11px",
+                        cursor: "pointer", transition: "all 0.15s",
+                        border: selectedTemplate === i ? `1px solid ${ACCENT2}` : "1px solid #2a2d35",
+                        background: selectedTemplate === i ? `${ACCENT2}15` : "transparent",
+                        color: selectedTemplate === i ? ACCENT2 : "#8b8fa3",
+                        fontWeight: selectedTemplate === i ? 700 : 400,
+                        display: "inline-flex", alignItems: "center", gap: "5px",
+                      }}>
+                        {t.name}
+                        {isRecommended && (
+                          <span style={{
+                            fontSize: "7px", padding: "1px 4px", borderRadius: "3px",
+                            background: `${ACCENT}25`, color: ACCENT,
+                            fontFamily: "var(--mono)", letterSpacing: "1px",
+                          }}>REC</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div className="card" style={{ marginBottom: "12px" }}>
@@ -775,7 +1158,7 @@ export default function App() {
                     {POSITIONING_TEMPLATES[selectedTemplate].desc}
                   </div>
 
-                  {/* Grid */}
+                  {/* Template Grid */}
                   <div style={{
                     background: "#0a0b0f", borderRadius: "8px", padding: "16px",
                     border: "1px solid #1e2028", marginBottom: "12px",

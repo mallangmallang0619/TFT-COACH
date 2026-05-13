@@ -1,0 +1,320 @@
+{
+  "patch": "17.2b",
+  "synced_at": "2026-05-13T09:21:47.532403Z",
+  "last_checked_at": "2026-05-13T09:21:47.532403Z",
+  "source_url": "https://tftacademy.com/tierlist/comps",
+  "comps": [
+    {
+      "name": "Yi Marawlers",
+      "tier": "S",
+      "slug": "set-17-yi-marawlers",
+      "trend": "rising",
+      "carry": "Master Yi",
+      "match_traits": [
+        "Marauder",
+        "Psionic"
+      ]
+    },
+    {
+      "name": "Dark Star",
+      "tier": "S",
+      "slug": "set-17-dark-star",
+      "trend": "rising",
+      "carry": "Jhin",
+      "match_traits": [
+        "Dark Star"
+      ]
+    },
+    {
+      "name": "Primordian Reroll",
+      "tier": "S",
+      "slug": "set-17-primordian-reroll",
+      "trend": "",
+      "carry": "Briar",
+      "match_traits": [
+        "Primordian"
+      ]
+    },
+    {
+      "name": "Fountain Lulu",
+      "tier": "A",
+      "slug": "set-17-fountain-lulu",
+      "trend": "rising",
+      "carry": "Lulu",
+      "match_traits": [
+        "Stargazer"
+      ]
+    },
+    {
+      "name": "Vanguard Teemo",
+      "tier": "A",
+      "slug": "set-17-vanguard-teemo",
+      "trend": "",
+      "carry": "Teemo",
+      "match_traits": [
+        "Vanguard",
+        "Space Groove"
+      ]
+    },
+    {
+      "name": "Tf Reroll",
+      "tier": "A",
+      "slug": "set-17-tf-reroll",
+      "trend": "",
+      "carry": "?",
+      "match_traits": []
+    },
+    {
+      "name": "Corki Riven",
+      "tier": "A",
+      "slug": "set-17-corki-riven",
+      "trend": "rising",
+      "carry": "Corki",
+      "match_traits": [
+        "Meeple",
+        "Fateweaver"
+      ]
+    },
+    {
+      "name": "Graves Vex 9 5",
+      "tier": "A",
+      "slug": "set-17-graves-vex-9-5",
+      "trend": "",
+      "carry": "?",
+      "match_traits": []
+    },
+    {
+      "name": "Voyager Crab",
+      "tier": "B",
+      "slug": "set-17-voyager-crab",
+      "trend": "falling",
+      "carry": "Urgot",
+      "match_traits": [
+        "Voyager",
+        "Mecha"
+      ]
+    },
+    {
+      "name": "Fast 9 Jhin Stargazer Version",
+      "tier": "B",
+      "slug": "set-17-fast-9-jhin-stargazer-version",
+      "trend": "",
+      "carry": "?",
+      "match_traits": []
+    },
+    {
+      "name": "Kaisa Karma",
+      "tier": "B",
+      "slug": "set-17-kaisa-karma",
+      "trend": "new",
+      "carry": "Kai'Sa",
+      "match_traits": [
+        "Dark Star"
+      ]
+    },
+    {
+      "name": "Veigar Printer",
+      "tier": "B",
+      "slug": "set-17-veigar-printer",
+      "trend": "",
+      "carry": "Veigar",
+      "match_traits": [
+        "Meeple",
+        "Replicator"
+      ]
+    },
+    {
+      "name": "Samira Knock Up Copy",
+      "tier": "B",
+      "slug": "set-17-samira-knock-up-copy",
+      "trend": "",
+      "carry": "?",
+      "match_traits": []
+    },
+    {
+      "name": "Dark Star Lissandra",
+      "tier": "C",
+      "slug": "set-17-dark-star-lissandra",
+      "trend": "",
+      "carry": "?",
+      "match_traits": []
+    },
+    {
+      "name": "Anima Reroll",
+      "tier": "C",
+      "slug": "set-17-anima-reroll",
+      "trend": "",
+      "carry": "Aurora",
+      "match_traits": [
+        "Anima"
+      ]
+    },
+    {
+      "name": "Karma Lb Duo",
+      "tier": "C",
+      "slug": "set-17-karma-lb-duo",
+      "trend": "",
+      "carry": "?",
+      "match_traits": []
+    },
+    {
+      "name": "Mecha Sol",
+      "tier": "C",
+      "slug": "set-17-mecha-sol",
+      "trend": "",
+      "carry": "Aurelion Sol",
+      "match_traits": [
+        "Mecha",
+        "Conduit"
+      ]
+    },
+    {
+      "name": "Ez Cho",
+      "tier": "C",
+      "slug": "set-17-ez-cho",
+      "trend": "",
+      "carry": "Cho'Gath",
+      "match_traits": [
+        "Brawler",
+        "Dark Star"
+      ]
+    },
+    {
+      "name": "Karnami Flex",
+      "tier": "C",
+      "slug": "set-17-karnami-flex",
+      "trend": "",
+      "carry": "Karma",
+      "match_traits": [
+        "Dark Star",
+        "Space Groove"
+      ]
+    },
+    {
+      "name": "In The Groove",
+      "tier": "C",
+      "slug": "set-17-in-the-groove",
+      "trend": "",
+      "carry": "?",
+      "match_traits": []
+    },
+    {
+      "name": "Vanguard Zoe",
+      "tier": "C",
+      "slug": "set-17-vanguard-zoe",
+      "trend": "",
+      "carry": "Zoe",
+      "match_traits": [
+        "Vanguard",
+        "Arbiter"
+      ]
+    },
+    {
+      "name": "Viktor B4l",
+      "tier": "C",
+      "slug": "set-17-viktor-b4l",
+      "trend": "",
+      "carry": "?",
+      "match_traits": []
+    },
+    {
+      "name": "Invader Zed",
+      "tier": "X",
+      "slug": "set-17-invader-zed",
+      "trend": "",
+      "carry": "Zed",
+      "match_traits": [
+        "Galaxy Hunter"
+      ]
+    },
+    {
+      "name": "Shieldmaiden Leona",
+      "tier": "S",
+      "slug": "set-17-shieldmaiden-leona",
+      "trend": "",
+      "carry": "Leona",
+      "match_traits": [
+        "Arbiter",
+        "Vanguard"
+      ]
+    },
+    {
+      "name": "Self Destruct Gragas",
+      "tier": "A",
+      "slug": "set-17-self-destruct-gragas",
+      "trend": "",
+      "carry": "?",
+      "match_traits": []
+    },
+    {
+      "name": "Termeepnal Velocity Poppy",
+      "tier": "B",
+      "slug": "set-17-termeepnal-velocity-poppy",
+      "trend": "",
+      "carry": "?",
+      "match_traits": []
+    },
+    {
+      "name": "Bonk Nasus",
+      "tier": "B",
+      "slug": "set-17-bonk-nasus",
+      "trend": "",
+      "carry": "Nasus",
+      "match_traits": [
+        "Space Groove",
+        "Vanguard"
+      ]
+    },
+    {
+      "name": "Contract Killer Pyke",
+      "tier": "B",
+      "slug": "set-17-contract-killer-pyke",
+      "trend": "",
+      "carry": "Pyke",
+      "match_traits": [
+        "Psionic",
+        "Voyager"
+      ]
+    },
+    {
+      "name": "The Big Bang Meepsie",
+      "tier": "C",
+      "slug": "set-17-the-big-bang-meepsie",
+      "trend": "",
+      "carry": "Meepsie",
+      "match_traits": [
+        "Meeple"
+      ]
+    },
+    {
+      "name": "Stellar Combo Aatrox",
+      "tier": "C",
+      "slug": "set-17-stellar-combo-aatrox",
+      "trend": "",
+      "carry": "Aatrox",
+      "match_traits": [
+        "N.O.V.A.",
+        "Bastion"
+      ]
+    },
+    {
+      "name": "Reach For The Stars Jax",
+      "tier": "C",
+      "slug": "set-17-reach-for-the-stars-jax",
+      "trend": "",
+      "carry": "?",
+      "match_traits": []
+    },
+    {
+      "name": "Heat Death Mordekaiser",
+      "tier": "C",
+      "slug": "set-17-heat-death-mordekaiser",
+      "trend": "",
+      "carry": "Mordekaiser",
+      "match_traits": [
+        "Dark Star",
+        "Vanguard"
+      ]
+    }
+  ]
+}
