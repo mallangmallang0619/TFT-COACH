@@ -393,7 +393,12 @@ class DemoServer:
         # Kick off a background TFT Academy refresh — this checks the live
         # tier list and updates META_COMPS if the patch has changed. Safe to
         # call on every startup; refresh_async is internally debounced.
-        tftacademy_live.schedule_background_refresh(initial_delay_seconds=2.0)
+        # include_details pulls per-comp units/items so the comp matcher has
+        # canonical, current-patch data to compare against the player's board.
+        tftacademy_live.schedule_background_refresh(
+            initial_delay_seconds=2.0,
+            include_details=True,
+        )
         async with websockets.serve(
             self._handle_client, WEBSOCKET_HOST, WEBSOCKET_PORT, ping_interval=20,
         ):

@@ -1,7 +1,7 @@
 {
   "patch": "17.2b",
-  "synced_at": "2026-05-13T09:21:47.532403Z",
-  "last_checked_at": "2026-05-13T09:21:47.532403Z",
+  "synced_at": "2026-05-13T09:43:44.979861Z",
+  "last_checked_at": "2026-05-13T09:43:46.776183Z",
   "source_url": "https://tftacademy.com/tierlist/comps",
   "comps": [
     {
@@ -13,7 +13,211 @@
       "match_traits": [
         "Marauder",
         "Psionic"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Belveth",
+            "name": "Bel'Veth",
+            "boardIndex": 8,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Gragas",
+            "name": "Gragas",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Maokai",
+            "name": "Maokai",
+            "boardIndex": 5,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Urgot",
+            "name": "Urgot",
+            "boardIndex": 7,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Kindred",
+            "name": "Kindred",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "TFT_Item_RunaansHurricane",
+                "name": "Runaans Hurricane"
+              },
+              {
+                "apiName": "TFT_Item_LastWhisper",
+                "name": "Last Whisper"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_MasterYi",
+            "name": "Master Yi",
+            "boardIndex": 0,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuardianAngel",
+                "name": "Guardian Angel"
+              },
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              },
+              {
+                "apiName": "TFT_Item_Quicksilver",
+                "name": "Quicksilver"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TahmKench",
+            "name": "Tahm Kench",
+            "boardIndex": 1,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_SpectralGauntlet",
+                "name": "Spectral Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_Redemption",
+                "name": "Redemption"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Fiora",
+            "name": "Fiora",
+            "boardIndex": 2,
+            "items": [
+              {
+                "apiName": "TFT_Item_ThiefsGloves",
+                "name": "Thief's Gloves"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Chogath",
+            "name": "Cho'Gath",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Briar",
+            "name": "Briar",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_GuardianAngel",
+                "name": "Guardian Angel"
+              },
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Belveth",
+            "name": "Bel'Veth",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_JustSlayer",
+            "name": "Just Slayer"
+          },
+          {
+            "apiName": "TFT_Augment_GroupHug1",
+            "name": "Group Hug 1"
+          },
+          {
+            "apiName": "TFT_Augment_BoxingLessons",
+            "name": "Boxing Lessons"
+          },
+          {
+            "apiName": "TFT_Augment_HomeCooking",
+            "name": "Home Cooking"
+          },
+          {
+            "apiName": "TFT_Augment_FuriousBlows",
+            "name": "Furious Blows"
+          },
+          {
+            "apiName": "TFT_Augment_ComponentQuestSword",
+            "name": "Component Quest Sword"
+          },
+          {
+            "apiName": "TFT_Augment_EpicRolldown",
+            "name": "Epic Rolldown"
+          },
+          {
+            "apiName": "TFT_Augment_ForgeSword",
+            "name": "Forge Sword"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_GuardianAngel",
+            "name": "Guardian Angel"
+          },
+          {
+            "apiName": "TFT_Item_MadredsBloodrazor",
+            "name": "Madreds Bloodrazor"
+          },
+          {
+            "apiName": "TFT_Item_Quicksilver",
+            "name": "Quicksilver"
+          },
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_MasterYi",
+          "name": "Master Yi",
+          "cost": 4
+        },
+        "tip": "Tempo composition that is best played from ahead. Best Psionic item = Malware Matrix on Yi. Related trait emblems are good: Marauder > Brawler = Psionic > Challenger. ",
+        "difficulty": "MEDIUM",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:43:45.155706Z"
+      }
     },
     {
       "name": "Dark Star",
@@ -23,7 +227,222 @@
       "carry": "Jhin",
       "match_traits": [
         "Dark Star"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Chogath",
+            "name": "Cho'Gath",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Mordekaiser",
+            "name": "Mordekaiser",
+            "boardIndex": 5,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Kaisa",
+            "name": "Kai'Sa",
+            "boardIndex": 26,
+            "items": [
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Karma",
+            "name": "Karma",
+            "boardIndex": 23,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Nunu",
+            "name": "Nunu",
+            "boardIndex": 3,
+            "items": [
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              },
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              },
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_TahmKench",
+            "name": "Tahm Kench",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Galio",
+            "name": "Galio",
+            "boardIndex": 6,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Bard",
+            "name": "Bard",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "TFT17_Item_DarkStarEmblemItem",
+                "name": "Dark Star Emblem Item"
+              },
+              {
+                "apiName": "TFT_Item_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Jhin",
+            "name": "Jhin",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "TFT_Item_LastWhisper",
+                "name": "Last Whisper"
+              },
+              {
+                "apiName": "TFT_Item_Deathblade",
+                "name": "Deathblade"
+              },
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_Briar",
+            "name": "Briar",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Chogath",
+            "name": "Cho'Gath",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Kaisa",
+            "name": "Kai'Sa",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT_Augment_SpreadingRoots",
+            "name": "Spreading Roots"
+          },
+          {
+            "apiName": "TFT_Augment_TraitTree",
+            "name": "Trait Tree"
+          },
+          {
+            "apiName": "TFT_Augment_MayTheFoursBeWithYou",
+            "name": "May The Fours Be With You"
+          },
+          {
+            "apiName": "TFT_Augment_HoldTheLine",
+            "name": "Hold The Line"
+          },
+          {
+            "apiName": "TFT_Augment_UrfsGambit",
+            "name": "Urfs Gambit"
+          },
+          {
+            "apiName": "TFT6_Augment_MakeshiftArmor1",
+            "name": "Makeshift Armor 1"
+          },
+          {
+            "apiName": "TFT_Augment_Lineup",
+            "name": "Lineup"
+          },
+          {
+            "apiName": "TFT_Augment_BoxingLessons",
+            "name": "Boxing Lessons"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_BFSword",
+            "name": "BFSword"
+          },
+          {
+            "apiName": "TFT_Item_SparringGloves",
+            "name": "Sparring Gloves"
+          },
+          {
+            "apiName": "TFT_Item_TearOfTheGoddess",
+            "name": "Tear Of The Goddess"
+          },
+          {
+            "apiName": "TFT_Item_RecurveBow",
+            "name": "Recurve Bow"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Jhin",
+          "name": "Jhin",
+          "cost": 5
+        },
+        "tip": "Always aim for 6 Dark Star. Late game if you lack AD items, prioritize: Jhin 2 > Kai'Sa 2 > Jhin 1. Level 7 and 8 are very flexible -- most common to play 4 Dark Star + Vanguards Shepherd (Illaoi / Meepsie) / Brawlers (Pantheon) / Rogues (Riven). Emblems are good: Dark Star > Sniper >> Voyager, Rogue, Tank.",
+        "difficulty": "MEDIUM",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:43:45.834530Z"
+      }
     },
     {
       "name": "Primordian Reroll",
@@ -33,7 +452,219 @@
       "carry": "Briar",
       "match_traits": [
         "Primordian"
-      ]
+      ],
+      "detail": {
+        "units": [
+          {
+            "apiName": "TFT17_Chogath",
+            "name": "Cho'Gath",
+            "boardIndex": 13,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Briar",
+            "name": "Briar",
+            "boardIndex": 0,
+            "items": [
+              {
+                "apiName": "TFT_Item_SteraksGage",
+                "name": "Sterak's Gage"
+              },
+              {
+                "apiName": "TFT_Item_TitansResolve",
+                "name": "Titan's Resolve"
+              },
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": 8,
+            "items": [
+              {
+                "apiName": "TFT_Item_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "TFT_Item_FrozenHeart",
+                "name": "Frozen Heart"
+              },
+              {
+                "apiName": "TFT_Item_SpectralGauntlet",
+                "name": "Spectral Gauntlet"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Akali",
+            "name": "Akali",
+            "boardIndex": 24,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Belveth",
+            "name": "Bel'Veth",
+            "boardIndex": 22,
+            "items": [
+              {
+                "apiName": "TFT_Item_Quicksilver",
+                "name": "Quicksilver"
+              },
+              {
+                "apiName": "TFT_Item_RunaansHurricane",
+                "name": "Runaans Hurricane"
+              },
+              {
+                "apiName": "TFT_Item_MadredsBloodrazor",
+                "name": "Madreds Bloodrazor"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "TFT17_Rhaast",
+            "name": "Rhaast",
+            "boardIndex": 25,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Kaisa",
+            "name": "Kai'Sa",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "TFT_Item_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "TFT_Item_PowerGauntlet",
+                "name": "Power Gauntlet"
+              },
+              {
+                "apiName": "TFT_Item_SpearOfShojin",
+                "name": "Spear of Shojin"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Kindred",
+            "name": "Kindred",
+            "boardIndex": 23,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "TFT17_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Briar",
+            "name": "Briar",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "TFT_Item_Bloodthirster",
+                "name": "Bloodthirster"
+              },
+              {
+                "apiName": "TFT_Item_SteraksGage",
+                "name": "Sterak's Gage"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Belveth",
+            "name": "Bel'Veth",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "TFT17_Chogath",
+            "name": "Cho'Gath",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "TFT6_Augment_GachaAddict",
+            "name": "Gacha Addict"
+          },
+          {
+            "apiName": "TFT6_Augment_TradeSector",
+            "name": "Trade Sector"
+          },
+          {
+            "apiName": "TFT9_Augment_MissedConnections",
+            "name": "Missed Connections"
+          },
+          {
+            "apiName": "TFT_Augment_Waverider",
+            "name": "Waverider"
+          },
+          {
+            "apiName": "TFT_Augment_BoxingLessons",
+            "name": "Boxing Lessons"
+          },
+          {
+            "apiName": "TFT_Augment_NoScoutNoPivot",
+            "name": "No Scout No Pivot"
+          },
+          {
+            "apiName": "TFT_Augment_GroupHug1",
+            "name": "Group Hug 1"
+          },
+          {
+            "apiName": "TFT_Augment_FuriousBlows",
+            "name": "Furious Blows"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "TFT_Item_BFSword",
+            "name": "BFSword"
+          },
+          {
+            "apiName": "TFT_Item_NegatronCloak",
+            "name": "Negatron Cloak"
+          },
+          {
+            "apiName": "TFT_Item_GiantsBelt",
+            "name": "Giants Belt"
+          },
+          {
+            "apiName": "TFT_Item_ChainVest",
+            "name": "Chain Vest"
+          }
+        ],
+        "main_champion": {
+          "apiName": "TFT17_Briar",
+          "name": "Briar",
+          "cost": 1
+        },
+        "tip": "Prioritize items on Briar > Bel'Veth / Kai'Sa. Positioning shown is for most of early and mid game, but late game you can play a standard default melee carry positioning. Rhaast on 8, Jhin on 9. Tahm 2 is a better tank than Reksai 3.",
+        "difficulty": "MEDIUM",
+        "patch": "17.2b",
+        "scraped_at": "2026-05-13T09:43:46.776183Z"
+      }
     },
     {
       "name": "Fountain Lulu",

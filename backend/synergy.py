@@ -29,6 +29,7 @@ from game_data import (
     META_COMPS,
     META_COMPS_BY_CARRY,
 )
+from tftacademy_live import canonical_name
 
 
 # ── Active Synergies ──────────────────────────────────────────────────────────
@@ -130,6 +131,108 @@ _TRAIT_WEIGHT      = 1.5   # How much trait progress matters relative to units
 _MIN_VIABLE_SCORE  = 0.20  # Drop comps below this so we only surface real fits
 
 
+# ── Dynamic comps from scraped META_COMPS detail ──────────────────────────────
+
+def _derive_target_traits(unit_names: list[str]) -> list[tuple[str, int]]:
+    """
+    Pick the traits with the most coverage across a scraped comp's units.
+    Returns up to three (trait, unit-count) tuples — the matcher uses these
+    as the breakpoint targets to score how close the player is.
+    """
+    counts: dict[str, int] = {}
+    for name in unit_names:
+        data = CHAMPIONS.get(name)
+        if not data:
+            continue
+        for trait in data.get("traits", []):
+            counts[trait] = counts.get(trait, 0) + 1
+    ranked = sorted(counts.items(), key=lambda kv: -kv[1])
+    return [(t, c) for t, c in ranked if c >= 2][:3]
+
+
+def _split_cores_and_flexes(
+    units: list[dict],
+    main_carry: str | None,
+) -> tuple[list[str], list[str]]:
+    """
+    Promote main carry / item-holding / 3+-cost units to "core" status —
+    these are the units the matcher should weight more heavily when a comp
+    is being identified. Everything else becomes "flex" filler.
+    """
+    cores: list[str] = []
+    flexes: list[str] = []
+    for u in units:
+        name = canonical_name(u.get("name") or "")
+        if not name:
+            continue
+        is_main = main_carry and name == canonical_name(main_carry)
+        has_items = bool(u.get("items"))
+        cost = CHAMPIONS.get(name, {}).get("cost", 0)
+        if is_main or has_items or cost >= 3:
+            cores.append(name)
+        else:
+            flexes.append(name)
+    return cores, flexes
+
+
+def build_comps_from_meta() -> list[dict]:
+    """
+    Convert scraped META_COMPS entries (with `detail.units`) into the same
+    dict shape that the curated COMPS list uses, so detect_comp_direction()
+    can score them with no special-casing.
+
+    Comps without scraped detail are skipped — they fall through to the
+    curated COMPS list in get_active_comps().
+    """
+    result: list[dict] = []
+    for meta in META_COMPS:
+        detail = meta.get("detail") or {}
+        units = detail.get("units") or []
+        if not units:
+            continue
+
+        unit_names = [
+            canonical_name(u["name"]) for u in units if u.get("name")
+        ]
+        if not unit_names:
+            continue
+
+        main_carry_raw = (detail.get("main_champion") or {}).get("name") or meta.get("carry")
+        cores, flexes = _split_cores_and_flexes(units, main_carry_raw)
+        target_traits = _derive_target_traits(unit_names)
+
+        result.append({
+            "name":          meta["name"],
+            "target_traits": target_traits,
+            "core_units":    cores,
+            "flex_units":    flexes,
+            "playstyle":     (detail.get("tip") or "").strip(),
+            # Carry-through fields so detect_comp_direction() can attach
+            # tier info without re-querying _match_meta_comp().
+            "_meta_carry":         meta.get("carry"),
+            "_meta_match_traits":  meta.get("match_traits", []),
+            "_meta_tier":          meta.get("tier"),
+            "_meta_slug":          meta.get("slug"),
+            "_meta_trend":         meta.get("trend", ""),
+            "_source":             "meta",
+        })
+    return result
+
+
+def get_active_comps() -> list[dict]:
+    """
+    Live comp catalog for the matcher.
+
+    Prefers scraped META_COMPS detail (real, current-patch unit lists with
+    items, items, augments, tip) and falls back to the hand-curated COMPS
+    list for any name not yet covered by a scrape.
+    """
+    dynamic = build_comps_from_meta()
+    dynamic_names = {c["name"] for c in dynamic}
+    fallback = [c for c in COMPS if c["name"] not in dynamic_names]
+    return dynamic + fallback
+
+
 def detect_comp_direction(
     synergies: list[ActiveSynergy],
     board_champions: list[DetectedChampion],
@@ -152,7 +255,7 @@ def detect_comp_direction(
 
     suggestions: list[CompSuggestion] = []
 
-    for comp in COMPS:
+    for comp in get_active_comps():
         cores: list[str]   = comp["core_units"]
         flexes: list[str]  = comp["flex_units"]
         targets: list[tuple[str, int]] = comp["target_traits"]
@@ -207,8 +310,16 @@ def detect_comp_direction(
             progress_parts.append(f"{cur}/{target} {trait_name}")
         progress = ", ".join(progress_parts)
 
-        # Look up TFT Academy tier rating (if our comp matches a curated entry)
-        meta = _match_meta_comp(comp, board_names, syn_by_name)
+        # Look up TFT Academy tier rating. Dynamic comps already carry the
+        # metadata; curated comps still need the heuristic lookup.
+        if "_meta_tier" in comp:
+            meta = {
+                "name":  comp["name"],
+                "tier":  comp["_meta_tier"],
+                "trend": comp.get("_meta_trend", ""),
+            }
+        else:
+            meta = _match_meta_comp(comp, board_names, syn_by_name)
 
         # Build a one-line tip the coach can show directly
         tip = _format_direction_tip(

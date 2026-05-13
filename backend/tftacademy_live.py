@@ -253,10 +253,66 @@ _DIFFICULTY_RE = re.compile(r'difficulty:"([^"]+)"')
 _TIP_RE = re.compile(r'augmentsTip:"((?:[^"\\]|\\.)*)"')
 
 
+# Lazily-built reverse index mapping any "normalized" name (apostrophes/spaces
+# stripped, lowercased) to the canonical name used in game_data.CHAMPIONS /
+# ITEM_RECIPES. Built from game_data once at first use; rebuilt on demand so
+# the order of module imports doesn't matter.
+_canonical_index: Optional[dict[str, str]] = None
+
+
+def _build_canonical_index() -> dict[str, str]:
+    """
+    Build the reverse lookup from game_data on first use. Each canonical
+    name gets multiple keys: with apostrophes removed, with apostrophes
+    replaced by space, and the lowercased forms of each. This catches the
+    inconsistent apiName casing Riot ships ('TFT17_Belveth' vs
+    'TFT17_RekSai') and the apostrophes the scrape always drops.
+    """
+    import game_data
+
+    index: dict[str, str] = {}
+    sources: list[str] = []
+    for name in game_data.CHAMPIONS:
+        sources.append(name)
+    for recipe in game_data.ITEM_RECIPES:
+        sources.append(recipe["name"])
+
+    for canonical in sources:
+        variants = {
+            canonical,
+            canonical.replace("'", ""),
+            canonical.replace("'", " "),
+        }
+        for v in variants:
+            collapsed = " ".join(v.split())   # collapse double spaces
+            index[collapsed.lower()] = canonical
+    return index
+
+
+def canonical_name(name: str) -> str:
+    """
+    Map a scraper-produced name to its canonical form in game_data.
+    Returns the input unchanged if no canonical match exists (e.g. items
+    from older sets that aren't in our ITEM_RECIPES yet).
+    """
+    global _canonical_index
+    if not name:
+        return name
+    if _canonical_index is None:
+        _canonical_index = _build_canonical_index()
+    key = " ".join(name.replace("'", "").split()).lower()
+    return _canonical_index.get(key, name)
+
+
 def _human_name(api_name: str) -> str:
-    """Turn an apiName like 'TFT17_TahmKench' into a human label ('Tahm Kench')."""
+    """
+    Turn an apiName like 'TFT17_TahmKench' into a human label, then resolve
+    that label to its canonical game_data spelling (with apostrophes) when
+    possible. Falls back to the camelCase-split label for unknown names.
+    """
     stripped = _API_PREFIX_RE.sub("", api_name)
-    return _CAMEL_SPLIT_RE.sub(" ", stripped)
+    split = _CAMEL_SPLIT_RE.sub(" ", stripped)
+    return canonical_name(split)
 
 
 def _extract_array_field(blob: str, field: str) -> Optional[str]:

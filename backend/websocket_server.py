@@ -57,8 +57,13 @@ class TFTCoachServer:
         self.templates.load()
 
         # Background refresh of the TFT Academy tier list (cache-checked,
-        # debounced — does nothing if recently refreshed).
-        tftacademy_live.schedule_background_refresh(initial_delay_seconds=2.0)
+        # debounced — does nothing if recently refreshed). include_details
+        # pulls per-comp unit/item/augment data so the comp matcher can
+        # surface accurate "you have X, need Y" suggestions.
+        tftacademy_live.schedule_background_refresh(
+            initial_delay_seconds=2.0,
+            include_details=True,
+        )
 
         # Start WebSocket server and capture loop concurrently
         self.is_running = True
