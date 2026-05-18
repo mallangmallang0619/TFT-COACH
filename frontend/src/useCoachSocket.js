@@ -38,6 +38,7 @@ export function useCoachSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [serverStats, setServerStats] = useState(null);
   const [isDemo, setIsDemo] = useState(false);
+  const [demoInfo, setDemoInfo] = useState(null);  // { scenarios, current_scenario, paused, tick_ms, tick_bounds }
 
   const wsRef = useRef(null);
   const reconnectAttempts = useRef(0);
@@ -74,6 +75,9 @@ export function useCoachSocket() {
             // Item recipes, component list, shred/burn sets from game_data.py
             setGameData(msg);
             try { localStorage.setItem("tft_coach_game_data", JSON.stringify(msg)); } catch {}
+          } else if (msg.type === "demo_info") {
+            setDemoInfo(msg);
+            setIsDemo(true);
           } else if (msg.type === "pong") {
             // Heartbeat response — connection is alive
           }
@@ -153,6 +157,7 @@ export function useCoachSocket() {
     gameData,
     isConnected,
     isDemo,
+    demoInfo,
     serverStats,
     sendCommand,
     overrideStage,

@@ -556,10 +556,273 @@ function CompCard({ comp, primary }) {
   );
 }
 
+// ─── DEV PANEL (demo mode only) ──────────────────────────────────────────────
+
+function NumberStepper({ label, value, min, max, step = 1, onChange, suffix = "" }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px",
+    }}>
+      <span style={{
+        fontSize: "10px", color: "#8b8fa3", fontFamily: "var(--mono)",
+        letterSpacing: "1px", width: "44px",
+      }}>{label}</span>
+      <button onClick={() => onChange(Math.max(min, value - step))} style={{
+        background: "#1a1b21", border: "1px solid #2a2d35", borderRadius: "4px",
+        color: "#c8cad0", width: "22px", height: "22px", cursor: "pointer",
+        fontFamily: "var(--mono)", fontSize: "11px",
+      }}>−</button>
+      <input
+        type="range" min={min} max={max} step={step} value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={{ flex: 1, accentColor: ACCENT, height: "4px" }}
+      />
+      <button onClick={() => onChange(Math.min(max, value + step))} style={{
+        background: "#1a1b21", border: "1px solid #2a2d35", borderRadius: "4px",
+        color: "#c8cad0", width: "22px", height: "22px", cursor: "pointer",
+        fontFamily: "var(--mono)", fontSize: "11px",
+      }}>+</button>
+      <span style={{
+        fontFamily: "var(--mono)", fontSize: "10px", color: ACCENT,
+        width: "44px", textAlign: "right",
+      }}>{value}{suffix}</span>
+    </div>
+  );
+}
+
+function PanelSection({ title, children }) {
+  return (
+    <div style={{ marginBottom: "14px" }}>
+      <div style={{
+        fontSize: "9px", color: "#8b8fa3", marginBottom: "6px",
+        fontFamily: "var(--mono)", letterSpacing: "2px",
+      }}>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function DevPanel({
+  open, onClose, demoInfo, gameState, sendCommand,
+}) {
+  const scenarios = demoInfo?.scenarios || [];
+  const currentScenario = demoInfo?.current_scenario;
+  const paused = !!demoInfo?.paused;
+  const tickMs = demoInfo?.tick_ms ?? 500;
+  const [minTick, maxTick] = demoInfo?.tick_bounds || [50, 5000];
+
+  const hp = gameState?.player_hp ?? 100;
+  const gold = gameState?.gold ?? 0;
+  const level = gameState?.level ?? 1;
+  const stage = gameState?.stage ?? "1-1";
+
+  const componentIds = gameState?.component_ids ?? [];
+
+  if (!open) return null;
+
+  const phases = [
+    { id: "planning", label: "Planning" },
+    { id: "combat", label: "Combat" },
+    { id: "augment_select", label: "Augment" },
+    { id: "carousel", label: "Carousel" },
+  ];
+
+  const allStages = [
+    "1-1", "1-4", "2-1", "2-3", "2-5", "3-1", "3-2", "3-5",
+    "4-1", "4-2", "4-5", "5-1", "5-5", "6-1",
+  ];
+
+  return (
+    <div style={{
+      position: "fixed", top: 0, right: 0, bottom: 0, width: "320px",
+      background: "rgba(13,14,18,0.98)",
+      borderLeft: `1px solid ${ACCENT}33`,
+      boxShadow: "-8px 0 24px rgba(0,0,0,0.4)",
+      zIndex: 100, overflowY: "auto",
+      padding: "14px 14px 20px", animation: "slideIn 0.2s ease",
+    }}>
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        marginBottom: "12px", paddingBottom: "10px",
+        borderBottom: `1px solid ${ACCENT}22`,
+      }}>
+        <div style={{
+          fontFamily: "'Orbitron', sans-serif", fontSize: "12px", fontWeight: 900,
+          color: ACCENT, letterSpacing: "3px",
+        }}>
+          DEV PANEL
+        </div>
+        <button onClick={onClose} style={{
+          background: "transparent", border: "1px solid #2a2d35",
+          borderRadius: "4px", color: "#8b8fa3", padding: "2px 8px",
+          cursor: "pointer", fontFamily: "var(--mono)", fontSize: "10px",
+        }}>CLOSE</button>
+      </div>
+
+      <PanelSection title="SCENARIO">
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          {scenarios.map((s) => {
+            const active = s.index === currentScenario;
+            return (
+              <button
+                key={s.index}
+                onClick={() => sendCommand("restart_game", { scenario: s.index })}
+                title={s.desc}
+                style={{
+                  padding: "6px 8px", borderRadius: "5px", cursor: "pointer",
+                  textAlign: "left", fontSize: "11px",
+                  border: active ? `1px solid ${ACCENT}` : "1px solid #2a2d35",
+                  background: active ? `${ACCENT}12` : "rgba(0,0,0,0.2)",
+                  color: active ? ACCENT : "#c8cad0",
+                  fontWeight: active ? 700 : 500,
+                  fontFamily: "var(--mono)", letterSpacing: "1px",
+                }}>
+                {active ? "● " : "  "}{s.name}
+              </button>
+            );
+          })}
+        </div>
+      </PanelSection>
+
+      <PanelSection title="SIM CONTROL">
+        <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
+          <button onClick={() => sendCommand("pause")} style={devBtnStyle(paused ? "#2ed573" : "#ffa502")}>
+            {paused ? "▶ RESUME" : "❚❚ PAUSE"}
+          </button>
+          <button onClick={() => sendCommand("step")} disabled={!paused} style={{
+            ...devBtnStyle("#8b8fa3"),
+            opacity: paused ? 1 : 0.4,
+            cursor: paused ? "pointer" : "not-allowed",
+          }}>▶| STEP</button>
+        </div>
+        <div style={{ display: "flex", gap: "4px", marginBottom: "8px" }}>
+          <button onClick={() => sendCommand("next_round")} style={devBtnStyle("#7c5cfc")}>
+            SKIP ROUND
+          </button>
+          <button
+            onClick={() => sendCommand("restart_game", { scenario: currentScenario })}
+            style={devBtnStyle("#ff6348")}>
+            RESTART
+          </button>
+        </div>
+        <NumberStepper
+          label="tick"
+          value={tickMs}
+          min={minTick}
+          max={maxTick}
+          step={50}
+          onChange={(v) => sendCommand("set_tick_speed", { tick_ms: v })}
+          suffix="ms"
+        />
+      </PanelSection>
+
+      <PanelSection title="FORCE PHASE">
+        <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+          {phases.map((p) => (
+            <button key={p.id}
+              onClick={() => sendCommand("force_phase", { phase: p.id })}
+              style={{
+                ...devBtnStyle("#a29bfe"),
+                flex: "1 1 calc(50% - 4px)", minWidth: "120px",
+                background: gameState?.phase === p.id ? "#a29bfe22" : "rgba(0,0,0,0.2)",
+                borderColor: gameState?.phase === p.id ? "#a29bfe" : "#2a2d35",
+                color: gameState?.phase === p.id ? "#a29bfe" : "#c8cad0",
+              }}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </PanelSection>
+
+      <PanelSection title={`STAGE — current: ${stage}`}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "3px" }}>
+          {allStages.map((s) => {
+            const active = s === stage;
+            return (
+              <button key={s}
+                onClick={() => sendCommand("override_stage", { stage: s })}
+                style={{
+                  padding: "3px 8px", borderRadius: "4px", cursor: "pointer",
+                  fontSize: "10px", fontFamily: "var(--mono)",
+                  border: active ? `1px solid ${ACCENT}` : "1px solid #2a2d35",
+                  background: active ? `${ACCENT}12` : "transparent",
+                  color: active ? ACCENT : "#8b8fa3",
+                }}>{s}</button>
+            );
+          })}
+        </div>
+      </PanelSection>
+
+      <PanelSection title="RESOURCES">
+        <NumberStepper
+          label="HP" value={hp} min={0} max={100}
+          onChange={(v) => sendCommand("set_hp", { hp: v })}
+        />
+        <NumberStepper
+          label="GOLD" value={gold} min={0} max={150}
+          onChange={(v) => sendCommand("set_gold", { gold: v })}
+        />
+        <NumberStepper
+          label="LVL" value={level} min={1} max={10}
+          onChange={(v) => sendCommand("set_level", { level: v })}
+        />
+      </PanelSection>
+
+      <PanelSection title={`COMPONENTS (${componentIds.length})`}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "3px", marginBottom: "6px" }}>
+          {COMPONENTS.map((c) => (
+            <button key={c.id}
+              onClick={() => sendCommand("override_components", {
+                components: [...componentIds, c.id],
+              })}
+              title={`Add ${c.name}`}
+              style={{
+                width: "34px", height: "34px", borderRadius: "5px",
+                border: "1px solid #2a2d35", background: "rgba(0,0,0,0.2)",
+                cursor: "pointer", fontSize: "16px",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+              {c.icon}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: "4px" }}>
+          <button
+            onClick={() => sendCommand("override_components", { components: [] })}
+            style={devBtnStyle("#ff6348")}>
+            CLEAR
+          </button>
+          <button
+            onClick={() => sendCommand("override_components", {
+              components: COMPONENTS.slice(0, 5).map((c) => c.id),
+            })}
+            style={devBtnStyle(ACCENT)}>
+            FILL 5
+          </button>
+        </div>
+      </PanelSection>
+    </div>
+  );
+}
+
+function devBtnStyle(color) {
+  return {
+    flex: 1, padding: "6px 8px", borderRadius: "5px", cursor: "pointer",
+    border: `1px solid ${color}55`,
+    background: `${color}10`,
+    color,
+    fontFamily: "var(--mono)", fontSize: "10px",
+    fontWeight: 700, letterSpacing: "1px",
+  };
+}
+
 // ─── MAIN APP ────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const { gameState, gameData, isConnected, isDemo, serverStats } = useCoachSocket();
+  const { gameState, gameData, isConnected, isDemo, demoInfo, serverStats, sendCommand } = useCoachSocket();
+  const [devOpen, setDevOpen] = useState(false);
 
   const itemRecipes = useMemo(
     () => (gameData?.item_recipes ?? []).map((r) => ({ ...r, icon: ITEM_ICONS[r.name] || "🔧" })),
@@ -665,17 +928,45 @@ export default function App() {
           </div>
           <ConnectionBadge isConnected={isConnected} isDemo={isDemo} />
         </div>
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          style={{
-            background: "none", border: "1px solid #2a2d35", borderRadius: "6px",
-            color: "#8b8fa3", padding: "4px 10px", cursor: "pointer",
-            fontFamily: "var(--mono)", fontSize: "10px",
-          }}
-        >
-          {collapsed ? "EXPAND" : "MINIMIZE"}
-        </button>
+        <div style={{ display: "flex", gap: "6px" }}>
+          {isDemo && (
+            <button
+              onClick={() => setDevOpen(!devOpen)}
+              style={{
+                background: devOpen ? `${ACCENT}18` : "none",
+                border: `1px solid ${devOpen ? ACCENT : "#2a2d35"}`,
+                borderRadius: "6px",
+                color: devOpen ? ACCENT : "#8b8fa3",
+                padding: "4px 10px", cursor: "pointer",
+                fontFamily: "var(--mono)", fontSize: "10px",
+                fontWeight: 700, letterSpacing: "1px",
+              }}
+            >
+              DEV
+            </button>
+          )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            style={{
+              background: "none", border: "1px solid #2a2d35", borderRadius: "6px",
+              color: "#8b8fa3", padding: "4px 10px", cursor: "pointer",
+              fontFamily: "var(--mono)", fontSize: "10px",
+            }}
+          >
+            {collapsed ? "EXPAND" : "MINIMIZE"}
+          </button>
+        </div>
       </div>
+
+      {isDemo && (
+        <DevPanel
+          open={devOpen}
+          onClose={() => setDevOpen(false)}
+          demoInfo={demoInfo}
+          gameState={gameState}
+          sendCommand={sendCommand}
+        />
+      )}
 
       {collapsed ? null : (
         <>

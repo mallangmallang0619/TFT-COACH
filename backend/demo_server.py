@@ -38,6 +38,7 @@ from game_state import (
     DetectionConfidence,
 )
 from coach import Coach
+from game_data import ITEM_RECIPES, COMPONENT_IDS, COMPONENT_NAMES, SHRED_ITEMS, BURN_ITEMS
 import tftacademy_live
 
 logger = logging.getLogger(__name__)
@@ -378,6 +379,11 @@ class SimulatedGame:
 class DemoServer:
     """WebSocket server running simulated TFT games in a loop."""
 
+    # Default ms between simulation ticks. Adjustable via `set_tick_speed`.
+    DEFAULT_TICK_MS = 500
+    MIN_TICK_MS = 50
+    MAX_TICK_MS = 5000
+
     def __init__(self):
         self.clients: Set[WebSocketServerProtocol] = set()
         self.coach = Coach()
@@ -386,6 +392,8 @@ class DemoServer:
         self._scenario_index = 0
         self._tick = 0
         self._paused = False
+        self._tick_ms = self.DEFAULT_TICK_MS
+        self._step_once = False  # one-shot: advance a single tick while paused
 
     async def start(self):
         logger.info(f"Demo server starting on ws://{WEBSOCKET_HOST}:{WEBSOCKET_PORT}")
@@ -411,6 +419,43 @@ class DemoServer:
     async def stop(self):
         self.is_running = False
 
+    @staticmethod
+    def _build_game_data_payload() -> str:
+        """Item recipes + component metadata for the frontend."""
+        return json.dumps({
+            "type": "game_data",
+            "item_recipes": [
+                {
+                    "recipe": list(r["recipe"]),
+                    "name": r["name"].strip(),
+                    "tier": r["tier"],
+                    "type": r["type"],
+                    "slam": r["slam"],
+                    "shred": r["shred"],
+                    "burn": r["burn"],
+                }
+                for r in ITEM_RECIPES
+            ],
+            "component_ids": COMPONENT_IDS,
+            "component_names": COMPONENT_NAMES,
+            "shred_items": sorted(SHRED_ITEMS),
+            "burn_items": sorted(BURN_ITEMS),
+        })
+
+    def _build_demo_info_payload(self) -> str:
+        """Demo-mode metadata: scenarios + current sim controls."""
+        return json.dumps({
+            "type": "demo_info",
+            "scenarios": [
+                {"index": i, "name": s["name"], "desc": s["desc"]}
+                for i, s in enumerate(SCENARIOS)
+            ],
+            "current_scenario": self._scenario_index % len(SCENARIOS),
+            "paused": self._paused,
+            "tick_ms": self._tick_ms,
+            "tick_bounds": [self.MIN_TICK_MS, self.MAX_TICK_MS],
+        })
+
     async def _handle_client(self, websocket: WebSocketServerProtocol):
         self.clients.add(websocket)
         logger.info(f"Frontend connected. Clients: {len(self.clients)}")
@@ -418,6 +463,12 @@ class DemoServer:
         # rapid reconnects won't hammer the upstream site.
         tftacademy_live.schedule_background_refresh(initial_delay_seconds=0.0)
         try:
+            # Push static game data and demo-mode metadata immediately so
+            # the frontend can render craftable items + dev controls without
+            # waiting for the first state broadcast.
+            await websocket.send(self._build_game_data_payload())
+            await websocket.send(self._build_demo_info_payload())
+
             async for raw in websocket:
                 await self._handle_message(websocket, raw)
         except websockets.exceptions.ConnectionClosed:
@@ -429,56 +480,167 @@ class DemoServer:
         try:
             msg = json.loads(raw)
             t = msg.get("type", "")
-
-            if t == "ping":
-                await websocket.send(json.dumps({"type": "pong"}))
-            elif t == "restart_game":
-                idx = msg.get("scenario")
-                if idx is not None and 0 <= idx < len(SCENARIOS):
-                    self._game = SimulatedGame(SCENARIOS[idx])
-                else:
-                    self._game = SimulatedGame()
-                logger.info(f"Game restarted: {self._game.scenario['name']}")
-            elif t == "pause":
-                self._paused = not self._paused
-                logger.info(f"Demo {'paused' if self._paused else 'resumed'}")
-            elif t == "next_round":
-                if self._game:
-                    self._game.round_tick = self._game.ticks_per_round - 1
-            elif t == "override_components":
-                if self._game:
-                    self._game.components = msg.get("components", [])
-            elif t == "override_stage":
-                if self._game:
-                    target = msg.get("stage", "")
-                    for i, (s, _) in enumerate(ROUND_SEQUENCE):
-                        if s == target:
-                            self._game.round_index = i
-                            break
         except json.JSONDecodeError:
-            pass
+            return
+
+        if t == "ping":
+            await websocket.send(json.dumps({"type": "pong"}))
+            return
+
+        if t == "request_game_data":
+            await websocket.send(self._build_game_data_payload())
+            return
+
+        if t == "request_demo_info":
+            await websocket.send(self._build_demo_info_payload())
+            return
+
+        if t == "restart_game":
+            idx = msg.get("scenario")
+            if idx is not None and 0 <= idx < len(SCENARIOS):
+                self._scenario_index = idx
+                self._game = SimulatedGame(SCENARIOS[idx])
+            else:
+                self._game = SimulatedGame()
+            logger.info(f"Game restarted: {self._game.scenario['name']}")
+            await self._broadcast_demo_info()
+            return
+
+        if t == "pause":
+            # Allow explicit `paused` field, otherwise toggle
+            if "paused" in msg and isinstance(msg["paused"], bool):
+                self._paused = msg["paused"]
+            else:
+                self._paused = not self._paused
+            logger.info(f"Demo {'paused' if self._paused else 'resumed'}")
+            await self._broadcast_demo_info()
+            return
+
+        if t == "step":
+            self._step_once = True
+            return
+
+        if t == "next_round":
+            if self._game:
+                self._game.round_tick = self._game.ticks_per_round - 1
+            return
+
+        if t == "set_tick_speed":
+            try:
+                ms = int(msg.get("tick_ms", self.DEFAULT_TICK_MS))
+            except (TypeError, ValueError):
+                return
+            self._tick_ms = max(self.MIN_TICK_MS, min(self.MAX_TICK_MS, ms))
+            logger.info(f"Tick speed: {self._tick_ms}ms")
+            await self._broadcast_demo_info()
+            return
+
+        if not self._game:
+            return  # remaining commands need an active game
+
+        if t == "override_components":
+            self._game.components = msg.get("components", [])
+            return
+
+        if t == "override_stage":
+            target = msg.get("stage", "")
+            for i, (s, _) in enumerate(ROUND_SEQUENCE):
+                if s == target:
+                    self._game.round_index = i
+                    self._game.round_tick = 0
+                    break
+            return
+
+        if t == "set_hp":
+            try:
+                hp = int(msg.get("hp", self._game.hp))
+            except (TypeError, ValueError):
+                return
+            self._game.hp = max(0, min(100, hp))
+            return
+
+        if t == "set_gold":
+            try:
+                gold = int(msg.get("gold", self._game.gold))
+            except (TypeError, ValueError):
+                return
+            self._game.gold = max(0, min(999, gold))
+            return
+
+        if t == "set_level":
+            try:
+                level = int(msg.get("level", self._game.level))
+            except (TypeError, ValueError):
+                return
+            self._game.level = max(1, min(10, level))
+            return
+
+        if t == "force_phase":
+            phase = msg.get("phase", "")
+            # Map a UI-friendly phase onto round_tick / round_type so the
+            # next _build_state picks it up. We override round_type by
+            # bumping round_index to one of known type.
+            phase_map = {
+                "planning": ("pvp", 0),
+                "combat":   ("pvp", 3),
+                "augment_select": ("augment", 0),
+                "carousel": ("carousel", 0),
+            }
+            target = phase_map.get(phase)
+            if target is None:
+                return
+            rtype, tick = target
+            for i, (_, rt) in enumerate(ROUND_SEQUENCE):
+                if rt == rtype and i >= self._game.round_index:
+                    self._game.round_index = i
+                    self._game.round_tick = tick
+                    if rtype == "augment":
+                        # Generate fresh augment choices so the panel populates
+                        self._game._process_augment()
+                    break
+
+    async def _broadcast_demo_info(self):
+        """Push current sim-control state to every connected client."""
+        if not self.clients:
+            return
+        payload = self._build_demo_info_payload()
+        dead = set()
+        for client in self.clients:
+            try:
+                await client.send(payload)
+            except websockets.exceptions.ConnectionClosed:
+                dead.add(client)
+        self.clients -= dead
 
     async def _simulation_loop(self):
         while self.is_running:
             scenario = SCENARIOS[self._scenario_index % len(SCENARIOS)]
             self._game = SimulatedGame(scenario)
-            self._scenario_index += 1
 
             logger.info(f"{'=' * 50}")
             logger.info(f"Starting game: {scenario['name']}")
             logger.info(f"{'=' * 50}")
 
+            # Push fresh demo info now that we have a new scenario active
+            await self._broadcast_demo_info()
+
             while self.is_running and not self._game.is_over:
-                if self._paused:
+                if self._paused and not self._step_once:
+                    # Still emit a state every ~0.5s while paused so the UI
+                    # reflects any overrides (set_hp, override_components, ...)
+                    state = self._game._build_state()
+                    state.advice = self.coach.analyze(state)
+                    await self._broadcast(state)
                     await asyncio.sleep(0.5)
                     continue
 
+                self._step_once = False
                 self._tick += 1
                 state = self._game.tick()
                 advice = self.coach.analyze(state)
                 state.advice = advice
                 await self._broadcast(state)
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(self._tick_ms / 1000.0)
 
             if self._game and self._game.is_over:
                 logger.info(f"Game ended — placement #{self._game.placement}")
@@ -486,9 +648,10 @@ class DemoServer:
                     state = self._game._build_state()
                     state.advice = self.coach.analyze(state)
                     await self._broadcast(state)
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(self._tick_ms / 1000.0)
                 logger.info("Next game in 3 seconds...")
                 await asyncio.sleep(3.0)
+                self._scenario_index += 1
 
     async def _broadcast(self, state: GameState):
         if not self.clients:
