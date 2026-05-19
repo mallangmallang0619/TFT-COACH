@@ -149,7 +149,7 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] WebSocket communication
 - [x] Electron overlay shell
 - [ ] Template image generation wizard
-- [ ] Champion portrait database
+- [-] Champion portrait database
 - [ ] Augment OCR + database
 - [x] Comp detection from active synergies
 - [ ] Multi-resolution support
