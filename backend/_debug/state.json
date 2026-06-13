@@ -1,0 +1,23 @@
+{
+  "timestamp": 1781318568.2906282,
+  "frame_number": 1,
+  "detection_ms": 9.456872940063477,
+  "phase": "not_in_game",
+  "phase_confidence": 0.7,
+  "stage": "1-1",
+  "stage_confidence": 0.0,
+  "player_hp": 100,
+  "gold": 0,
+  "level": 1,
+  "xp_current": 0,
+  "xp_needed": 2,
+  "board_champions": [],
+  "bench_champions": [],
+  "held_components": [],
+  "component_ids": [],
+  "active_synergies": [],
+  "augment_options": [],
+  "selected_augments": [],
+  "advice": null,
+  "overall_confidence": "low"
+}
