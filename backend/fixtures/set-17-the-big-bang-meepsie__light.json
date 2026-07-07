@@ -1,0 +1,48 @@
+{
+  "source": "synthetic",
+  "comp": "set-17-the-big-bang-meepsie",
+  "realism": "light",
+  "seed": 0,
+  "board": [
+    {
+      "name": "Lissandra",
+      "row": 3,
+      "col": 1
+    },
+    {
+      "name": "Mordekaiser",
+      "row": 0,
+      "col": 6
+    },
+    {
+      "name": "Meepsie",
+      "row": 1,
+      "col": 6
+    },
+    {
+      "name": "Pyke",
+      "row": 3,
+      "col": 2
+    },
+    {
+      "name": "Illaoi",
+      "row": 0,
+      "col": 0
+    },
+    {
+      "name": "Rhaast",
+      "row": 2,
+      "col": 6
+    },
+    {
+      "name": "Viktor",
+      "row": 3,
+      "col": 6
+    },
+    {
+      "name": "Nami",
+      "row": 3,
+      "col": 0
+    }
+  ]
+}

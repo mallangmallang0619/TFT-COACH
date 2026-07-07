@@ -1,0 +1,43 @@
+{
+  "source": "synthetic",
+  "comp": "set-17-gnar-printer",
+  "realism": "light",
+  "seed": 0,
+  "board": [
+    {
+      "name": "Poppy",
+      "row": 0,
+      "col": 2
+    },
+    {
+      "name": "Meepsie",
+      "row": 0,
+      "col": 3
+    },
+    {
+      "name": "Gnar",
+      "row": 3,
+      "col": 6
+    },
+    {
+      "name": "Karma",
+      "row": 3,
+      "col": 2
+    },
+    {
+      "name": "Rammus",
+      "row": 0,
+      "col": 4
+    },
+    {
+      "name": "Bard",
+      "row": 3,
+      "col": 0
+    },
+    {
+      "name": "Jhin",
+      "row": 3,
+      "col": 5
+    }
+  ]
+}

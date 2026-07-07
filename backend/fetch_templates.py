@@ -31,8 +31,13 @@ from typing import Iterable, Optional
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from config import COMPONENT_TEMPLATE_DIR, CHAMPION_TEMPLATE_DIR
-from game_data import COMPONENT_NAMES, CHAMPIONS
+from config import (
+    COMPONENT_TEMPLATE_DIR,
+    CHAMPION_TEMPLATE_DIR,
+    TRAIT_TEMPLATE_DIR,
+    ITEM_TEMPLATE_DIR,
+)
+from game_data import COMPONENT_NAMES, CHAMPIONS, TRAITS
 
 logger = logging.getLogger("fetch_templates")
 
@@ -40,6 +45,30 @@ DDRAGON_BASE = "https://ddragon.leagueoflegends.com"
 VERSIONS_URL = f"{DDRAGON_BASE}/api/versions.json"
 USER_AGENT = "tft-coach-template-fetcher/0.1"
 REQUEST_TIMEOUT = 15
+
+# Community Dragon serves the real in-game art (square champion portraits, trait
+# icons, item icons) that Data Dragon's splash art doesn't. We pull traits/items
+# from here because Data Dragon has no trait icons and CDragon's are the actual
+# HUD glyphs the detector needs to match.
+CDRAGON_TFT_DATA = "https://raw.communitydragon.org/latest/cdragon/tft/en_us.json"
+CDRAGON_GAME_BASE = "https://raw.communitydragon.org/latest/game/"
+# The current TFT set (matches the "set-17-…" comp slugs and TFT17_ apiNames).
+CURRENT_SET = "17"
+
+
+def cdragon_asset_url(icon_path: str) -> str:
+    """Map a CDragon asset path (e.g. 'ASSETS/UX/TraitIcons/Foo.tex') to a URL.
+
+    CDragon serves game assets lowercased with .tex/.dds rewritten to .png.
+    """
+    p = icon_path.lower()
+    for ext in (".tex", ".dds"):
+        if p.endswith(ext):
+            p = p[: -len(ext)] + ".png"
+            break
+    if not p.endswith(".png"):
+        p += ".png"
+    return CDRAGON_GAME_BASE + p
 
 
 def _http_get(url: str) -> bytes:
@@ -292,6 +321,76 @@ def fetch_champions(
     return ok, missing
 
 
+# ── Community Dragon (traits + items) ─────────────────────────────────────────
+
+def load_cdragon_tft() -> dict:
+    """Fetch the Community Dragon TFT data blob (champions/traits/items)."""
+    return _http_get_json(CDRAGON_TFT_DATA)
+
+
+def fetch_traits(
+    cdragon: dict, *, force: bool = False, dry_run: bool = False
+) -> tuple[int, list[str]]:
+    """Download current-set trait icons named by their game_data.TRAITS key."""
+    wanted = set(TRAITS.keys())
+    set_traits = (cdragon.get("sets", {}).get(CURRENT_SET, {}) or {}).get("traits", [])
+    by_name = {t["name"]: t for t in set_traits if t.get("name")}
+
+    ok = 0
+    missing: list[str] = []
+    for name in sorted(wanted):
+        out_path = TRAIT_TEMPLATE_DIR / f"{name}.png"
+        if out_path.exists() and not force:
+            logger.info(f"  ✓ {name}.png (exists, skipping)")
+            ok += 1
+            continue
+        entry = by_name.get(name)
+        icon = entry.get("icon") if entry else None
+        if not icon:
+            logger.warning(f"  ✗ {name}: no trait icon in CDragon set {CURRENT_SET}")
+            missing.append(name)
+            continue
+        if download_to(out_path, cdragon_asset_url(icon), dry_run=dry_run):
+            logger.info(f"  ✓ {name}.png")
+            ok += 1
+        else:
+            missing.append(name)
+    return ok, missing
+
+
+def fetch_items(
+    cdragon: dict, *, force: bool = False, dry_run: bool = False
+) -> tuple[int, list[str]]:
+    """Download item icons for the completed items in game_data.ITEM_RECIPES."""
+    from game_data import ITEM_RECIPES
+
+    items = cdragon.get("items", [])
+    by_norm = {normalize(it["name"]): it for it in items if it.get("name")}
+
+    ok = 0
+    missing: list[str] = []
+    for recipe in ITEM_RECIPES:
+        name = recipe["name"].strip()
+        safe = name.replace("/", "_")
+        out_path = ITEM_TEMPLATE_DIR / f"{safe}.png"
+        if out_path.exists() and not force:
+            logger.info(f"  ✓ {safe}.png (exists, skipping)")
+            ok += 1
+            continue
+        entry = by_norm.get(normalize(name))
+        icon = entry.get("icon") if entry else None
+        if not icon:
+            logger.warning(f"  ✗ {name}: no item icon in CDragon items")
+            missing.append(name)
+            continue
+        if download_to(out_path, cdragon_asset_url(icon), dry_run=dry_run):
+            logger.info(f"  ✓ {safe}.png")
+            ok += 1
+        else:
+            missing.append(name)
+    return ok, missing
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main() -> int:
@@ -299,6 +398,8 @@ def main() -> int:
     parser.add_argument("--force", action="store_true", help="Re-download even if a file already exists")
     parser.add_argument("--components", action="store_true", help="Only fetch components")
     parser.add_argument("--champions", action="store_true", help="Only fetch champions")
+    parser.add_argument("--traits", action="store_true", help="Only fetch trait icons (CDragon)")
+    parser.add_argument("--items", action="store_true", help="Only fetch item icons (CDragon)")
     parser.add_argument("--dry-run", action="store_true", help="Print URLs without downloading")
     parser.add_argument("--version", help="Pin a specific Data Dragon version (default: latest)")
     parser.add_argument("--debug", action="store_true", help="Verbose logging")
@@ -309,8 +410,12 @@ def main() -> int:
         format="%(message)s",
     )
 
-    do_components = args.components or not args.champions
-    do_champions = args.champions or not args.components
+    # If no category flag is given, fetch everything; otherwise only the named ones.
+    selective = any((args.components, args.champions, args.traits, args.items))
+    do_components = args.components or not selective
+    do_champions = args.champions or not selective
+    do_traits = args.traits or not selective
+    do_items = args.items or not selective
 
     try:
         version = args.version or get_latest_version()
@@ -343,10 +448,20 @@ def main() -> int:
         except Exception as e:
             logger.warning(f"Failed to load champion.json: {e}")
 
-    comp_ok = 0
-    champ_ok_count = 0
+    cdragon: dict = {}
+    if do_traits or do_items:
+        try:
+            cdragon = load_cdragon_tft()
+            logger.info("Loaded Community Dragon TFT data")
+        except Exception as e:
+            logger.error(f"Failed to load Community Dragon TFT data: {e}")
+            return 1
+
+    comp_ok = champ_ok_count = trait_ok = item_ok = 0
     comp_missing_list: list[str] = []
     champ_missing_list: list[str] = []
+    trait_missing_list: list[str] = []
+    item_missing_list: list[str] = []
 
     if do_components:
         logger.info("\n── Components ──")
@@ -361,6 +476,18 @@ def main() -> int:
             force=args.force, dry_run=args.dry_run,
         )
 
+    if do_traits:
+        logger.info("\n── Traits (Community Dragon) ──")
+        trait_ok, trait_missing_list = fetch_traits(
+            cdragon, force=args.force, dry_run=args.dry_run
+        )
+
+    if do_items:
+        logger.info("\n── Items (Community Dragon) ──")
+        item_ok, item_missing_list = fetch_items(
+            cdragon, force=args.force, dry_run=args.dry_run
+        )
+
     logger.info("\n── Summary ──")
     if do_components:
         logger.info(f"  Components: {comp_ok}/{len(COMPONENT_NAMES)} ok")
@@ -370,8 +497,18 @@ def main() -> int:
         logger.info(f"  Champions:  {champ_ok_count}/{len(CHAMPIONS)} ok")
         if champ_missing_list:
             logger.info(f"    missing: {', '.join(champ_missing_list)}")
+    if do_traits:
+        logger.info(f"  Traits:     {trait_ok}/{len(TRAITS)} ok")
+        if trait_missing_list:
+            logger.info(f"    missing: {', '.join(trait_missing_list)}")
+    if do_items:
+        from game_data import ITEM_RECIPES
+        logger.info(f"  Items:      {item_ok}/{len(ITEM_RECIPES)} ok")
+        if item_missing_list:
+            logger.info(f"    missing: {', '.join(item_missing_list)}")
 
-    any_missing = bool(comp_missing_list) or bool(champ_missing_list)
+    any_missing = any((comp_missing_list, champ_missing_list,
+                       trait_missing_list, item_missing_list))
     return 0 if not any_missing else 2
 
 

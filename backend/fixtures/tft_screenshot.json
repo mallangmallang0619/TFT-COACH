@@ -1,0 +1,30 @@
+{
+  "source": "real",
+  "resolution": [3600, 2026],
+  "note": "Real in-game frame. HUD OCR ROIs calibrated against this. Board unit positions not yet labeled (board is 3D perspective; champion-template matching on board models is not yet viable).",
+  "hud": {
+    "stage": "3-5",
+    "gold": 38,
+    "level": 7,
+    "player_hp": 46
+  },
+  "traits_active": {
+    "Dark Star": 3,
+    "Shepherd": 3,
+    "Timebreaker": 2,
+    "Voyager": 2,
+    "Replicator": 2,
+    "Vanguard": 2
+  },
+  "traits_inactive": {
+    "Brawler": 1,
+    "Conduit": 1,
+    "Fateweaver": 1
+  },
+  "bench": ["Aurelion Sol", "Gwen", "Aatrox"],
+  "board_units": [
+    "Mordekaiser", "Pantheon", "Illaoi", "Meepsie",
+    "Galio", "Lissandra", "Milio", "Karma"
+  ],
+  "board": []
+}

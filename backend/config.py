@@ -24,6 +24,8 @@ ASSETS_DIR = PROJECT_ROOT / "assets"
 TEMPLATE_DIR = ASSETS_DIR / "templates"
 COMPONENT_TEMPLATE_DIR = TEMPLATE_DIR / "components"
 CHAMPION_TEMPLATE_DIR = TEMPLATE_DIR / "champions"
+TRAIT_TEMPLATE_DIR = TEMPLATE_DIR / "traits"
+ITEM_TEMPLATE_DIR = TEMPLATE_DIR / "items"
 UI_TEMPLATE_DIR = TEMPLATE_DIR / "ui"
 
 
@@ -127,6 +129,9 @@ CONFIDENCE_THRESHOLD = 0.80   # Template match confidence minimum
 OCR_CONFIDENCE_MIN = 60       # Tesseract confidence minimum (0-100)
 COMPONENT_MATCH_THRESHOLD = 0.82
 CHAMPION_MATCH_THRESHOLD = 0.78
+# Trait symbols are matched multi-scale + polarity-invariant; validated against a
+# real frame where actives scored 0.78–0.90 and the best wrong guess was ~0.75.
+TRAIT_MATCH_THRESHOLD = 0.76
 
 
 # ── Regions of Interest (ROI) ─────────────────────────────────────────────────
@@ -187,24 +192,26 @@ class RegionOfInterest:
 class GameROIs:
     """All regions of interest in the TFT game UI."""
 
-    # Stage indicator — top center of screen (e.g., "Stage 3-2")
+    # Stage indicator — top center, right of the stage icon (e.g. "3-5").
+    # Calibrated against fixtures/tft_screenshot.png (3600×2026, 16:9).
     stage: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.46, 0.0, 0.08, 0.04)
+        default_factory=lambda: RegionOfInterest(0.398, 0.010, 0.036, 0.034)
     )
 
-    # Player HP — left side HUD
+    # Player HP — our value in the right-side player list (between the two
+    # little-legend portraits on our row).
     player_hp: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.32, 0.895, 0.04, 0.025)
+        default_factory=lambda: RegionOfInterest(0.901, 0.597, 0.046, 0.034)
     )
 
-    # Gold count — bottom center
+    # Gold count — bottom center, right of the coin icon.
     gold: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.48, 0.88, 0.04, 0.03)
+        default_factory=lambda: RegionOfInterest(0.497, 0.806, 0.026, 0.040)
     )
 
-    # Level indicator — bottom left area
+    # Level indicator — bottom-left "Lvl. N" panel (digit-whitelisted OCR).
     level: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.31, 0.88, 0.03, 0.025)
+        default_factory=lambda: RegionOfInterest(0.148, 0.820, 0.060, 0.034)
     )
 
     # Item bench — the component storage area (bottom-left of board)
@@ -233,6 +240,22 @@ class GameROIs:
     )
 
 
+# ── Trait Panel ───────────────────────────────────────────────────────────────
+# The active-trait list on the left HUD. Each row shows a tier-tinted trait
+# symbol (matched against assets/templates/traits/) followed by the count and
+# name. Geometry calibrated against fixtures/tft_screenshot.png; the symbol
+# column x and row pitch are stable, the start_y shifts a little with trait count.
+
+@dataclass
+class TraitPanel:
+    symbol_cx: float = 0.0485   # horizontal center of the trait symbol column
+    symbol_w: float = 0.028     # search-window width (ratio of frame width)
+    symbol_h: float = 0.040     # search-window height (ratio of frame height)
+    first_row_cy: float = 0.285 # vertical center of the top trait row
+    row_pitch: float = 0.0485   # vertical spacing between rows
+    max_rows: int = 12          # how many row slots to scan
+
+
 # ── Board Hex Grid Mapping ────────────────────────────────────────────────────
 #
 # TFT board is 7 columns × 4 rows. Each hex center is mapped as a ratio
@@ -250,20 +273,42 @@ class HexPosition:
     radius: float = 0.04
 
 
-def generate_hex_grid() -> list[HexPosition]:
-    """Generate the 28 hex positions (7 × 4) for the TFT board."""
-    hexes = []
-    rows = 4
-    cols = 7
+def generate_hex_grid(radius: float = 0.04) -> list[HexPosition]:
+    """Generate the 28 hex positions (7 × 4) for the TFT board.
 
+    Rows use a brick stagger (odd rows offset by half a hex). The raw stagger
+    pushes odd rows' last column to cx≈1.0 — i.e. its sampling window would fall
+    off the right edge of the board ROI and never match. We remap the staggered
+    centers so the whole grid (including each hex's `radius` sampling window) is
+    inset within [0, 1] horizontally and centered, keeping every hex sampleable.
+
+    NOTE: this fixes internal consistency (no clipped hexes); the absolute
+    placement still wants calibration against a real screenshot.
+    """
+    rows, cols = 4, 7
+
+    # Raw brick layout: even rows at (col+0.5)/cols, odd rows shifted +half a hex.
+    raw_cx = {}
     for row in range(rows):
         for col in range(cols):
             cx = (col + 0.5) / cols
-            # Odd rows get a half-column offset
             if row % 2 == 1:
                 cx += 0.5 / cols
+            raw_cx[(row, col)] = cx
+
+    # Remap the raw center span into [radius, 1-radius] (+ a hair of margin) so
+    # every sampling window fits inside the ROI, preserving relative spacing.
+    lo, hi = min(raw_cx.values()), max(raw_cx.values())
+    margin = 0.005
+    target_lo, target_hi = radius + margin, 1.0 - radius - margin
+    scale = (target_hi - target_lo) / (hi - lo)
+
+    hexes = []
+    for row in range(rows):
+        for col in range(cols):
+            cx = target_lo + (raw_cx[(row, col)] - lo) * scale
             cy = (row + 0.5) / rows
-            hexes.append(HexPosition(row=row, col=col, cx=cx, cy=cy))
+            hexes.append(HexPosition(row=row, col=col, cx=cx, cy=cy, radius=radius))
 
     return hexes
 

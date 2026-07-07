@@ -32,15 +32,18 @@ from config import (
     TEMPLATE_DIR,
     COMPONENT_TEMPLATE_DIR,
     CHAMPION_TEMPLATE_DIR,
+    TRAIT_TEMPLATE_DIR,
     CONFIDENCE_THRESHOLD,
     COMPONENT_MATCH_THRESHOLD,
     CHAMPION_MATCH_THRESHOLD,
+    TRAIT_MATCH_THRESHOLD,
     OCR_CONFIDENCE_MIN,
     BOARD_HEX_GRID,
     COMPONENT_IDS,
     LOG_DETECTION_FRAMES,
     LOG_FRAME_DIR,
     GameROIs,
+    TraitPanel,
 )
 from game_state import (
     GameState,
@@ -52,6 +55,52 @@ from game_state import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ── Champion matching tuning ──────────────────────────────────────────────────
+# Champions are matched on small, grayscale, blurred, circularly-masked patches.
+# Working at a fixed canonical size makes matching scale-stable and cheap; the
+# search window is larger than the template so we can slide for position
+# tolerance, and we try a few template scales to absorb portrait-size jitter.
+CANON_TEMPLATE = 60          # canonical champion patch edge (px)
+CANON_SEARCH = 80            # search-window edge the patch slides within (px)
+MATCH_SCALES = (0.85, 1.0, 1.15)
+_MASK_CACHE: dict[int, np.ndarray] = {}
+
+# Trait symbols are tiny tier-tinted glyphs in the left panel. Matching them needs
+# multi-scale sliding (the glyph fills a varying fraction of its hexagon) and
+# polarity tolerance (bronze tiers are dark-on-light, gold tiers light-on-dark),
+# under a circular mask to ignore the hexagon frame. Validated 6/6 on a real frame.
+TRAIT_SEARCH = 52
+TRAIT_SIZES = (26, 30, 34, 38)
+
+
+def _circular_mask(size: int) -> np.ndarray:
+    """A filled white circle on black, cached per size — masks out hex corners."""
+    mask = _MASK_CACHE.get(size)
+    if mask is None:
+        mask = np.zeros((size, size), dtype=np.uint8)
+        cv2.circle(mask, (size // 2, size // 2), size // 2 - 1, 255, -1)
+        _MASK_CACHE[size] = mask
+    return mask
+
+
+def _prep_gray(img: np.ndarray, size: int) -> np.ndarray:
+    """Grayscale → resize to `size`² → light blur. The common front-end for both
+    templates and crops so they're compared in the same robust feature space."""
+    if img.ndim == 3:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img = cv2.resize(img, (size, size), interpolation=cv2.INTER_AREA)
+    return cv2.GaussianBlur(img, (3, 3), 0)
+
+
+def _prep_trait_gray(img: np.ndarray, size: int) -> np.ndarray:
+    """Like _prep_gray but composites a transparent trait icon onto black first
+    (CDragon trait icons are white glyphs on alpha)."""
+    if img.ndim == 3 and img.shape[2] == 4:
+        alpha = img[:, :, 3:4] / 255.0
+        img = (img[:, :, :3] * alpha).astype(np.uint8)
+    return _prep_gray(img, size)
 
 
 class TemplateStore:
@@ -67,6 +116,11 @@ class TemplateStore:
     def __init__(self):
         self.component_templates: dict[str, np.ndarray] = {}
         self.champion_templates: dict[str, np.ndarray] = {}
+        # Per-scale canonical grayscale champion patches, keyed by name then
+        # pixel size — precomputed so matching doesn't re-grayscale/resize per hex.
+        self.champion_gray: dict[str, dict[int, np.ndarray]] = {}
+        # Per-scale grayscale trait glyphs, same idea (built from RGBA icons).
+        self.trait_gray: dict[str, dict[int, np.ndarray]] = {}
         self.ui_templates: dict[str, np.ndarray] = {}
         self._loaded = False
 
@@ -75,7 +129,30 @@ class TemplateStore:
         self.component_templates = self._load_dir(COMPONENT_TEMPLATE_DIR)
         self.champion_templates = self._load_dir(CHAMPION_TEMPLATE_DIR)
         self.ui_templates = self._load_dir(TEMPLATE_DIR / "ui")
+        self._build_champion_gray()
+        self._build_trait_gray()
         self._loaded = True
+
+    def _build_trait_gray(self):
+        """Load trait icons (RGBA) and precompute per-scale grayscale glyphs."""
+        self.trait_gray = {}
+        if not TRAIT_TEMPLATE_DIR.exists():
+            return
+        for img_path in TRAIT_TEMPLATE_DIR.glob("*.png"):
+            img = cv2.imread(str(img_path), cv2.IMREAD_UNCHANGED)
+            if img is None:
+                continue
+            self.trait_gray[img_path.stem] = {
+                sz: _prep_trait_gray(img, sz) for sz in TRAIT_SIZES
+            }
+
+    def _build_champion_gray(self):
+        """Precompute each champion's canonical grayscale patch at every match
+        scale, so the hot detection loop just slides cached arrays."""
+        self.champion_gray = {}
+        sizes = sorted({int(CANON_TEMPLATE * s) for s in MATCH_SCALES})
+        for name, bgr in self.champion_templates.items():
+            self.champion_gray[name] = {sz: _prep_gray(bgr, sz) for sz in sizes}
 
         total = (
             len(self.component_templates)
@@ -208,17 +285,22 @@ class Detector:
         return GamePhase.PLANNING, 0.60
 
     def _is_augment_screen(self, region: np.ndarray) -> bool:
-        """Detect the augment selection overlay by checking for darkened background."""
+        """Detect the augment selection overlay.
+
+        The overlay dims the whole screen dark but shows three brightly-lit augment
+        cards in the center. The old "dark + some edges" test fired on any dark,
+        noisy/textured board; we additionally require a meaningful patch of bright,
+        card-like pixels, which a dimmed board never has.
+        """
         if region.size == 0:
             return False
-        # Augment screen has a dark semi-transparent overlay
-        mean_brightness = np.mean(region)
-        # Also check for the characteristic augment card borders
         gray = cv2.cvtColor(region, cv2.COLOR_BGR2GRAY)
+        mean_brightness = float(np.mean(gray))
+        bright_frac = float(np.mean(gray > 150))  # the augment cards are bright
         edges = cv2.Canny(gray, 50, 150)
         edge_density = np.count_nonzero(edges) / edges.size
-        # Augment screen: relatively dark with structured edges
-        return mean_brightness < 80 and edge_density > 0.02
+        # Dark dimmed background + bright structured cards.
+        return mean_brightness < 90 and bright_frac > 0.04 and edge_density > 0.02
 
     def _is_blank_or_loading(self, region: np.ndarray) -> bool:
         """Check if a region is mostly blank (not in game)."""
@@ -345,17 +427,105 @@ class Detector:
 
     # ── Champion Detection ────────────────────────────────────────────────────
 
+    def _match_champion(self, search_bgr: np.ndarray) -> tuple[str, float]:
+        """Best (name, confidence) for a champion in a search crop.
+
+        The crop is reduced to a canonical grayscale, blurred search window; each
+        champion's cached patch is slid across it (position tolerance) at several
+        scales (size tolerance) under a circular mask (ignores hex-corner
+        background). Returns ("Unknown", 0.0) if nothing clears the threshold.
+        """
+        if search_bgr.size == 0:
+            return "Unknown", 0.0
+        search = _prep_gray(search_bgr, CANON_SEARCH)
+
+        best_name, best_conf = "Unknown", 0.0
+        for name, by_size in self.templates.champion_gray.items():
+            for size, patch in by_size.items():
+                if size > CANON_SEARCH:
+                    continue
+                result = cv2.matchTemplate(
+                    search, patch, cv2.TM_CCOEFF_NORMED, mask=_circular_mask(size)
+                )
+                # Masked CCOEFF_NORMED can yield nan/inf on flat windows.
+                np.nan_to_num(result, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+                max_val = float(result.max())
+                if max_val > best_conf:
+                    best_conf, best_name = max_val, name
+
+        if best_conf > CHAMPION_MATCH_THRESHOLD:
+            return best_name, best_conf
+        return "Unknown", best_conf
+
+    # ── Trait Detection ───────────────────────────────────────────────────────
+
+    def _match_trait(self, search_bgr: np.ndarray) -> tuple[str, float]:
+        """Best (trait_name, confidence) for a trait symbol crop.
+
+        Each cached glyph is slid across the search window at several scales and
+        in both polarities (templates are light-on-dark; bronze-tier in-game
+        glyphs are dark-on-light), under a circular mask. Returns ("", 0.0) below
+        threshold.
+        """
+        if search_bgr.size == 0 or not self.templates.trait_gray:
+            return "", 0.0
+        search = _prep_gray(search_bgr, TRAIT_SEARCH)
+        search_inv = cv2.bitwise_not(search)
+
+        best_name, best_conf = "", 0.0
+        for name, by_size in self.templates.trait_gray.items():
+            for size, glyph in by_size.items():
+                mask = _circular_mask(size)
+                for src in (search, search_inv):
+                    result = cv2.matchTemplate(src, glyph, cv2.TM_CCOEFF_NORMED, mask=mask)
+                    np.nan_to_num(result, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+                    v = float(result.max())
+                    if v > best_conf:
+                        best_conf, best_name = v, name
+
+        if best_conf >= TRAIT_MATCH_THRESHOLD:
+            return best_name, best_conf
+        return "", best_conf
+
+    def _detect_traits(self, frame: np.ndarray) -> list[tuple[str, float]]:
+        """Scan the trait panel rows and return matched (trait, confidence).
+
+        Walks down the symbol column at the configured row pitch; rows whose
+        symbol clears the threshold are reported in panel order. Duplicate names
+        (a glyph matching two adjacent slots) are de-duplicated, keeping the best.
+        """
+        h, w = frame.shape[:2]
+        p = TraitPanel()
+        hw = p.symbol_w / 2
+        hh = p.symbol_h / 2
+
+        best_by_name: dict[str, float] = {}
+        order: list[str] = []
+        for i in range(p.max_rows):
+            cy = p.first_row_cy + i * p.row_pitch
+            if cy + hh >= 1.0:
+                break
+            x1, x2 = int((p.symbol_cx - hw) * w), int((p.symbol_cx + hw) * w)
+            y1, y2 = int((cy - hh) * h), int((cy + hh) * h)
+            crop = frame[max(0, y1):y2, max(0, x1):x2]
+            name, conf = self._match_trait(crop)
+            if not name:
+                continue
+            if name not in best_by_name:
+                order.append(name)
+            if conf > best_by_name.get(name, 0.0):
+                best_by_name[name] = conf
+
+        return [(n, best_by_name[n]) for n in order]
+
     def _detect_board_champions(self, frame: np.ndarray) -> list[DetectedChampion]:
-        """
-        Detect champions on the board by sampling each hex position.
-        """
-        if not self.templates.champion_templates:
+        """Detect champions on the board by sampling each hex position."""
+        if not self.templates.champion_gray:
             return []
 
         h, w = frame.shape[:2]
         bx, by, bw, bh = self.rois.board.to_pixels(w, h)
         board_region = frame[by:by+bh, bx:bx+bw]
-
         if board_region.size == 0:
             return []
 
@@ -363,91 +533,53 @@ class Detector:
         brh, brw = board_region.shape[:2]
 
         for hex_pos in BOARD_HEX_GRID:
-            # Extract the area around this hex
             cx = int(hex_pos.cx * brw)
             cy = int(hex_pos.cy * brh)
             r = int(hex_pos.radius * brw)
 
-            # Bounds check
-            x1 = max(0, cx - r)
-            y1 = max(0, cy - r)
-            x2 = min(brw, cx + r)
-            y2 = min(brh, cy + r)
-            hex_crop = board_region[y1:y2, x1:x2]
-
-            if hex_crop.size == 0:
+            # Core hex crop for the occupancy check, and a slightly larger search
+            # window (so the matcher can slide to absorb position jitter).
+            core = board_region[max(0, cy-r):cy+r, max(0, cx-r):cx+r]
+            if core.size == 0 or self._is_hex_empty(core):
                 continue
+            sr = int(r * 1.25)
+            search = board_region[max(0, cy-sr):cy+sr, max(0, cx-sr):cx+sr]
 
-            # Check if this hex has a champion (not empty)
-            if self._is_hex_empty(hex_crop):
-                continue
-
-            # Match against champion templates
-            best_name = "Unknown"
-            best_conf = 0.0
-
-            for champ_name, template in self.templates.champion_templates.items():
-                # Resize template to match hex crop size
-                resized = cv2.resize(template, (hex_crop.shape[1], hex_crop.shape[0]))
-                result = cv2.matchTemplate(hex_crop, resized, cv2.TM_CCOEFF_NORMED)
-                _, max_val, _, _ = cv2.minMaxLoc(result)
-
-                if max_val > best_conf and max_val > CHAMPION_MATCH_THRESHOLD:
-                    best_conf = max_val
-                    best_name = champ_name
-
-            if best_conf > CHAMPION_MATCH_THRESHOLD:
+            name, conf = self._match_champion(search)
+            if name != "Unknown":
                 detected.append(DetectedChampion(
-                    name=best_name,
+                    name=name,
                     board_row=hex_pos.row,
                     board_col=hex_pos.col,
-                    confidence=best_conf,
+                    confidence=conf,
                 ))
 
         return detected
 
     def _detect_bench_champions(self, frame: np.ndarray) -> list[DetectedChampion]:
-        """Detect champions on the bench row."""
-        # Similar to board detection but for the bench region
-        # Bench has 9 slots in a horizontal row
-        if not self.templates.champion_templates:
+        """Detect champions on the bench row (9 horizontal slots)."""
+        if not self.templates.champion_gray:
             return []
 
         h, w = frame.shape[:2]
         bx, by, bw, bh = self.rois.champion_bench.to_pixels(w, h)
         bench_region = frame[by:by+bh, bx:bx+bw]
-
         if bench_region.size == 0:
             return []
 
         detected = []
-        brh, brw = bench_region.shape[:2]
+        brw = bench_region.shape[1]
         slot_width = brw // 9
 
         for slot in range(9):
             sx = slot * slot_width
             slot_crop = bench_region[:, sx:sx+slot_width]
-
             if slot_crop.size == 0 or self._is_hex_empty(slot_crop):
                 continue
 
-            best_name = "Unknown"
-            best_conf = 0.0
-
-            for champ_name, template in self.templates.champion_templates.items():
-                resized = cv2.resize(template, (slot_crop.shape[1], slot_crop.shape[0]))
-                result = cv2.matchTemplate(slot_crop, resized, cv2.TM_CCOEFF_NORMED)
-                _, max_val, _, _ = cv2.minMaxLoc(result)
-
-                if max_val > best_conf and max_val > CHAMPION_MATCH_THRESHOLD:
-                    best_conf = max_val
-                    best_name = champ_name
-
-            if best_conf > CHAMPION_MATCH_THRESHOLD:
-                detected.append(DetectedChampion(
-                    name=best_name,
-                    confidence=best_conf,
-                ))
+            name, conf = self._match_champion(slot_crop)
+            if name != "Unknown":
+                detected.append(DetectedChampion(name=name, confidence=conf))
 
         return detected
 

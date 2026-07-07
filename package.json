@@ -9,7 +9,9 @@
     "build:frontend": "cd frontend && vite build",
     "start:backend": "python backend/main.py",
     "start:demo": "python backend/main.py --demo",
+    "start:sim": "python backend/main.py --sim",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run start:demo\" \"sleep 3 && npm start\"",
+    "dev:sim": "concurrently \"npm run dev:frontend\" \"npm run start:sim\" \"sleep 3 && npm start\"",
     "package": "electron-builder"
   },
   "dependencies": {

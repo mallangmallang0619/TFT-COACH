@@ -43,6 +43,19 @@ def main():
         "--demo", action="store_true",
         help="Run in demo mode with simulated game data (no screen capture)"
     )
+    parser.add_argument(
+        "--sim", action="store_true",
+        help="Run the real detector+coach pipeline on synthesized board frames "
+             "(no screen capture), cycling through comps for the frontend"
+    )
+    parser.add_argument(
+        "--sim-comps", default=None,
+        help="Comma-separated comp slugs for --sim (default: a built-in rotation)"
+    )
+    parser.add_argument(
+        "--sim-dwell", type=float, default=6.0,
+        help="Seconds to show each board in --sim mode (default: 6)"
+    )
     parser.add_argument("--port", type=int, default=None, help="WebSocket port override")
     args = parser.parse_args()
 
@@ -57,7 +70,15 @@ def main():
     logger.info("  TFT COACH — Desktop Overlay Backend")
     logger.info("=" * 60)
 
-    if args.demo:
+    if args.sim:
+        logger.info("Running in SIM MODE (synthesized frames → real detector+coach)")
+        from sim_server import SimulationServer
+        comps = (
+            [s.strip() for s in args.sim_comps.split(",") if s.strip()]
+            if args.sim_comps else None
+        )
+        server = SimulationServer(comps=comps, dwell_seconds=args.sim_dwell)
+    elif args.demo:
         logger.info("Running in DEMO MODE (simulated game data)")
         # Lazy import — demo_server only needs websockets + pydantic, not opencv/mss
         from demo_server import DemoServer

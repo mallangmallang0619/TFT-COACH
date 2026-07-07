@@ -232,6 +232,14 @@ def parse_comps(html: str) -> list[dict]:
 
 # Strip a leading set-prefix like "TFT17_" or "TFT_Item_"/"TFT_Augment_".
 _API_PREFIX_RE = re.compile(r"^TFT\d*(?:_(?:Item|Augment))?_")
+
+# Display-name overrides keyed by the prefix-stripped apiName, lowercased.
+# TFT Academy ships some units under internal codenames that don't match the
+# in-game champion name; map them here so the scrape stays human-readable.
+# 'TFT17_IvernMinion' is the in-game champion Meepsie.
+_APINAME_OVERRIDES = {
+    "ivernminion": "Meepsie",
+}
 # Insert a space at lower→upper transitions and letter→digit transitions, so
 # "TahmKench" → "Tahm Kench" and "MakeshiftArmor1" → "Makeshift Armor 1".
 _CAMEL_SPLIT_RE = re.compile(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Za-z])(?=\d)")
@@ -311,6 +319,9 @@ def _human_name(api_name: str) -> str:
     possible. Falls back to the camelCase-split label for unknown names.
     """
     stripped = _API_PREFIX_RE.sub("", api_name)
+    override = _APINAME_OVERRIDES.get(stripped.lower())
+    if override is not None:
+        return override
     split = _CAMEL_SPLIT_RE.sub(" ", stripped)
     return canonical_name(split)
 

@@ -1,23 +1,51 @@
 {
-  "timestamp": 1781318568.2906282,
+  "timestamp": 1782676155.194735,
   "frame_number": 1,
-  "detection_ms": 9.456872940063477,
-  "phase": "not_in_game",
-  "phase_confidence": 0.7,
-  "stage": "1-1",
+  "detection_ms": 1850.8901596069336,
+  "phase": "planning",
+  "phase_confidence": 0.6,
+  "stage": "?",
   "stage_confidence": 0.0,
-  "player_hp": 100,
+  "player_hp": 0,
   "gold": 0,
-  "level": 1,
+  "level": 0,
   "xp_current": 0,
   "xp_needed": 2,
   "board_champions": [],
-  "bench_champions": [],
+  "bench_champions": [
+    {
+      "name": "Milio",
+      "star_level": 1,
+      "cost": 1,
+      "items": [],
+      "board_row": null,
+      "board_col": null,
+      "confidence": 0.8033434152603149
+    },
+    {
+      "name": "Shen",
+      "star_level": 1,
+      "cost": 1,
+      "items": [],
+      "board_row": null,
+      "board_col": null,
+      "confidence": 0.8454036116600037
+    },
+    {
+      "name": "Shen",
+      "star_level": 1,
+      "cost": 1,
+      "items": [],
+      "board_row": null,
+      "board_col": null,
+      "confidence": 0.8050659894943237
+    }
+  ],
   "held_components": [],
   "component_ids": [],
   "active_synergies": [],
   "augment_options": [],
   "selected_augments": [],
   "advice": null,
-  "overall_confidence": "low"
+  "overall_confidence": "guess"
 }
