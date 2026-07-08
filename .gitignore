@@ -96,3 +96,7 @@ Desktop.ini
 # ─── Misc ─────────────────────────────────────────────────────────────────────
 *.log
 .cache/
+
+# Diagnostic output (diagnose_capture.py writes timestamped frames here)
+backend/_debug/diagnose_*.png
+backend/_debug/hexes_*/

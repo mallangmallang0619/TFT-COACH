@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Toggle between click-through and interactive mode
   toggleInteraction: () => ipcRenderer.send("toggle-interaction"),
 
+  // Explicitly set interactivity (used for hover-to-interact)
+  setInteractive: (enabled) => ipcRenderer.send("set-interactive", enabled),
+
   // Resize the overlay window
   resizeOverlay: (width, height) =>
     ipcRenderer.send("resize-overlay", { width, height }),

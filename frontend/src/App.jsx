@@ -70,52 +70,55 @@ const STAGES = [
 const POSITIONING_TEMPLATES = [
   {
     name: "Standard Frontline",
-    desc: "Tanks front, carry safe in back corner",
+    desc: "Tanks soak center, carry tucked in the back corner",
     layout: [
-      ["T","T","T",0,0,0,0],
-      [0,0,0,0,0,0,0],
-      [0,0,0,0,"S","S",0],
-      [0,0,0,0,0,0,"C"],
+      [0,"T","T","T","T",0,0],
+      [0,0,0,0,0,"T",0],
+      [0,0,0,0,0,"S","S"],
+      [0,0,0,0,"S","C","C"],
     ],
     tips: [
-      "Main carry in far back corner — maximum distance from enemy melee",
-      "Tanks across the front row absorb aggro for your backline",
-      "Supports adjacent to carry let aura items (Protector's Vow, Evenshroud) reach them",
+      "Main carry second-from-corner — the true corner eats assassin jumps and Zephyr first",
+      "Tanks slightly off-center toward the carry side shorten the enemy's path to them, not to your carry",
+      "Supports adjacent to the carry so aura items (Protector's Vow, Evenshroud, Spirit Visage) cover them",
+      "Mirror the whole shape left if the strongest enemy carry sits on your right",
     ],
   },
   {
     name: "Anti-Assassin",
-    desc: "Clump the corner so assassins can't reach your carry",
+    desc: "Corner clump — no landing hexes next to your carry",
     layout: [
-      [0,0,0,0,0,"T","T"],
-      [0,0,0,0,0,"T","S"],
-      [0,0,0,0,0,0,"S"],
-      [0,0,0,0,0,0,"C"],
+      [0,0,0,0,0,0,0],
+      [0,0,0,0,"T","T","T"],
+      [0,0,0,0,"S","C","S"],
+      [0,0,0,0,"S","C","S"],
     ],
     tips: [
-      "Assassins jump to the farthest unit — surround your carry to block paths",
-      "Quicksilver on the carry blocks the CC chain that usually kills them",
-      "Counters Diana, Kai'Sa, and other Rogue/Challenger divers",
+      "Assassins leap to the hex behind your backline — fill every hex around the carry so there's nowhere to land",
+      "Pull the clump one row forward (rows 1-3, not the wall) so divers can't wrap behind it",
+      "Quicksilver on the carry blocks the opening CC chain that usually kills them",
+      "Scout: if no assassins/divers this lobby, switch back to Standard — clumping loses to AoE",
     ],
   },
   {
     name: "Spread",
-    desc: "Maximize spacing vs AoE / burn comps",
+    desc: "One-hex gaps vs AoE, burn, and Ionic Spark",
     layout: [
-      ["T",0,"T",0,"T",0,0],
+      ["T",0,"T",0,"T",0,"T"],
       [0,0,0,0,0,0,0],
-      [0,"S",0,"S",0,0,"S"],
-      ["C",0,0,0,0,0,"C"],
+      ["S",0,0,"S",0,0,"S"],
+      [0,"C",0,0,0,"C",0],
     ],
     tips: [
-      "Counters Morellonomicon, Sunfire Cape, and other AoE/burn damage",
-      "Leave at least one hex of gap between units to limit splash",
-      "Sacrifice some adjacency synergy for survivability",
+      "Counters Morellonomicon, Sunfire, Statikk Shiv chains, and big AoE ults",
+      "Keep at least one empty hex between every pair of units — splash needs adjacency",
+      "Split your two damage threats to opposite sides so one ult can't hit both",
+      "Aura items lose value spread out — swap them onto the frontline before committing",
     ],
   },
   {
     name: "Backline Stack",
-    desc: "All units back row for maximum distance",
+    desc: "Everything on the back wall for max distance",
     layout: [
       [0,0,0,0,0,0,0],
       [0,0,0,0,0,0,0],
@@ -824,6 +827,23 @@ export default function App() {
   const { gameState, gameData, isConnected, isDemo, demoInfo, serverStats, sendCommand } = useCoachSocket();
   const [devOpen, setDevOpen] = useState(false);
 
+  // Electron overlay: hover-to-interact. The window is click-through by
+  // default so game clicks pass underneath; mouse-over the panel asks the
+  // main process to capture the mouse, mouse-out releases it again.
+  const inElectron = typeof window !== "undefined" && !!window.electronAPI;
+  const [isInteractive, setIsInteractive] = useState(!inElectron);
+  useEffect(() => {
+    if (!inElectron) return;
+    window.electronAPI.onInteractionMode?.((interactive) =>
+      setIsInteractive(interactive)
+    );
+  }, [inElectron]);
+  // Only request interactivity on enter — release is handled by the main
+  // process polling the cursor position, since renderer mouseleave events
+  // fire spuriously when the click-through state toggles.
+  const handleMouseEnter = () => inElectron && window.electronAPI.setInteractive?.(true);
+  const handleMouseLeave = () => {};
+
   const itemRecipes = useMemo(
     () => (gameData?.item_recipes ?? []).map((r) => ({ ...r, icon: ITEM_ICONS[r.name] || "🔧" })),
     [gameData]
@@ -892,12 +912,15 @@ export default function App() {
   const warn = slamUrgency.color;
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "rgba(13, 14, 18, 0.92)",
-      color: "#e4e5ea",
-      fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
-    }}>
+    <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        minHeight: "100vh",
+        background: "rgba(13, 14, 18, 0.92)",
+        color: "#e4e5ea",
+        fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
+      }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&family=Orbitron:wght@700;900&display=swap');
         :root { --mono: 'JetBrains Mono', 'Fira Code', monospace; }
@@ -927,6 +950,21 @@ export default function App() {
             TFT COACH
           </div>
           <ConnectionBadge isConnected={isConnected} isDemo={isDemo} />
+          {inElectron && (
+            <span
+              title={isInteractive
+                ? "Interactive — clicks stay on the overlay"
+                : "Ghost mode — clicks pass through to the game (hover to interact)"}
+              style={{
+                fontFamily: "var(--mono)", fontSize: "9px", fontWeight: 700,
+                letterSpacing: "1px", padding: "3px 8px", borderRadius: "5px",
+                color: isInteractive ? "#4ade80" : "#8b8fa3",
+                border: `1px solid ${isInteractive ? "#4ade8040" : "#2a2d35"}`,
+              }}
+            >
+              {isInteractive ? "🖱 ACTIVE" : "👻 GHOST"}
+            </span>
+          )}
         </div>
         <div style={{ display: "flex", gap: "6px" }}>
           {isDemo && (
@@ -1406,6 +1444,42 @@ export default function App() {
                   </div>
                 )}
 
+                {/* ── META LAYOUT — TFT Academy's board for your comp ── */}
+                {compSuggestions[0]?.board_layout?.length > 0 && (
+                  <>
+                    <div style={{
+                      fontSize: "9px", color: ACCENT2, marginBottom: "8px",
+                      fontFamily: "var(--mono)", letterSpacing: "2px",
+                      display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap",
+                    }}>
+                      META LAYOUT — {(compSuggestions[0].tftacademy_name || compSuggestions[0].name).toUpperCase()}
+                      {compSuggestions[0].tftacademy_tier && (
+                        <TierBadge tier={compSuggestions[0].tftacademy_tier} />
+                      )}
+                    </div>
+                    <div className="card" style={{ marginBottom: "14px" }}>
+                      <LiveBoard
+                        champions={compSuggestions[0].board_layout.map((u) => ({
+                          name: u.name,
+                          board_row: Math.floor(u.board_index / 7),
+                          board_col: u.board_index % 7,
+                          star_level: u.stars,
+                          items: u.items,
+                          cost: u.cost,
+                        }))}
+                        itemIcons={ITEM_ICONS}
+                      />
+                      <div style={{
+                        marginTop: "8px", fontSize: "10px", color: "#8b8fa3",
+                        lineHeight: 1.5,
+                      }}>
+                        TFT Academy's recommended final board for your top comp —
+                        stars show the target star level, icons the target items.
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 {/* ── REFERENCE TEMPLATES ── */}
                 <div style={{
                   fontSize: "9px", color: "#8b8fa3", marginBottom: "8px",
@@ -1517,8 +1591,16 @@ export default function App() {
                     {augmentRatings.map((aug, i) => {
                       const tierColor = aug.tier === "Prismatic" ? "#ff4757" : aug.tier === "Gold" ? "#ffd32a" : "#c0c0c0";
                       return (
-                        <div key={i} className="card" style={{ marginBottom: "8px", borderLeft: `3px solid ${TIER_COLORS[aug.rating] || "#555"}` }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                        <div key={i} className="card" style={{
+                          marginBottom: "8px",
+                          borderLeft: `3px solid ${TIER_COLORS[aug.rating] || "#555"}`,
+                          ...(aug.pick && {
+                            border: "1px solid #2ed57355",
+                            borderLeft: "3px solid #2ed573",
+                            background: "rgba(46,213,115,0.05)",
+                          }),
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
                             <span style={{ fontWeight: 600, fontSize: "14px" }}>{aug.name}</span>
                             <TierBadge tier={aug.rating} />
                             <span style={{
@@ -1527,7 +1609,23 @@ export default function App() {
                               borderRadius: "3px", fontFamily: "var(--mono)",
                               letterSpacing: "1px", border: `1px solid ${tierColor}22`,
                             }}>{aug.tier?.toUpperCase()}</span>
+                            {aug.pick && (
+                              <span style={{
+                                fontSize: "8px", fontWeight: 800, color: "#2ed573",
+                                background: "#2ed57318", padding: "2px 7px",
+                                borderRadius: "3px", fontFamily: "var(--mono)",
+                                letterSpacing: "1px", border: "1px solid #2ed57344",
+                              }}>★ PICK</span>
+                            )}
                           </div>
+                          {(aug.reasons || []).map((reason, ri) => (
+                            <div key={ri} style={{
+                              fontSize: "10px", color: "#2ed573", marginBottom: "4px",
+                              display: "flex", gap: "5px", alignItems: "center",
+                            }}>
+                              <span>▸</span><span>{reason}</span>
+                            </div>
+                          ))}
                           <p style={{ fontSize: "11px", color: "#a0a3b0", lineHeight: 1.4 }}>
                             💡 {aug.tip}
                           </p>

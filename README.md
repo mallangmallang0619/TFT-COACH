@@ -93,7 +93,35 @@ npm run dev:frontend          # terminal 2
 npm start                     # terminal 3 (Electron overlay)
 ```
 
-Overlay hotkeys: `Ctrl+Shift+T` toggle click-through · `Ctrl+Shift+H` show/hide · `Ctrl+Shift+Q` quit.
+The overlay is click-through ("ghost mode") by default so game clicks pass
+underneath — **hover over the panel to interact with it**; move the cursor
+off and it goes back to ghost mode. The badge in the header shows the
+current mode. Hotkeys: `Ctrl+Shift+T` manual click-through toggle ·
+`Ctrl+Shift+H` show/hide · `Ctrl+Shift+Q` quit.
+
+### Troubleshooting live detection
+
+If HP/gold/components/units read wrong (or not at all) in live mode, run
+the diagnostic while the game is open:
+
+```bash
+python backend/diagnose_capture.py               # capture the game window
+python backend/diagnose_capture.py --fullscreen  # or the whole monitor
+python backend/diagnose_capture.py --dump-hexes  # also save per-hex crops
+```
+
+It writes an annotated PNG to `backend/_debug/` with every ROI drawn on the
+frame and prints what the detector read. Each labeled box should sit exactly
+on its UI element — if they're all shifted, the capture grabbed the wrong
+window or region; if one box is off, that ROI needs recalibrating in
+`config.GameROIs`.
+
+**Known limitation — unit identification:** board and bench units render as
+3D models, which the CDN portrait templates cannot match, so unit names are
+currently only detected in sim mode. Live games still get synergies (read
+from the HUD trait panel), HP/gold/stage/level OCR, and item advice. The
+path to live unit ID is collecting in-game crops via `--dump-hexes` and
+building a per-set template library from them.
 
 ### Template Images
 
@@ -196,6 +224,15 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] Auto-update tier list for new patches (TFT Academy sync)
 - [x] Augment database — full set coverage synced from TFT Academy's API, with fuzzy OCR-name matching
 - [ ] In-game UI templates for live mode (`capture_templates.py` — needs a live game)
-- [ ] Live-mode validation against real gameplay footage
 - [x] Current-set auto-detection (trait fetch + augments API track the newest set; no constant to bump)
+- [x] Live HUD detection validated on a real frame (stage/HP/gold/level OCR + trait panel — `test_real_frame.py`)
+- [x] Trait-panel synergy detection for live games (drives comp advice without unit identification)
+- [x] Hover-to-interact overlay (ghost mode by default, cursor-poll release)
+- [x] Detection diagnostic tool (`diagnose_capture.py` — annotated ROI overlay + per-hex crop dump)
+- [x] Context-aware comp direction (held components + taken augments boost matching comps)
+- [x] Contextual augment picks (offers scored by tier + comp fit + active synergies, best flagged ★ PICK)
+- [x] Meta board layouts (Position tab renders TFT Academy's recommended placement, stars, and items for your comp)
+- [ ] Live unit identification — board/bench are 3D models; needs an in-game template library (collect with `diagnose_capture.py --dump-hexes`)
+- [ ] Player-HP row tracking — the right-side player list reorders by standing, so the fixed HP ROI reads the wrong row late-game
+- [ ] Opponent scouting + positioning prediction (read enemy boards during combat, suggest counter-positioning)
 - [ ] New-set data migration — `game_data.py` CHAMPIONS/TRAITS/META_COMPS seeds are still hand-written per set; templates need a `--force` re-fetch
