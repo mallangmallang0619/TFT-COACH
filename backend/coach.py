@@ -30,6 +30,7 @@ from game_data import (
     SHRED_ITEMS,
     BURN_ITEMS,
     find_augment_rating,
+    _normalize_augment_name as _norm_augment,
 )
 from synergy import compute_active_synergies, detect_comp_direction
 
@@ -426,6 +427,8 @@ class Coach:
             state.active_synergies,
             state.board_champions,
             state.bench_champions,
+            component_ids=state.component_ids,
+            selected_augments=state.selected_augments,
         )
         if not suggestions:
             return
@@ -470,31 +473,83 @@ class Coach:
 
     # ── Augment Analysis ──────────────────────────────────────────────────────
 
+    # Base value of a tier-list rating when scoring an offer. Unknown
+    # augments land between B and C — unknown ≠ bad, just unproven.
+    _AUGMENT_RATING_SCORE = {"S": 4.0, "A": 3.0, "B": 2.0, "C": 1.0}
+    _AUGMENT_COMP_BOOST = 1.5     # comp we're building recommends this augment
+    _AUGMENT_TRAIT_BOOST = 1.0    # trait-specific augment for an active synergy
+
     def _analyze_augments(self, state: GameState, advice: CoachingAdvice):
-        """Rate detected augment options."""
+        """
+        Rate the offered augments in context, not just by tier list.
+
+        Each offer starts from its TFT Academy rating, then gets boosted
+        when it's on the recommended-augments list of a comp the player is
+        already building (comp_suggestions are computed before this runs)
+        or when it's a trait augment for a synergy that's active on their
+        board. The best offer is flagged `pick: true` and surfaced as a tip.
+        """
+        if not state.augment_options:
+            return
+
+        # {normalized augment name → comp that recommends it}, strongest
+        # (higher-scored) comps first so the attribution names the comp
+        # the player is most likely going.
+        rec_by_augment: dict[str, str] = {}
+        for sug in reversed(advice.comp_suggestions):
+            label = sug.tftacademy_name or sug.name
+            for aug_name in sug.recommended_augments:
+                rec_by_augment[_norm_augment(aug_name)] = label
+
+        active_traits = [s.name for s in state.active_synergies if s.is_active]
+
+        rated: list[dict] = []
         for aug in state.augment_options:
             # Fuzzy lookup — OCR'd names are noisy, so exact misses fall
             # back to normalized/close matching against the database.
             matched_name, rating_data = find_augment_rating(aug.name)
+            display = matched_name or aug.name
             if rating_data:
-                advice.augment_ratings.append({
-                    "name": matched_name,
-                    "tier": aug.tier,
-                    "rating": rating_data["rating"],
-                    "tip": rating_data["tip"],
-                    "slot_index": aug.slot_index,
-                })
+                rating = rating_data["rating"]
+                tip = rating_data["tip"]
+                score = self._AUGMENT_RATING_SCORE.get(rating, 1.5)
             else:
-                advice.augment_ratings.append({
-                    "name": aug.name,
-                    "tier": aug.tier,
-                    "rating": "?",
-                    "tip": (
-                        f"'{aug.name}' is not in the database — "
-                        "evaluate based on your current comp and items."
-                    ),
-                    "slot_index": aug.slot_index,
-                })
+                rating = "?"
+                tip = (
+                    f"'{aug.name}' is not in the database — "
+                    "evaluate based on your current comp and items."
+                )
+                score = 1.5
+
+            reasons: list[str] = []
+            rec_comp = rec_by_augment.get(_norm_augment(display))
+            if rec_comp:
+                score += self._AUGMENT_COMP_BOOST
+                reasons.append(f"Recommended for {rec_comp} — your current direction")
+            trait_hit = next(
+                (t for t in active_traits if t.lower() in display.lower()), None
+            )
+            if trait_hit:
+                score += self._AUGMENT_TRAIT_BOOST
+                reasons.append(f"Amplifies your active {trait_hit} synergy")
+
+            rated.append({
+                "name": display,
+                "tier": aug.tier,
+                "rating": rating,
+                "tip": tip,
+                "slot_index": aug.slot_index,
+                "context_score": round(score, 1),
+                "reasons": reasons,
+                "pick": False,
+            })
+
+        best = max(rated, key=lambda r: r["context_score"])
+        best["pick"] = True
+        advice.augment_ratings = rated
+
+        why = f" — {best['reasons'][0].lower()}" if best["reasons"] else ""
+        advice.tips.append(f"Augment pick: {best['name']}{why}")
 
     # ── General Tips ──────────────────────────────────────────────────────────
 

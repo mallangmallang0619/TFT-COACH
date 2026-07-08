@@ -481,6 +481,103 @@ def test_augments_apply_and_fuzzy():
     return "live+curated merge OK, fuzzy lookup OK"
 
 
+def _dark_star_board():
+    """Board leaning Dark Star — shared by the context-scoring tests."""
+    from game_state import DetectedChampion
+    return [
+        DetectedChampion(name="Jhin",        star_level=2, board_row=0, board_col=6),
+        DetectedChampion(name="Kai'Sa",      star_level=2, board_row=0, board_col=5),
+        DetectedChampion(name="Karma",       star_level=1, board_row=0, board_col=0),
+        DetectedChampion(name="Lissandra",   star_level=2, board_row=3, board_col=3),
+        DetectedChampion(name="Mordekaiser", star_level=2, board_row=3, board_col=2),
+    ]
+
+
+def test_context_comp_scoring():
+    """Held components and taken augments boost the comps they fit."""
+    from synergy import detect_comp_direction, compute_active_synergies
+    from game_data import META_COMPS
+
+    board = _dark_star_board()
+    synergies = compute_active_synergies(board)
+
+    base = detect_comp_direction(synergies, board)
+    assert base, "board should match at least one comp"
+    primary = base[0]
+    assert primary.board_layout, "META_COMPS-backed suggestion should carry a board layout"
+    assert all("board_index" in u and "name" in u for u in primary.board_layout)
+
+    # Augment context: take an augment the primary comp recommends → its
+    # score must rise and a context note must appear.
+    meta = next((c for c in META_COMPS if c["name"] == (primary.tftacademy_name or primary.name)), None)
+    rec_augments = [a["name"] for a in ((meta or {}).get("detail") or {}).get("augments", [])]
+    assert rec_augments, "primary comp should have recommended augments in the cache"
+
+    boosted = detect_comp_direction(
+        synergies, board, selected_augments=[rec_augments[0]]
+    )
+    boosted_primary = next((s for s in boosted if s.name == primary.name), None)
+    assert boosted_primary is not None
+    assert boosted_primary.match_score > primary.match_score, \
+        f"augment match should boost score: {boosted_primary.match_score} vs {primary.match_score}"
+    assert boosted_primary.context_notes, "context note should explain the boost"
+
+    # Item context: hold components that build the comp's items → score rises.
+    item_boosted = detect_comp_direction(
+        synergies, board,
+        component_ids=["recurve_bow", "sparring_gloves", "bf_sword"],
+    )
+    item_primary = next((s for s in item_boosted if s.name == primary.name), None)
+    assert item_primary is not None and item_primary.match_score >= primary.match_score
+
+    return (
+        f"layout={len(primary.board_layout)} units, "
+        f"augment boost +{boosted_primary.match_score - primary.match_score:.3f}, "
+        f"item boost +{item_primary.match_score - primary.match_score:.3f}"
+    )
+
+
+def test_augment_pick_context():
+    """Offered augments are ranked in context and the best is flagged."""
+    from game_state import GameState, GamePhase, DetectedAugment
+    from synergy import detect_comp_direction, compute_active_synergies
+    from coach import Coach
+    from game_data import META_COMPS
+
+    board = _dark_star_board()
+    synergies = compute_active_synergies(board)
+    primary = detect_comp_direction(synergies, board)[0]
+    meta = next((c for c in META_COMPS if c["name"] == (primary.tftacademy_name or primary.name)), None)
+    rec_aug = ((meta or {}).get("detail") or {}).get("augments", [])[0]["name"]
+
+    state = GameState(
+        phase=GamePhase.AUGMENT_SELECT,
+        stage="4-2",
+        player_hp=70,
+        gold=30,
+        board_champions=board,
+        augment_options=[
+            DetectedAugment(name=rec_aug,          tier="Gold", slot_index=0),
+            DetectedAugment(name="Pandora's Items", tier="Gold", slot_index=1),
+            DetectedAugment(name="Nonexistent Augment Xyz", tier="Gold", slot_index=2),
+        ],
+    )
+    advice = Coach().analyze(state)
+    assert len(advice.augment_ratings) == 3
+    picks = [r for r in advice.augment_ratings if r["pick"]]
+    assert len(picks) == 1, f"exactly one pick expected, got {len(picks)}"
+
+    rec_entry = next(r for r in advice.augment_ratings if r["slot_index"] == 0)
+    assert any("Recommended for" in reason for reason in rec_entry["reasons"]), \
+        f"comp-recommended augment should carry a reason, got {rec_entry['reasons']}"
+    assert rec_entry["context_score"] > next(
+        r for r in advice.augment_ratings if r["slot_index"] == 2
+    )["context_score"]
+    assert any(t.startswith("Augment pick:") for t in advice.tips)
+
+    return f"pick={picks[0]['name']} (score {picks[0]['context_score']}), reasons OK"
+
+
 def test_set_autodetect():
     """Current-set detection from CDragon payload and comp slugs."""
     from tftacademy_live import current_set_number, CURRENT_SET_NUMBER
@@ -665,6 +762,8 @@ def main():
     test("Augments parser", test_augments_parser)
     test("Augments apply + fuzzy lookup", test_augments_apply_and_fuzzy)
     test("Set auto-detection", test_set_autodetect)
+    test("Context comp scoring", test_context_comp_scoring)
+    test("Augment pick context", test_augment_pick_context)
     test("TFT Academy debounce", test_tftacademy_debounce)
 
     print("\n[Dependencies]")

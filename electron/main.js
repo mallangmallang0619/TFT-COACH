@@ -105,13 +105,26 @@ function setClickThrough(enabled) {
 }
 
 function registerHotkeys() {
+  // globalShortcut.register returns false when another app already owns
+  // the accelerator — surface that instead of failing silently.
+  const register = (accelerator, handler) => {
+    const ok = globalShortcut.register(accelerator, handler);
+    if (!ok) {
+      console.warn(
+        `[TFT Coach] Could not register hotkey ${accelerator} — ` +
+        `another application may already use it`
+      );
+    }
+    return ok;
+  };
+
   // Toggle click-through
-  globalShortcut.register("Ctrl+Shift+T", () => {
+  register("Ctrl+Shift+T", () => {
     setClickThrough(isInteractive); // Toggle
   });
 
   // Show/hide overlay
-  globalShortcut.register("Ctrl+Shift+H", () => {
+  register("Ctrl+Shift+H", () => {
     if (isVisible) {
       overlayWindow.hide();
       isVisible = false;
@@ -123,7 +136,7 @@ function registerHotkeys() {
   });
 
   // Quit
-  globalShortcut.register("Ctrl+Shift+Q", () => {
+  register("Ctrl+Shift+Q", () => {
     console.log("[TFT Coach] Quitting...");
     overlayWindow.destroy();
     app.quit();
@@ -150,6 +163,43 @@ app.on("window-all-closed", () => {
 // Frontend can request interaction mode toggle
 ipcMain.on("toggle-interaction", () => {
   setClickThrough(isInteractive);
+});
+
+// Hover-to-interact: the renderer still receives mouse events while
+// click-through (setIgnoreMouseEvents forwards them), so it asks for
+// interactivity when the cursor enters the panel. Release is decided
+// here by polling the real cursor position against the window bounds —
+// renderer mouseleave can't be trusted for it, because toggling
+// setIgnoreMouseEvents fires synthetic enter/leave events that would
+// flap the state. Ctrl+Shift+T remains as a manual fallback.
+let hoverReleaseTimer = null;
+
+function startHoverRelease() {
+  if (hoverReleaseTimer) return;
+  hoverReleaseTimer = setInterval(() => {
+    if (!overlayWindow || !isInteractive) {
+      clearInterval(hoverReleaseTimer);
+      hoverReleaseTimer = null;
+      return;
+    }
+    const { x, y } = screen.getCursorScreenPoint();
+    const b = overlayWindow.getBounds();
+    const inside = x >= b.x && x < b.x + b.width && y >= b.y && y < b.y + b.height;
+    if (!inside) {
+      setClickThrough(true);
+      clearInterval(hoverReleaseTimer);
+      hoverReleaseTimer = null;
+    }
+  }, 250);
+}
+
+ipcMain.on("set-interactive", (event, enabled) => {
+  if (enabled && !isInteractive) {
+    setClickThrough(false);
+    startHoverRelease();
+  }
+  // Explicit disables from the renderer are ignored — cursor polling
+  // owns the release to avoid enter/leave feedback loops.
 });
 
 // Frontend can request window resize

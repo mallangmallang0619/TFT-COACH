@@ -124,6 +124,16 @@ class CompSuggestion(BaseModel):
     tftacademy_tier: Optional[str] = None      # S / A / B / C / X
     tftacademy_trend: Optional[str] = None     # rising / falling / new / ""
 
+    # ── Scraped comp detail (present for META_COMPS-backed suggestions) ──
+    # board_layout: TFT Academy's recommended final board, one entry per
+    # unit: {"name", "board_index" (0-27; row = idx // 7, row 0 = front),
+    # "stars", "items": [item names]}.
+    board_layout: list[dict] = Field(default_factory=list)
+    # Augments TFT Academy recommends for this comp (display names).
+    recommended_augments: list[str] = Field(default_factory=list)
+    # Human-readable notes on why the score got context boosts (items/augments).
+    context_notes: list[str] = Field(default_factory=list)
+
 
 class CoachingAdvice(BaseModel):
     """Complete coaching output for the current game state."""

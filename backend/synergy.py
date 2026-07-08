@@ -26,10 +26,16 @@ from game_data import (
     CHAMPIONS,
     TRAITS,
     COMPS,
+    ITEM_RECIPES,
     META_COMPS,
     META_COMPS_BY_CARRY,
+    _normalize_augment_name,
 )
 from tftacademy_live import canonical_name
+
+# Item-name → recipe lookup for translating a comp's build items into the
+# components the player would need to hold.
+_RECIPE_BY_NAME: dict[str, tuple] = {r["name"]: r["recipe"] for r in ITEM_RECIPES}
 
 
 # ── Active Synergies ──────────────────────────────────────────────────────────
@@ -62,6 +68,17 @@ def compute_active_synergies(
         for trait in data.get("traits", []):
             counts[trait] = counts.get(trait, 0) + 1
 
+    return synergies_from_counts(counts)
+
+
+def synergies_from_counts(counts: dict[str, int]) -> list[ActiveSynergy]:
+    """
+    Build ActiveSynergy entries from raw {trait: unit_count} tallies.
+
+    Split out of compute_active_synergies so other count sources — e.g. the
+    detector reading the HUD trait panel on live frames — produce identical
+    synergy objects.
+    """
     synergies: list[ActiveSynergy] = []
     for trait_name, count in counts.items():
         trait_data = TRAITS.get(trait_name)
@@ -175,6 +192,35 @@ def _split_cores_and_flexes(
     return cores, flexes
 
 
+def _layout_from_detail(detail: dict) -> list[dict]:
+    """Recommended final board from a scraped comp detail (0-27 hex indices)."""
+    return [
+        {
+            "name": canonical_name(u["name"]),
+            "board_index": u["boardIndex"],
+            "stars": u.get("stars", 1),
+            "items": [canonical_name(i["name"]) for i in (u.get("items") or [])],
+            "cost": CHAMPIONS.get(canonical_name(u["name"]), {}).get("cost", 1),
+        }
+        for u in (detail or {}).get("units") or []
+        if u.get("name") and u.get("boardIndex") is not None
+    ]
+
+
+def _item_names_from_detail(detail: dict) -> list[str]:
+    """All build items across a scraped comp's units (canonical names)."""
+    return [
+        canonical_name(i["name"])
+        for u in (detail or {}).get("units") or []
+        for i in (u.get("items") or [])
+    ]
+
+
+def _augment_names_from_detail(detail: dict) -> list[str]:
+    """Recommended augment display names from a scraped comp detail."""
+    return [a["name"] for a in (detail or {}).get("augments") or [] if a.get("name")]
+
+
 def build_comps_from_meta() -> list[dict]:
     """
     Convert scraped META_COMPS entries (with `detail.units`) into the same
@@ -201,6 +247,13 @@ def build_comps_from_meta() -> list[dict]:
         cores, flexes = _split_cores_and_flexes(units, main_carry_raw)
         target_traits = _derive_target_traits(unit_names)
 
+        # Recommended final-board layout (units with a boardIndex), the
+        # comp's item builds, and its recommended augments — used for
+        # positioning display and item/augment-aware scoring.
+        layout = _layout_from_detail(detail)
+        item_names = _item_names_from_detail(detail)
+        augment_names = _augment_names_from_detail(detail)
+
         result.append({
             "name":          meta["name"],
             "target_traits": target_traits,
@@ -214,6 +267,9 @@ def build_comps_from_meta() -> list[dict]:
             "_meta_tier":          meta.get("tier"),
             "_meta_slug":          meta.get("slug"),
             "_meta_trend":         meta.get("trend", ""),
+            "_meta_layout":        layout,
+            "_meta_item_names":    item_names,
+            "_meta_augments":      augment_names,
             "_source":             "meta",
         })
     return result
@@ -233,14 +289,81 @@ def get_active_comps() -> list[dict]:
     return dynamic + fallback
 
 
+def _item_fit(
+    comp_item_names: list[str],
+    component_ids: list[str],
+) -> tuple[float, str | None]:
+    """
+    How well the player's held components feed this comp's item builds.
+
+    Returns (fraction of held components the comp can use, note). Each build
+    item is decomposed into its two components via ITEM_RECIPES; components
+    the comp needs multiple times count multiple times.
+    """
+    if not comp_item_names or not component_ids:
+        return 0.0, None
+
+    needed: dict[str, int] = {}
+    for item_name in comp_item_names:
+        for comp_id in _RECIPE_BY_NAME.get(item_name, ()):
+            needed[comp_id] = needed.get(comp_id, 0) + 1
+
+    have: dict[str, int] = {}
+    for comp_id in component_ids:
+        have[comp_id] = have.get(comp_id, 0) + 1
+
+    matched = sum(min(n, have.get(c, 0)) for c, n in needed.items())
+    fit = matched / len(component_ids)
+    if matched == 0:
+        return 0.0, None
+
+    # Name one item the player can already work toward, for the tip.
+    example = next(
+        (i for i in comp_item_names
+         if any(c in have and have[c] > 0 for c in _RECIPE_BY_NAME.get(i, ()))),
+        None,
+    )
+    note = f"Your components build into {example}." if example else None
+    return fit, note
+
+
+def _augment_fit(
+    comp_augment_names: list[str],
+    selected_augments: list[str],
+) -> tuple[int, list[str]]:
+    """How many of the player's taken augments this comp recommends."""
+    if not comp_augment_names or not selected_augments:
+        return 0, []
+    comp_norm = {_normalize_augment_name(a): a for a in comp_augment_names}
+    matches = [
+        comp_norm[_normalize_augment_name(sel)]
+        for sel in selected_augments
+        if _normalize_augment_name(sel) in comp_norm
+    ]
+    return len(matches), matches
+
+
+# Context bonuses — additive on top of the unit/trait base score, so they
+# reorder close calls without letting an empty board "match" a comp.
+_ITEM_FIT_BONUS_MAX  = 0.10   # full bonus when every held component fits
+_AUGMENT_MATCH_BONUS = 0.15   # per taken augment the comp recommends
+_AUGMENT_BONUS_CAP   = 0.30
+
+
 def detect_comp_direction(
     synergies: list[ActiveSynergy],
     board_champions: list[DetectedChampion],
     bench_champions: list[DetectedChampion] | None = None,
     top_n: int = 3,
+    component_ids: list[str] | None = None,
+    selected_augments: list[str] | None = None,
 ) -> list[CompSuggestion]:
     """
     Rank comps by how well the current board matches each entry in COMPS.
+
+    Beyond unit/trait overlap, the score reacts to context: held components
+    that feed a comp's item builds and already-taken augments the comp
+    recommends both push that comp up the ranking.
 
     Returns up to `top_n` suggestions ordered by match score. The
     highest-scoring comp is flagged `is_primary=True` — that's what the
@@ -291,11 +414,50 @@ def detect_comp_direction(
 
         trait_score = sum(trait_progress) / len(trait_progress) if trait_progress else 0.0
 
-        # Combine into a 0-1 score
+        # Combine into a 0-1 base score
         match_score = min(1.0, (trait_score * _TRAIT_WEIGHT + unit_score) / (1 + _TRAIT_WEIGHT))
 
         if match_score < _MIN_VIABLE_SCORE:
             continue
+
+        # Resolve the TFT Academy entry early — its scraped detail feeds
+        # both the context bonuses and the layout payload. Dynamic comps
+        # already carry the detail fields; curated comps borrow them from
+        # whichever META_COMPS entry they match.
+        if "_meta_tier" in comp:
+            meta = {
+                "name":  comp["name"],
+                "tier":  comp["_meta_tier"],
+                "trend": comp.get("_meta_trend", ""),
+            }
+            layout = comp.get("_meta_layout") or []
+            comp_item_names = comp.get("_meta_item_names") or []
+            comp_augments = comp.get("_meta_augments") or []
+        else:
+            meta = _match_meta_comp(comp, board_names, syn_by_name)
+            detail = (meta or {}).get("detail") or {}
+            layout = _layout_from_detail(detail)
+            comp_item_names = _item_names_from_detail(detail)
+            comp_augments = _augment_names_from_detail(detail)
+
+        # Context boosts: held components that feed this comp's builds, and
+        # taken augments the comp recommends.
+        context_notes: list[str] = []
+        fit, item_note = _item_fit(comp_item_names, component_ids or [])
+        if fit > 0:
+            match_score = min(1.0, match_score + fit * _ITEM_FIT_BONUS_MAX)
+            if item_note:
+                context_notes.append(item_note)
+        aug_matches, matched_augs = _augment_fit(comp_augments, selected_augments or [])
+        if aug_matches:
+            match_score = min(
+                1.0,
+                match_score + min(_AUGMENT_BONUS_CAP, aug_matches * _AUGMENT_MATCH_BONUS),
+            )
+            context_notes.append(
+                f"Your {', '.join(matched_augs[:2])} augment"
+                f"{'s are' if aug_matches > 1 else ' is'} recommended for this comp."
+            )
 
         # Held vs missing units (board only — bench is "not yet played")
         held = sorted(cores_held + flexes_held, key=lambda n: 0 if n in cores else 1)
@@ -310,17 +472,6 @@ def detect_comp_direction(
             progress_parts.append(f"{cur}/{target} {trait_name}")
         progress = ", ".join(progress_parts)
 
-        # Look up TFT Academy tier rating. Dynamic comps already carry the
-        # metadata; curated comps still need the heuristic lookup.
-        if "_meta_tier" in comp:
-            meta = {
-                "name":  comp["name"],
-                "tier":  comp["_meta_tier"],
-                "trend": comp.get("_meta_trend", ""),
-            }
-        else:
-            meta = _match_meta_comp(comp, board_names, syn_by_name)
-
         # Build a one-line tip the coach can show directly
         tip = _format_direction_tip(
             comp["name"],
@@ -333,6 +484,9 @@ def detect_comp_direction(
             comp.get("playstyle", ""),
             meta,
         )
+
+        if context_notes:
+            tip = tip + " " + " ".join(context_notes)
 
         suggestions.append(CompSuggestion(
             name=comp["name"],
@@ -347,6 +501,9 @@ def detect_comp_direction(
             tftacademy_name=meta["name"] if meta else None,
             tftacademy_tier=meta["tier"] if meta else None,
             tftacademy_trend=meta.get("trend") if meta else None,
+            board_layout=layout,
+            recommended_augments=comp_augments,
+            context_notes=context_notes,
         ))
 
     suggestions.sort(key=lambda s: (-s.match_score, _meta_tier_order(s.tftacademy_tier)))

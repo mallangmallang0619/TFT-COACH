@@ -241,6 +241,12 @@ class Detector:
         if state.phase in (GamePhase.PLANNING, GamePhase.COMBAT):
             state.board_champions = self._detect_board_champions(frame)
             state.bench_champions = self._detect_bench_champions(frame)
+            # Live frames render units as 3D models the portrait templates
+            # can't identify — but the HUD trait panel is 2D and matches
+            # reliably. When hex matching comes up empty, read synergies
+            # from the panel so comp-direction coaching still works.
+            if not state.board_champions:
+                state.active_synergies = self._synergies_from_trait_panel(frame)
 
         # 5. Augment options (only during augment selection)
         if state.phase == GamePhase.AUGMENT_SELECT:
@@ -496,19 +502,21 @@ class Detector:
             return best_name, best_conf
         return "", best_conf
 
-    def _detect_traits(self, frame: np.ndarray) -> list[tuple[str, float]]:
-        """Scan the trait panel rows and return matched (trait, confidence).
+    def _detect_trait_rows(self, frame: np.ndarray) -> list[tuple[str, float, float]]:
+        """Scan the trait panel and return matched (trait, confidence, row_cy).
 
         Walks down the symbol column at the configured row pitch; rows whose
         symbol clears the threshold are reported in panel order. Duplicate names
         (a glyph matching two adjacent slots) are de-duplicated, keeping the best.
+        row_cy is the row's vertical center as a frame-height ratio, so callers
+        can read the count text sitting next to the symbol.
         """
         h, w = frame.shape[:2]
         p = TraitPanel()
         hw = p.symbol_w / 2
         hh = p.symbol_h / 2
 
-        best_by_name: dict[str, float] = {}
+        best_by_name: dict[str, tuple[float, float]] = {}   # name → (conf, cy)
         order: list[str] = []
         for i in range(p.max_rows):
             cy = p.first_row_cy + i * p.row_pitch
@@ -522,10 +530,50 @@ class Detector:
                 continue
             if name not in best_by_name:
                 order.append(name)
-            if conf > best_by_name.get(name, 0.0):
-                best_by_name[name] = conf
+            if conf > best_by_name.get(name, (0.0, 0.0))[0]:
+                best_by_name[name] = (conf, cy)
 
-        return [(n, best_by_name[n]) for n in order]
+        return [(n, best_by_name[n][0], best_by_name[n][1]) for n in order]
+
+    def _detect_traits(self, frame: np.ndarray) -> list[tuple[str, float]]:
+        """Matched trait-panel entries as (trait, confidence)."""
+        return [(n, conf) for n, conf, _ in self._detect_trait_rows(frame)]
+
+    def _synergies_from_trait_panel(self, frame: np.ndarray) -> list:
+        """
+        Build ActiveSynergy entries by reading the HUD trait panel.
+
+        This is the synergy source for live frames: board units render as 3D
+        models the portrait templates can't identify, but the panel's 2D trait
+        glyphs match reliably. The unit count is OCR'd from the number printed
+        right of each symbol; rows whose count can't be read fall back to the
+        trait's first breakpoint so the synergy still registers as active.
+        """
+        from synergy import synergies_from_counts
+        from game_data import TRAITS
+
+        h, w = frame.shape[:2]
+        p = TraitPanel()
+
+        counts: dict[str, int] = {}
+        for name, _conf, cy in self._detect_trait_rows(frame):
+            # Count text sits immediately right of the symbol column.
+            x1 = int((p.symbol_cx + p.symbol_w / 2) * w)
+            x2 = x1 + int(p.symbol_w * 0.9 * w)
+            y1 = int((cy - p.symbol_h / 2) * h)
+            y2 = int((cy + p.symbol_h / 2) * h)
+            crop = frame[max(0, y1):y2, max(0, x1):x2]
+            text = self._ocr_region(crop, whitelist="0123456789")
+            try:
+                count = int(text)
+            except ValueError:
+                count = 0
+            if count <= 0:
+                breakpoints = (TRAITS.get(name) or {}).get("breakpoints") or [1]
+                count = breakpoints[0]
+            counts[name] = count
+
+        return synergies_from_counts(counts)
 
     def _detect_board_champions(self, frame: np.ndarray) -> list[DetectedChampion]:
         """Detect champions on the board by sampling each hex position."""

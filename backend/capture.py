@@ -3,7 +3,6 @@ TFT Coach — Screen Capture Module
 
 Locates the TFT/League game window, captures frames at the configured FPS,
 and provides cropped ROI images to the detection pipeline.
-NEVER TESTED YET, PROBABLY BROKEN, MAYBE USELESS, PROCEED WITH CAUTION
 """
 
 from __future__ import annotations
@@ -12,6 +11,20 @@ import logging
 import time
 from dataclasses import dataclass
 from typing import Optional
+
+# On Windows, mss captures physical pixels but window coordinates come back
+# in DPI-virtualized units unless the process declares itself DPI-aware —
+# with display scaling ≠ 100% that shifts every crop. Declare awareness
+# before any window queries happen.
+if platform.system() == "Windows":
+    try:
+        import ctypes
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PER_MONITOR_AWARE
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
 
 try:
     import mss
@@ -75,32 +88,64 @@ class WindowFinder:
 
     @staticmethod
     def _find_windows() -> Optional[WindowRect]:
-        """Find window on Windows using pygetwindow."""
+        """Find the game window on Windows using pygetwindow.
+
+        The actual game renders in a window titled "League of Legends (TM)
+        Client"; the launcher/lobby is titled just "League of Legends".
+        pygetwindow does substring matching, so searching for the generic
+        title first would grab the lobby whenever both are open — search
+        most-specific first.
+        """
         try:
             import pygetwindow as gw
-            windows = gw.getWindowsWithTitle(GAME_WINDOW_TITLE)
-            if not windows:
-                # Try alternative titles
-                for alt_title in ["League of Legends (TM) Client", "Riot Games", "TFT"]:
-                    windows = gw.getWindowsWithTitle(alt_title)
-                    if windows:
-                        break
-            if not windows:
-                return None
-
-            win = windows[0]
-            if win.isMinimized:
-                logger.info("Game window is minimized")
-                return None
-
-            return WindowRect(
-                x=win.left,
-                y=win.top,
-                width=win.width,
-                height=win.height,
-            )
         except ImportError:
             logger.error("pygetwindow not installed — required on Windows")
+            return None
+
+        windows = []
+        for title in ("League of Legends (TM) Client", GAME_WINDOW_TITLE, "TFT"):
+            candidates = [
+                w for w in gw.getWindowsWithTitle(title)
+                if not w.isMinimized and w.width > 200 and w.height > 200
+            ]
+            if candidates:
+                windows = candidates
+                break
+        if not windows:
+            return None
+
+        win = windows[0]
+        rect = WindowFinder._client_rect_windows(win)
+        if rect:
+            return rect
+        return WindowRect(x=win.left, y=win.top, width=win.width, height=win.height)
+
+    @staticmethod
+    def _client_rect_windows(win) -> Optional[WindowRect]:
+        """Screen-space client area of a window (no title bar / borders).
+
+        In windowed mode the outer rect includes the title bar, which shifts
+        every ROI down by ~30px. Fullscreen/borderless windows have identical
+        client and outer rects, so this is safe for them too.
+        """
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            hwnd = win._hWnd
+            client = wintypes.RECT()
+            if not ctypes.windll.user32.GetClientRect(hwnd, ctypes.byref(client)):
+                return None
+            origin = wintypes.POINT(0, 0)
+            if not ctypes.windll.user32.ClientToScreen(hwnd, ctypes.byref(origin)):
+                return None
+            width = client.right - client.left
+            height = client.bottom - client.top
+            if width <= 0 or height <= 0:
+                return None
+            return WindowRect(x=origin.x, y=origin.y, width=width, height=height)
+        except Exception as e:
+            logger.debug(f"Client-rect lookup failed, using outer rect: {e}")
             return None
 
     @staticmethod
