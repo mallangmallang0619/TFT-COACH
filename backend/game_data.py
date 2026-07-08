@@ -61,7 +61,7 @@ ITEM_RECIPES: list[dict] = [
     {"recipe": ("giants_belt", "negatron_cloak"),    "name": "Evenshroud",         "tier": "B", "type": "utility", "slam": False, "shred": True,  "burn": False},
     {"recipe": ("giants_belt", "recurve_bow"),       "name": "Nashor's Tooth",     "tier": "B", "type": "carry",   "slam": False, "shred": False, "burn": False},
     {"recipe": ("giants_belt", "tear"),              "name": "Spirit Visage",      "tier": "B", "type": "tank", "slam": False, "shred": False, "burn": False},
-    {"recipe": ("giants_belt", "sparring_gloves"),   "name": "Guardbreaker",       "tier": "S", "type": "carry",   "slam": True, "shred": False, "burn": True},
+    {"recipe": ("giants_belt", "sparring_gloves"),   "name": "Striker's Flail",    "tier": "S", "type": "carry",   "slam": True, "shred": False, "burn": True},
 
     # ── Chain Vest ────────────────────────────────────────────────────────────
     {"recipe": ("chain_vest", "chain_vest"),         "name": "Bramble Vest",       "tier": "A", "type": "tank",    "slam": True, "shred": False, "burn": False},
@@ -72,8 +72,8 @@ ITEM_RECIPES: list[dict] = [
 
     # ── Negatron Cloak ────────────────────────────────────────────────────────
     {"recipe": ("negatron_cloak", "negatron_cloak"), "name": "Dragon's Claw",      "tier": "B", "type": "tank",    "slam": False, "shred": False, "burn": False},
-    {"recipe": ("negatron_cloak", "recurve_bow"),    "name": "Kraken Slayer ", "tier": "B", "type": "carry",   "slam": False, "shred": False, "burn": False},
-    {"recipe": ("negatron_cloak", "tear"),           "name": "Jaksho",   "tier": "A", "type": "support", "slam": True, "shred": False, "burn": False},
+    {"recipe": ("negatron_cloak", "recurve_bow"),    "name": "Kraken's Fury", "tier": "B", "type": "carry",   "slam": False, "shred": False, "burn": False},
+    {"recipe": ("negatron_cloak", "tear"),           "name": "Adaptive Helm",   "tier": "A", "type": "support", "slam": True, "shred": False, "burn": False},
     {"recipe": ("negatron_cloak", "sparring_gloves"),"name": "Quicksilver",        "tier": "A", "type": "carry",   "slam": False, "shred": False, "burn": False},
 
     # ── Recurve Bow ───────────────────────────────────────────────────────────
@@ -654,3 +654,57 @@ AUGMENT_RATINGS: dict[str, dict] = {
     "Reach for the Stars":  {"rating": "B", "tip": "Carry augment — Jax becomes a primary carry. Situational X-tier on TFT Academy."},
     "Heat Death":           {"rating": "B", "tip": "Carry augment — Mordekaiser carry. Situational X-tier on TFT Academy."},
 }
+
+
+# ── Augment lookup ────────────────────────────────────────────────────────────
+# OCR output is noisy ("Heroic Grab 8ag", stray punctuation, wrong case), so
+# augment lookups go exact → normalized → fuzzy instead of a plain dict hit.
+# AUGMENT_RATINGS is refreshed in place by tftacademy_live, so the normalized
+# index is rebuilt whenever the dict's size changes.
+
+import difflib as _difflib
+import re as _re
+
+_AUGMENT_NORM_RE = _re.compile(r"[^a-z0-9+]+")
+_augment_norm_index: dict[str, str] = {}
+_augment_norm_index_size = -1
+
+
+def _normalize_augment_name(name: str) -> str:
+    return _AUGMENT_NORM_RE.sub("", name.lower())
+
+
+def _augment_index() -> dict[str, str]:
+    global _augment_norm_index, _augment_norm_index_size
+    if len(AUGMENT_RATINGS) != _augment_norm_index_size:
+        _augment_norm_index = {
+            _normalize_augment_name(k): k for k in AUGMENT_RATINGS
+        }
+        _augment_norm_index_size = len(AUGMENT_RATINGS)
+    return _augment_norm_index
+
+
+def find_augment_rating(name: str) -> tuple[str | None, dict | None]:
+    """
+    Look up an (possibly OCR-mangled) augment name in AUGMENT_RATINGS.
+
+    Returns (canonical_name, rating_data), or (None, None) when nothing in
+    the database is a plausible match.
+    """
+    if not name:
+        return None, None
+    data = AUGMENT_RATINGS.get(name)
+    if data:
+        return name, data
+
+    index = _augment_index()
+    norm = _normalize_augment_name(name)
+    key = index.get(norm)
+    if key:
+        return key, AUGMENT_RATINGS[key]
+
+    close = _difflib.get_close_matches(norm, list(index), n=1, cutoff=0.8)
+    if close:
+        key = index[close[0]]
+        return key, AUGMENT_RATINGS[key]
+    return None, None

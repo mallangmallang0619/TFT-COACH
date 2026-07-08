@@ -536,7 +536,243 @@ def _fetch_comp_detail_blocking(slug: str) -> str:
     return _fetch_html_blocking(COMP_DETAIL_URL_TEMPLATE.format(slug=slug))
 
 
-#  Public API 
+#  Augment tier-list sync
+#
+# TFT Academy's augments *page* is client-rendered, but the page's own data
+# source is a plain JSON API (found in the SvelteKit bundle):
+#     GET /api/tierlist/augments?set=<N>
+# It returns S/A/B/C buckets of augment apiNames per augment slot
+# (1=silver, 2=gold, 3=prismatic) and per pick stage (2-1 / 3-2 / 4-2 / All).
+# Display names are resolved via Data Dragon's tft-augments.json, falling
+# back to camelCase-splitting the apiName for anything it doesn't carry.
+
+AUGMENTS_API_URL_TEMPLATE = "https://tftacademy.com/api/tierlist/augments?set={set_number}"
+# Fallback set number, used only when it can't be derived from comp slugs.
+CURRENT_SET_NUMBER = 17
+
+_SLUG_SET_NUMBER_RE = re.compile(r"^set-?(\d+)", re.IGNORECASE)
+
+
+def current_set_number(cache: Optional[dict] = None) -> int:
+    """
+    Derive the live TFT set number from the cached comp slugs
+    ('set-17-dark-star' → 17), so a new set is picked up without a code
+    change. Falls back to CURRENT_SET_NUMBER when no slugs are available.
+    """
+    if cache is None:
+        cache = load_cache() or {}
+    best = 0
+    for entry in cache.get("comps") or []:
+        m = _SLUG_SET_NUMBER_RE.match(entry.get("slug") or "")
+        if m:
+            best = max(best, int(m.group(1)))
+    return best or CURRENT_SET_NUMBER
+
+
+DDRAGON_VERSIONS_URL = "https://ddragon.leagueoflegends.com/api/versions.json"
+DDRAGON_AUGMENTS_URL_TEMPLATE = (
+    "https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/tft-augments.json"
+)
+
+_AUGMENT_SLOT_NAMES = {1: "silver", 2: "gold", 3: "prismatic"}
+
+_augments_refresh_lock = asyncio.Lock()
+_last_augments_refresh_at: float = 0.0
+# Snapshot of the hand-curated AUGMENT_RATINGS taken before the first live
+# apply, so curated tips survive refreshes and curated-only entries (comp-page
+# X-tier augments the API doesn't list) are never dropped.
+_curated_augment_seed: Optional[dict] = None
+
+
+def parse_augments_payload(payload: dict, name_by_api: dict[str, str]) -> list[dict]:
+    """
+    Flatten the augments API payload into one entry per augment:
+
+        {"api_name": "TFT_Augment_SmallGrabBag",
+         "name": "Small Grab Bag",
+         "slot": "silver",
+         "ratings": {"All": "A", "2-1": "S", ...}}   # stage → tier
+
+    Unknown tier letters are dropped; unknown apiNames get a name derived
+    from the apiName itself.
+    """
+    by_api: dict[str, dict] = {}
+    for block in payload.get("augments_tierlists") or []:
+        slot = _AUGMENT_SLOT_NAMES.get(block.get("augmenttier"), "unknown")
+        stage = str(block.get("stage") or "All")
+        for tier, api_names in (block.get("tier") or {}).items():
+            if tier not in _VALID_TIERS:
+                continue
+            for api_name in api_names or []:
+                entry = by_api.setdefault(api_name, {
+                    "api_name": api_name,
+                    "name": name_by_api.get(api_name) or _human_name(api_name),
+                    "slot": slot,
+                    "ratings": {},
+                })
+                entry["ratings"][stage] = tier
+    return sorted(by_api.values(), key=lambda e: e["name"])
+
+
+def _fetch_augments_blocking(set_number: int = CURRENT_SET_NUMBER) -> dict:
+    """Fetch the augments tier-list API. Always called via asyncio.to_thread."""
+    raw = _fetch_html_blocking(AUGMENTS_API_URL_TEMPLATE.format(set_number=set_number))
+    return json.loads(raw)
+
+
+def _fetch_ddragon_augment_names_blocking() -> dict[str, str]:
+    """Fetch {apiName: display name} from Data Dragon's tft-augments.json."""
+    versions = json.loads(_fetch_html_blocking(DDRAGON_VERSIONS_URL))
+    payload = json.loads(_fetch_html_blocking(
+        DDRAGON_AUGMENTS_URL_TEMPLATE.format(version=versions[0])
+    ))
+    return {
+        api_name: entry["name"]
+        for api_name, entry in (payload.get("data") or {}).items()
+        if entry.get("name")
+    }
+
+
+def _augment_overall_rating(ratings: dict[str, str]) -> Optional[str]:
+    """The rating shown in the overlay: the 'All'-stages bucket when present."""
+    return ratings.get("All") or next(iter(ratings.values()), None)
+
+
+def _augment_generated_tip(entry: dict) -> str:
+    """Fallback tip for augments without a hand-curated one."""
+    ratings = entry.get("ratings") or {}
+    overall = _augment_overall_rating(ratings)
+    per_stage = ", ".join(
+        f"{stage}: {tier}" for stage, tier in sorted(ratings.items()) if stage != "All"
+    )
+    stage_note = f" By pick stage — {per_stage}." if per_stage else ""
+    return (
+        f"TFT Academy rates this {overall}-tier among {entry.get('slot', '?')} "
+        f"augments.{stage_note}"
+    )
+
+
+def apply_augments_to_game_data(augments: list[dict]) -> None:
+    """
+    Replace `game_data.AUGMENT_RATINGS` (in place) with live tier data.
+
+    Hand-curated tips win over generated ones when the names match, and
+    curated entries the live list doesn't carry are kept. Mutating the dict
+    in place keeps existing `from game_data import AUGMENT_RATINGS`
+    references live.
+    """
+    if not augments:
+        return
+    import game_data
+
+    global _curated_augment_seed
+    if _curated_augment_seed is None:
+        _curated_augment_seed = dict(game_data.AUGMENT_RATINGS)
+
+    merged: dict[str, dict] = {}
+    for entry in augments:
+        ratings = entry.get("ratings") or {}
+        overall = _augment_overall_rating(ratings)
+        name = entry.get("name")
+        if not name or not overall:
+            continue
+        curated = _curated_augment_seed.get(name)
+        merged[name] = {
+            "rating": overall,
+            "tip": curated["tip"] if curated else _augment_generated_tip(entry),
+            "slot": entry.get("slot"),
+            "stage_ratings": ratings,
+        }
+    for name, data in _curated_augment_seed.items():
+        merged.setdefault(name, data)
+
+    game_data.AUGMENT_RATINGS.clear()
+    game_data.AUGMENT_RATINGS.update(merged)
+
+
+async def refresh_augments_async(
+    *,
+    force: bool = False,
+    debounce_seconds: int = DEFAULT_DEBOUNCE_SECONDS,
+) -> dict:
+    """
+    Refresh the augment tier list from TFT Academy's API and update the
+    cache + in-memory AUGMENT_RATINGS.
+
+    Returns {"checked": bool, "refreshed": bool, "count": int, "error": str|None}.
+    Debounced and lock-serialized like refresh_async().
+    """
+    global _last_augments_refresh_at
+
+    now = time.monotonic()
+    if not force and (now - _last_augments_refresh_at) < debounce_seconds:
+        return {"checked": False, "refreshed": False, "count": 0, "error": None}
+
+    async with _augments_refresh_lock:
+        now = time.monotonic()
+        if not force and (now - _last_augments_refresh_at) < debounce_seconds:
+            return {"checked": False, "refreshed": False, "count": 0, "error": None}
+        _last_augments_refresh_at = now
+
+        cache = load_cache() or {}
+        set_number = current_set_number(cache)
+        try:
+            payload = await asyncio.to_thread(_fetch_augments_blocking, set_number)
+        except Exception as e:
+            logger.warning(f"TFT Academy augments fetch failed: {e}")
+            return {"checked": True, "refreshed": False, "count": 0, "error": str(e)}
+
+        # Resolve apiNames → display names. Names already resolved in the
+        # cache are reused so Data Dragon is only hit when new augments show up.
+        name_by_api = {
+            e["api_name"]: e["name"]
+            for e in (cache.get("augments") or {}).get("entries") or []
+            if e.get("api_name") and e.get("name")
+        }
+        wanted = {
+            api_name
+            for block in payload.get("augments_tierlists") or []
+            for api_names in (block.get("tier") or {}).values()
+            for api_name in api_names or []
+        }
+        if wanted - set(name_by_api):
+            try:
+                name_by_api.update(
+                    await asyncio.to_thread(_fetch_ddragon_augment_names_blocking)
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Data Dragon augment-name fetch failed ({e}); "
+                    f"deriving names from apiNames"
+                )
+
+        entries = parse_augments_payload(payload, name_by_api)
+        if not entries:
+            logger.warning(
+                "TFT Academy augments API returned 0 augments — payload shape "
+                "may have changed. Keeping existing data."
+            )
+            return {
+                "checked": True, "refreshed": False, "count": 0,
+                "error": "no augments parsed",
+            }
+
+        apply_augments_to_game_data(entries)
+        cache["augments"] = {
+            "set": set_number,
+            "synced_at": datetime.datetime.utcnow().isoformat() + "Z",
+            "source_url": AUGMENTS_API_URL_TEMPLATE.format(set_number=set_number),
+            "entries": entries,
+        }
+        save_cache(cache)
+        logger.info(f"TFT Academy augment tier list refreshed: {len(entries)} augments")
+        return {
+            "checked": True, "refreshed": True,
+            "count": len(entries), "error": None,
+        }
+
+
+#  Public API
 
 def init_from_cache() -> Optional[str]:
     """
@@ -548,9 +784,12 @@ def init_from_cache() -> Optional[str]:
         return None
     comps = cache.get("comps") or []
     apply_to_game_data(comps)
+    augment_entries = (cache.get("augments") or {}).get("entries") or []
+    apply_augments_to_game_data(augment_entries)
     patch = cache.get("patch")
     logger.info(
-        f"Loaded TFT Academy cache: patch={patch}, {len(comps)} comps "
+        f"Loaded TFT Academy cache: patch={patch}, {len(comps)} comps, "
+        f"{len(augment_entries)} augments "
         f"(synced {cache.get('synced_at', 'unknown')})"
     )
     return patch
@@ -810,6 +1049,9 @@ def schedule_background_refresh(
             await asyncio.sleep(initial_delay_seconds)
         try:
             await refresh_async(debounce_seconds=debounce_seconds)
+            # One cheap JSON call — refresh augment tiers alongside the
+            # listing (its own debounce keeps repeat calls free).
+            await refresh_augments_async(debounce_seconds=debounce_seconds)
             if include_details:
                 await refresh_details_async(debounce_seconds=debounce_seconds)
         except Exception:

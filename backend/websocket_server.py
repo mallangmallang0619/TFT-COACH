@@ -212,9 +212,11 @@ class TFTCoachServer:
             },
         })
 
-        # Broadcast to all clients, removing dead connections
+        # Broadcast to all clients, removing dead connections. Iterate over a
+        # snapshot — clients can connect/disconnect (mutating the set) while
+        # we're suspended in await client.send().
         dead = set()
-        for client in self.clients:
+        for client in tuple(self.clients):
             try:
                 await client.send(payload)
             except websockets.exceptions.ConnectionClosed:

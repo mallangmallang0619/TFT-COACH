@@ -4,8 +4,12 @@ A real-time Teamfight Tactics coaching overlay that captures your game screen, d
 
 ## Architecture
 
+Uses an Electron shell that hosts a React frontend. The React frontend connects to the Python computer-vision pipeline over a WebSocket.
+
 ```
-Uses an electron shell that has a react frontend. The react frontend connects to the computer vision pipeline all connected using a websocket.
+TFT client ──screen capture──► Python backend ──ws://localhost:8765──► React UI (Electron overlay)
+                 (mss)          detect + coach
+```
 
 ## Components
 
@@ -19,8 +23,15 @@ Uses an electron shell that has a react frontend. The react frontend connects to
  `game_state.py`      | Data model for the full game state                          
  `coach.py`           | Coaching logic — generates advice from game state          
  `synergy.py`         | Active synergy + comp-direction detection from board state  
+ `game_data.py`       | Static game data: champions, traits, item recipes, meta comps |
  `tftacademy_live.py` | Background sync of TFT Academy's comp tier list             
  `websocket_server.py`| Async WebSocket server pushing state to frontend            
+ `demo_server.py`     | `--demo` mode: fabricated game states, no CV needed         
+ `sim_server.py`      | `--sim` mode: real detector + coach on synthesized frames   
+ `fetch_templates.py` | Downloads champion/component/trait/item templates from Riot CDNs |
+ `capture_templates.py`| In-game wizard for UI templates the CDNs don't have        |
+ `eval_detection.py`  | Detection accuracy benchmark on synthetic boards            |
+ `test_system.py`     | System test suite — run this first                          |
  `config.py`          | Resolution presets, ROI coordinates, thresholds       
        
 
@@ -41,7 +52,10 @@ Adapted from the prototype — receives game state via WebSocket and renders coa
 
 - Python 3.10+
 - Node.js 18+
-- Tesseract OCR installed (`brew install tesseract` for macos / `sudo apt install tesseract-ocr` for windows)
+- Tesseract OCR (live mode only):
+  - Windows: `winget install UB-Mannheim.TesseractOCR`
+  - macOS: `brew install tesseract`
+  - Linux: `sudo apt install tesseract-ocr`
 
 ### Installation
 
@@ -52,28 +66,49 @@ cd tft-coach-desktop
 # 2. Install Python dependencies
 pip install -r requirements.txt
 
-# 3. Install Node dependencies
+# 3. Install Node dependencies (root + frontend)
 npm install
+cd frontend && npm install && cd ..
 
-# 4. Generate template images (see below, MIGHT NOT WORK)
+# 4. Download template images from Riot's CDNs (champions, components, traits, items)
+python backend/fetch_templates.py
 
-# 5. Start the backend
-python backend/main.py
-
-# 6. In another terminal, start the Electron overlay
-npm start
+# 5. Verify everything works
+python backend/test_system.py
 ```
 
-### Generating Template Images
+### Running
 
-The CV pipeline uses template matching — it needs reference screenshots of each TFT component icon, champion portrait, and UI element. To generate these:
+```bash
+# Demo mode — fabricated game data, no game or CV deps needed.
+# Starts the Vite frontend + demo backend + Electron overlay together:
+npm run dev
 
-1. Open TFT at your native resolution
-2. Run `python backend/capture_templates.py` (guided wizard)
-3. Templates are saved to `assets/templates/`
+# Sim mode — the REAL detector + coach running on synthesized board frames:
+npm run dev:sim
 
-This only needs to be done once per patch/resolution change.
-This might not work very well...
+# Live mode — capture the actual game (TFT must be running):
+python backend/main.py        # terminal 1
+npm run dev:frontend          # terminal 2
+npm start                     # terminal 3 (Electron overlay)
+```
+
+Overlay hotkeys: `Ctrl+Shift+T` toggle click-through · `Ctrl+Shift+H` show/hide · `Ctrl+Shift+Q` quit.
+
+### Template Images
+
+Static templates (champion portraits, component/trait/item icons) are downloaded
+from Riot's Data Dragon and Community Dragon CDNs:
+
+```bash
+python backend/fetch_templates.py           # fetch anything missing
+python backend/fetch_templates.py --force   # re-download all (after a patch)
+```
+
+UI-region templates (stage banner, augment panel framing) aren't on the CDNs and
+are captured from a live game instead — run `python backend/capture_templates.py`
+with TFT open at your native resolution. Only needed for live mode; sim/demo
+modes work without them.
 
 ## Configuration
 
@@ -112,15 +147,21 @@ python scripts/sync_tftacademy.py --force --write   # bypass debounce
 python scripts/sync_tftacademy.py            # dry-run preview
 ```
 
-### Augments page caveat
+### Augment tier list
 
-TFT Academy's augments and items pages are JavaScript-rendered, so urllib
-can't extract their data. Augments referenced by the comps page (Aura
-Farming, Portable Forge, Bonk, etc.) are baked into `AUGMENT_RATINGS`.
-For full augment coverage, edit that dict by hand — the schema is
-`{augment_name: {"rating": "S/A/B/C", "tip": "..."}}`.
+Augment ratings sync from TFT Academy's JSON API
+(`/api/tierlist/augments?set=17` — the same endpoint their own page uses),
+covering every augment in the set with S/A/B/C ratings per pick stage
+(2-1 / 3-2 / 4-2) and slot (silver / gold / prismatic). Display names are
+resolved via Data Dragon's `tft-augments.json`.
 
-The sync script prints a clear note about this every time it runs.
+The refresh runs alongside the comp-list refresh (startup + client connect,
+debounced). Hand-curated tips in `AUGMENT_RATINGS` are preserved and
+overlaid with the live ratings; curated-only entries are kept.
+
+Augment lookups from OCR go exact → normalized → fuzzy
+(`game_data.find_augment_rating`), so noisy reads like "Heroic Grab 8ag"
+still resolve.
 
 ## How Detection Works
 
@@ -142,15 +183,19 @@ Detects the augment selection overlay and reads augment names via OCR.
 ## Development Roadmap
 
 - [x] Architecture scaffold
-- [x] Screen capture pipeline - work in progress
-- [x] Template matching engine
-- [-] Game state data model - work in progress
-- [-] Coaching logic engine - work in progress
+- [x] Screen capture pipeline (adaptive resolution + frame checking)
+- [x] Template matching engine (F1 = 1.00 on synthetic boards, `eval_detection.py`)
+- [x] Game state data model
+- [x] Coaching logic engine (items, comp direction, tips, TFT Academy tiers)
 - [x] WebSocket communication
-- [x] Electron overlay shell
-- [ ] Template image generation wizard
-- [-] Champion portrait database
-- [ ] Augment OCR + database
+- [x] Electron overlay shell (click-through, hotkeys)
+- [x] Template fetching from Riot CDNs (`fetch_templates.py`)
+- [x] Champion portrait database (63 champions, set 17)
 - [x] Comp detection from active synergies
-- [ ] Multi-resolution support
-- [ ] Auto-update for new patches
+- [x] Multi-resolution support (ROIs are resolution-relative)
+- [x] Auto-update tier list for new patches (TFT Academy sync)
+- [x] Augment database — full set coverage synced from TFT Academy's API, with fuzzy OCR-name matching
+- [ ] In-game UI templates for live mode (`capture_templates.py` — needs a live game)
+- [ ] Live-mode validation against real gameplay footage
+- [x] Current-set auto-detection (trait fetch + augments API track the newest set; no constant to bump)
+- [ ] New-set data migration — `game_data.py` CHAMPIONS/TRAITS/META_COMPS seeds are still hand-written per set; templates need a `--force` re-fetch
