@@ -52,8 +52,27 @@ REQUEST_TIMEOUT = 15
 # HUD glyphs the detector needs to match.
 CDRAGON_TFT_DATA = "https://raw.communitydragon.org/latest/cdragon/tft/en_us.json"
 CDRAGON_GAME_BASE = "https://raw.communitydragon.org/latest/game/"
-# The current TFT set (matches the "set-17-…" comp slugs and TFT17_ apiNames).
+# Fallback TFT set (matches the "set-17-…" comp slugs and TFT17_ apiNames)
+# used only when auto-detection against the CDragon payload fails.
 CURRENT_SET = "17"
+
+
+def detect_current_set(cdragon: dict) -> str:
+    """
+    Pick the newest set in the CDragon payload that actually ships traits.
+    Falls back to CURRENT_SET so a payload-shape change can't break fetching.
+    """
+    best: Optional[tuple[int, str]] = None
+    for key, data in (cdragon.get("sets") or {}).items():
+        if not (data or {}).get("traits"):
+            continue
+        m = re.match(r"(\d+)", str(key))
+        if not m:
+            continue
+        num = int(m.group(1))
+        if best is None or num > best[0]:
+            best = (num, str(key))
+    return best[1] if best else CURRENT_SET
 
 
 def cdragon_asset_url(icon_path: str) -> str:
@@ -333,7 +352,8 @@ def fetch_traits(
 ) -> tuple[int, list[str]]:
     """Download current-set trait icons named by their game_data.TRAITS key."""
     wanted = set(TRAITS.keys())
-    set_traits = (cdragon.get("sets", {}).get(CURRENT_SET, {}) or {}).get("traits", [])
+    set_key = detect_current_set(cdragon)
+    set_traits = (cdragon.get("sets", {}).get(set_key, {}) or {}).get("traits", [])
     by_name = {t["name"]: t for t in set_traits if t.get("name")}
 
     ok = 0
@@ -347,7 +367,7 @@ def fetch_traits(
         entry = by_name.get(name)
         icon = entry.get("icon") if entry else None
         if not icon:
-            logger.warning(f"  ✗ {name}: no trait icon in CDragon set {CURRENT_SET}")
+            logger.warning(f"  ✗ {name}: no trait icon in CDragon set {set_key}")
             missing.append(name)
             continue
         if download_to(out_path, cdragon_asset_url(icon), dry_run=dry_run):

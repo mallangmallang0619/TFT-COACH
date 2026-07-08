@@ -16,6 +16,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Windows consoles default to a legacy code page (cp1252) that can't encode
+# the emoji below — force UTF-8 so the runner doesn't crash mid-report.
+for _stream in (sys.stdout, sys.stderr):
+    if _stream.encoding and _stream.encoding.lower() not in ("utf-8", "utf8"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 PASS = "✅"
 FAIL = "❌"
 WARN = "⚠️"
@@ -229,10 +235,14 @@ def test_tftacademy_enrichment():
     from coach import Coach
     from game_data import META_COMPS, AUGMENT_RATINGS
 
-    # Sanity: we actually loaded TFT Academy data
+    # Sanity: we actually loaded TFT Academy data. The tier itself comes from
+    # the live-synced cache and shifts every patch, so look it up rather than
+    # hardcoding it.
     assert len(META_COMPS) >= 20, f"META_COMPS too small: {len(META_COMPS)}"
-    assert any(c["name"] == "Dark Star" and c["tier"] == "S" for c in META_COMPS), \
-        "Dark Star S-tier entry from TFT Academy should be present"
+    dark_star = next((c for c in META_COMPS if c["name"] == "Dark Star"), None)
+    assert dark_star is not None, "Dark Star entry from TFT Academy should be present"
+    assert dark_star["tier"] in ("S", "A", "B", "C", "X"), \
+        f"Dark Star has invalid tier: {dark_star['tier']}"
 
     # New augments from the comp-page references should be in AUGMENT_RATINGS
     for aug in ("Aura Farming", "Portable Forge", "Two Tanky", "Bonk"):
@@ -256,8 +266,8 @@ def test_tftacademy_enrichment():
     advice = coach.analyze(state)
     primary = advice.comp_suggestions[0]
 
-    assert primary.tftacademy_tier == "S", \
-        f"Dark Star should be S-tier, got: {primary.tftacademy_tier}"
+    assert primary.tftacademy_tier == dark_star["tier"], \
+        f"Dark Star should be {dark_star['tier']}-tier, got: {primary.tftacademy_tier}"
     assert primary.tftacademy_name == "Dark Star", \
         f"Should match TFT Academy 'Dark Star' entry, got: {primary.tftacademy_name}"
     # The composed direction tip should reference TFT Academy
@@ -304,25 +314,27 @@ def test_tftacademy_parser():
     from tftacademy_live import parse_patch, parse_comps
 
     # Synthetic HTML snippet covering:
-    #  - patch header in two formats
-    #  - tier labels in 3 forms (S-Tier text, data-tier attr, "tier":"S" JSON)
-    #  - comp links pointing at /tierlist/comps/<set>/<slug>
+    #  - patch header text
+    #  - tier section headers
+    #  - comp links pointing at /tierlist/comps/<slug> — the anchors on the
+    #    live listing page hold icon grids, not text, so the parser derives
+    #    the display name from the slug alone (set-17-dark-star → Dark Star)
     sample = """
     <html><body>
       <h1>Patch 17.2B  -  Last Updated 4 hours ago</h1>
       <section><h2>S-Tier</h2>
-        <a href="/tierlist/comps/set17/yi-marawlers">Yi Marawlers</a>
-        <a href="/tierlist/comps/set17/dark-star">Dark Star</a>
+        <a href="/tierlist/comps/set-17-yi-marawlers"></a>
+        <a href="/tierlist/comps/set-17-dark-star"></a>
       </section>
       <section><h2>A-Tier</h2>
-        <a href="/tierlist/comps/set17/fountain-lulu">Fountain Lulu</a>
-        <a href="/tierlist/comps/set17/tf-reroll">TF Reroll</a>
+        <a href="/tierlist/comps/set-17-fountain-lulu"></a>
+        <a href="/tierlist/comps/set-17-tf-reroll"></a>
       </section>
       <section><h2>B-Tier</h2>
-        <a href="/tierlist/comps/set17/voyager-crab">Voyager Crab</a>
+        <a href="/tierlist/comps/set-17-voyager-crab"></a>
       </section>
       <!-- duplicate to verify dedupe -->
-      <a href="/tierlist/comps/set17/dark-star">Dark Star</a>
+      <a href="/tierlist/comps/set-17-dark-star"></a>
     </body></html>
     """
 
@@ -333,7 +345,7 @@ def test_tftacademy_parser():
     assert by_name.get("Yi Marawlers") == "S"
     assert by_name.get("Dark Star")    == "S"
     assert by_name.get("Fountain Lulu") == "A"
-    assert by_name.get("TF Reroll")    == "A"
+    assert by_name.get("Tf Reroll")    == "A"
     assert by_name.get("Voyager Crab") == "B"
 
     # Dedupe — the duplicate Dark Star link must not produce a 2nd entry
@@ -391,6 +403,112 @@ def test_tftacademy_cache_roundtrip():
     game_data.META_COMPS_BY_CARRY.update(snapshot_lookup)
 
     return "cache write+read OK, in-place apply OK"
+
+
+def test_augments_parser():
+    """parse_augments_payload flattens the API payload correctly."""
+    from tftacademy_live import parse_augments_payload
+
+    payload = {
+        "augments_tierlists": [
+            {"augmenttier": 1, "stage": "All",
+             "tier": {"S": ["TFT_Augment_GoodOne"], "B": ["TFT_Augment_MehOne"]}},
+            {"augmenttier": 1, "stage": "2-1",
+             "tier": {"A": ["TFT_Augment_GoodOne"]}},
+            {"augmenttier": 3, "stage": "4-2",
+             "tier": {"S": ["TFT_Augment_BigPrismatic"],
+                      "Z": ["TFT_Augment_BadTierLetter"]}},   # invalid tier dropped
+        ]
+    }
+    names = {"TFT_Augment_GoodOne": "Good One"}
+    entries = parse_augments_payload(payload, names)
+    by_api = {e["api_name"]: e for e in entries}
+
+    # GoodOne + MehOne + BigPrismatic; BadTierLetter dropped (invalid tier)
+    assert len(entries) == 3, f"expected 3 entries, got {len(entries)}"
+    assert "TFT_Augment_BadTierLetter" not in by_api
+    good = by_api["TFT_Augment_GoodOne"]
+    assert good["name"] == "Good One"
+    assert good["slot"] == "silver"
+    assert good["ratings"] == {"All": "S", "2-1": "A"}
+    # Name derived from apiName when the mapping doesn't know it
+    big = by_api["TFT_Augment_BigPrismatic"]
+    assert big["name"] == "Big Prismatic", f"got: {big['name']}"
+    assert big["slot"] == "prismatic"
+    return f"{len(entries)} entries, stage ratings + slot + name fallback OK"
+
+
+def test_augments_apply_and_fuzzy():
+    """apply_augments_to_game_data merges live + curated; fuzzy lookup works."""
+    import tftacademy_live
+    import game_data
+    from game_data import find_augment_rating
+
+    snapshot = dict(game_data.AUGMENT_RATINGS)
+    seed_snapshot = tftacademy_live._curated_augment_seed
+    try:
+        live = [
+            {"api_name": "TFT_Augment_HeroicGrabBag", "name": "Heroic Grab Bag",
+             "slot": "gold", "ratings": {"All": "B"}},
+            {"api_name": "TFT_Augment_BrandNew", "name": "Brand New Augment",
+             "slot": "silver", "ratings": {"All": "S", "2-1": "A"}},
+        ]
+        tftacademy_live.apply_augments_to_game_data(live)
+
+        # Live rating applied, curated tip preserved
+        hgb = game_data.AUGMENT_RATINGS["Heroic Grab Bag"]
+        assert hgb["rating"] == "B", f"live rating should win, got {hgb['rating']}"
+        assert "components" in hgb["tip"], "curated tip should be preserved"
+        # New augment got a generated tip
+        new = game_data.AUGMENT_RATINGS["Brand New Augment"]
+        assert new["rating"] == "S"
+        assert "TFT Academy" in new["tip"]
+        # Curated-only entries survive the apply
+        assert "Aura Farming" in game_data.AUGMENT_RATINGS
+
+        # Fuzzy lookup: normalized + close-match against OCR noise
+        name, data = find_augment_rating("HEROIC GRAB BAG")
+        assert name == "Heroic Grab Bag"
+        name, data = find_augment_rating("Heroic Grab 8ag")
+        assert name == "Heroic Grab Bag", f"fuzzy failed: {name}"
+        name, data = find_augment_rating("Totally Unknown Augment")
+        assert name is None and data is None
+    finally:
+        game_data.AUGMENT_RATINGS.clear()
+        game_data.AUGMENT_RATINGS.update(snapshot)
+        tftacademy_live._curated_augment_seed = seed_snapshot
+
+    return "live+curated merge OK, fuzzy lookup OK"
+
+
+def test_set_autodetect():
+    """Current-set detection from CDragon payload and comp slugs."""
+    from tftacademy_live import current_set_number, CURRENT_SET_NUMBER
+
+    # From comp slugs — newest set wins, malformed slugs ignored
+    cache = {"comps": [
+        {"slug": "set-17-dark-star"},
+        {"slug": "set-18-new-hotness"},
+        {"slug": "not-a-set-slug"},
+        {"slug": None},
+    ]}
+    assert current_set_number(cache) == 18
+    # No usable slugs → fallback constant
+    assert current_set_number({"comps": []}) == CURRENT_SET_NUMBER
+
+    # From CDragon sets (fetch_templates needs cv2-free import? it imports
+    # config + game_data only, safe here)
+    from fetch_templates import detect_current_set, CURRENT_SET
+    cdragon = {"sets": {
+        "16": {"traits": [{"name": "Old"}]},
+        "17": {"traits": [{"name": "New"}]},
+        "18": {"traits": []},           # future set with no traits yet
+        "bogus": {"traits": [{"name": "X"}]},
+    }}
+    assert detect_current_set(cdragon) == "17"
+    assert detect_current_set({"sets": {}}) == CURRENT_SET
+
+    return "slug-derived set OK, CDragon-derived set OK, fallbacks OK"
 
 
 def test_tftacademy_debounce():
@@ -453,15 +571,26 @@ async def _test_demo_server_connection():
 
         # Connect a client
         async with ws.connect("ws://localhost:8765") as client:
-            # Wait for first game state message
-            raw = await asyncio.wait_for(client.recv(), timeout=3.0)
-            msg = json.loads(raw)
-            assert msg["type"] == "game_state", f"Expected game_state, got {msg['type']}"
+            # On connect the server pushes static game_data + demo_info
+            # payloads first, then starts broadcasting game_state. Read
+            # until the first game_state arrives.
+            seen_types = []
+            for _ in range(10):
+                raw = await asyncio.wait_for(client.recv(), timeout=5.0)
+                msg = json.loads(raw)
+                seen_types.append(msg["type"])
+                if msg["type"] == "game_state":
+                    break
+            else:
+                raise AssertionError(f"No game_state within 10 messages: {seen_types}")
+
+            assert "game_data" in seen_types, \
+                f"Server should push game_data on connect, saw: {seen_types}"
             assert "data" in msg
             data = msg["data"]
             assert "stage" in data
             assert "player_hp" in data
-            return f"received stage={data['stage']} hp={data['player_hp']}"
+            return f"received {seen_types} → stage={data['stage']} hp={data['player_hp']}"
 
     finally:
         server.is_running = False
@@ -496,7 +625,14 @@ def test_cv_deps():
 
 def test_tesseract():
     """Check if Tesseract OCR is available."""
+    hint = {
+        "win32": "winget install UB-Mannheim.TesseractOCR",
+        "darwin": "brew install tesseract",
+    }.get(sys.platform, "sudo apt install tesseract-ocr")
     try:
+        # detector.py points pytesseract at the standard Windows install
+        # location when the binary isn't on PATH — reuse that setup.
+        import detector  # noqa: F401
         import pytesseract
         version = pytesseract.get_tesseract_version()
         return f"v{version}"
@@ -504,7 +640,7 @@ def test_tesseract():
         warn("Tesseract", "pytesseract not installed (only needed for live mode)")
         return None
     except Exception:
-        warn("Tesseract", "pytesseract installed but tesseract binary not found (brew install tesseract)")
+        warn("Tesseract", f"pytesseract installed but tesseract binary not found ({hint})")
         return None
 
 
@@ -526,6 +662,9 @@ def main():
     test("TFT Academy enrichment", test_tftacademy_enrichment)
     test("TFT Academy parser", test_tftacademy_parser)
     test("TFT Academy cache roundtrip", test_tftacademy_cache_roundtrip)
+    test("Augments parser", test_augments_parser)
+    test("Augments apply + fuzzy lookup", test_augments_apply_and_fuzzy)
+    test("Set auto-detection", test_set_autodetect)
     test("TFT Academy debounce", test_tftacademy_debounce)
 
     print("\n[Dependencies]")

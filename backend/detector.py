@@ -5,11 +5,12 @@ Processes captured frames to extract game state:
   - Template matching for components, champions, UI elements
   - OCR for stage, HP, gold, augment names
   - Phase detection from UI layout analysis
-NEVER TESTED
 """
 
 from __future__ import annotations
 import logging
+import shutil
+import sys
 import time
 from pathlib import Path
 from typing import Optional
@@ -25,6 +26,14 @@ except ImportError as _e:
 
 try:
     import pytesseract
+
+    # On Windows the installer puts tesseract.exe in Program Files without
+    # adding it to PATH for already-running shells; point pytesseract at the
+    # standard location if the plain command isn't resolvable.
+    if sys.platform == "win32" and not shutil.which("tesseract"):
+        _tess_exe = Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe")
+        if _tess_exe.exists():
+            pytesseract.pytesseract.tesseract_cmd = str(_tess_exe)
 except ImportError:
     pytesseract = None
 

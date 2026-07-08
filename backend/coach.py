@@ -25,11 +25,11 @@ from game_state import (
 )
 from game_data import (
     ITEM_RECIPES,
-    AUGMENT_RATINGS,
     CHAMPIONS,
     TRAITS,
     SHRED_ITEMS,
     BURN_ITEMS,
+    find_augment_rating,
 )
 from synergy import compute_active_synergies, detect_comp_direction
 
@@ -473,10 +473,12 @@ class Coach:
     def _analyze_augments(self, state: GameState, advice: CoachingAdvice):
         """Rate detected augment options."""
         for aug in state.augment_options:
-            rating_data = AUGMENT_RATINGS.get(aug.name)
+            # Fuzzy lookup — OCR'd names are noisy, so exact misses fall
+            # back to normalized/close matching against the database.
+            matched_name, rating_data = find_augment_rating(aug.name)
             if rating_data:
                 advice.augment_ratings.append({
-                    "name": aug.name,
+                    "name": matched_name,
                     "tier": aug.tier,
                     "rating": rating_data["rating"],
                     "tip": rating_data["tip"],

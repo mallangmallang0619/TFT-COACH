@@ -85,19 +85,21 @@ def _build_champion_pool():
 
 CHAMPION_POOL = _build_champion_pool()
 
+# Real set-17 augment names (present in the synced TFT Academy augment tier
+# list) so demo-mode augment rounds exercise the live ratings database.
 AUGMENTS = [
-    ("Cybernetic Implants", "Silver", "combat"),
-    ("Featherweights", "Silver", "combat"),
-    ("Metabolic Accelerator", "Silver", "sustain"),
-    ("Electrocharge", "Silver", "combat"),
+    ("Carve a Path", "Silver", "combat"),
+    ("Best Friends I", "Silver", "combat"),
+    ("Boxing Lessons", "Silver", "combat"),
+    ("Band of Thieves", "Silver", "items"),
     ("Component Grab Bag", "Silver", "items"),
-    ("Verdant Veil", "Silver", "combat"),
-    ("Level Up!", "Gold", "econ"),
-    ("Portable Forge", "Gold", "items"),
-    ("Jeweled Lotus", "Gold", "combat"),
+    ("Bonk!", "Silver", "combat"),
+    ("Cosmic Restart", "Gold", "econ"),
+    ("A Magic Roll", "Gold", "econ"),
+    ("Aura Farming", "Gold", "combat"),
     ("Pandora's Items", "Gold", "items"),
-    ("Ascension", "Prismatic", "combat"),
-    ("Living Forge", "Prismatic", "items"),
+    ("Birthday Present", "Prismatic", "combat"),
+    ("Buried Treasures", "Prismatic", "items"),
 ]
 
 SCENARIOS = [
@@ -605,7 +607,9 @@ class DemoServer:
             return
         payload = self._build_demo_info_payload()
         dead = set()
-        for client in self.clients:
+        # Snapshot — clients can connect/disconnect (mutating the set) while
+        # we're suspended in await client.send().
+        for client in tuple(self.clients):
             try:
                 await client.send(payload)
             except websockets.exceptions.ConnectionClosed:
@@ -669,7 +673,9 @@ class DemoServer:
             },
         })
         dead = set()
-        for client in self.clients:
+        # Snapshot — clients can connect/disconnect (mutating the set) while
+        # we're suspended in await client.send().
+        for client in tuple(self.clients):
             try:
                 await client.send(payload)
             except websockets.exceptions.ConnectionClosed:

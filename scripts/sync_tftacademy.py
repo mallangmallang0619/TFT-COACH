@@ -17,11 +17,10 @@ script is for ad-hoc manual use:
     python scripts/sync_tftacademy.py --detail set-17-dark-star
         # dry-run a single comp detail page and print parsed output.
 
-The augments and items pages on tftacademy.com are JavaScript-rendered,
-so this script only handles comps. Augments referenced by the comp tier
-list ("Aura Farming", "Portable Forge", etc.) are baked into
-`AUGMENT_RATINGS` in backend/game_data.py — edit that dict by hand to
-add more.
+Augment tier lists are synced from TFT Academy's JSON API
+(/api/tierlist/augments) — `--write` refreshes them alongside the comps.
+Hand-curated tips in backend/game_data.py AUGMENT_RATINGS are preserved
+and overlaid with the live ratings.
 """
 
 from __future__ import annotations
@@ -37,12 +36,15 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "backend"))
 
 from tftacademy_live import (   # noqa: E402  (after sys.path mutation)
+    AUGMENTS_API_URL_TEMPLATE,
     COMP_DETAIL_URL_TEMPLATE,
     COMPS_URL,
+    current_set_number,
     parse_comp_detail,
     parse_comps,
     parse_patch,
     refresh_async,
+    refresh_augments_async,
     refresh_details_async,
     _fetch_comp_detail_blocking,
     _fetch_html_blocking,
@@ -106,21 +108,16 @@ def print_detail(slug: str, detail: dict) -> None:
 
 
 def print_augments_note() -> None:
-    """Explain the augments-page situation."""
+    """Explain where augment ratings come from."""
     print("-" * 70)
-    print("Augments page status")
+    print("Augment tier list")
     print("-" * 70)
     print(
-        "The TFT Academy augments tier list at"
-        f"\n    https://tftacademy.com/tierlist/augments"
-        "\nis JavaScript-rendered. urllib cannot extract the augment data from"
-        "\nthe raw HTML."
-        "\n"
-        "\nAugments referenced by the scraped comps page (Aura Farming,"
-        "\nPortable Forge, Bonk, etc.) are already baked into AUGMENT_RATINGS"
-        "\nin backend/game_data.py. To add full augment coverage, edit that"
-        "\ndict by hand — the schema is {augment_name: {\"rating\": \"...\","
-        "\n\"tip\": \"...\"}}."
+        "Augment ratings sync from TFT Academy's JSON API:"
+        f"\n    {AUGMENTS_API_URL_TEMPLATE.format(set_number=current_set_number())}"
+        "\nRun with --write to refresh them alongside the comp tier list."
+        "\nHand-curated tips in backend/game_data.py AUGMENT_RATINGS are kept"
+        "\nand overlaid with the live ratings."
     )
 
 
@@ -201,6 +198,18 @@ def main() -> int:
             print(f"Cache already current (patch={result['patch']}).")
         else:
             print("Cache was within debounce window — no fetch performed.")
+
+        print()
+        print("Fetching augment tier list…")
+        aug_result = asyncio.run(
+            refresh_augments_async(force=args.force, debounce_seconds=0)
+        )
+        if aug_result["error"]:
+            print(f"!! Augment refresh failed: {aug_result['error']}", file=sys.stderr)
+        elif aug_result["refreshed"]:
+            print(f"Augments: {aug_result['count']} synced.")
+        else:
+            print("Augments: cache already current.")
 
         if args.details:
             print()
