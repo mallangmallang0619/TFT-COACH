@@ -50,6 +50,12 @@ function createOverlayWindow() {
     },
   });
 
+  // Exclude the overlay from screen capture (WDA_EXCLUDEFROMCAPTURE on
+  // Windows). Without this the backend's own capture includes the overlay
+  // pixels — it sits exactly over the game's player-HP list, corrupting
+  // OCR of everything underneath it.
+  overlayWindow.setContentProtection(true);
+
   // Enable click-through initially
   setClickThrough(true);
 

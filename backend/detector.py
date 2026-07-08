@@ -9,6 +9,7 @@ Processes captured frames to extract game state:
 
 from __future__ import annotations
 import logging
+import re
 import shutil
 import sys
 import time
@@ -229,7 +230,7 @@ class Detector:
 
         # 2. Core stats (always detect these during a game)
         state.stage, state.stage_confidence = self._ocr_stage(frame)
-        state.player_hp = self._ocr_number(frame, self.rois.player_hp, "HP")
+        state.player_hp = self._ocr_player_hp(frame)
         state.gold = self._ocr_number(frame, self.rois.gold, "Gold")
         state.level = self._ocr_number(frame, self.rois.level, "Level")
 
@@ -242,11 +243,14 @@ class Detector:
             state.board_champions = self._detect_board_champions(frame)
             state.bench_champions = self._detect_bench_champions(frame)
             # Live frames render units as 3D models the portrait templates
-            # can't identify — but the HUD trait panel is 2D and matches
-            # reliably. When hex matching comes up empty, read synergies
-            # from the panel so comp-direction coaching still works.
-            if not state.board_champions:
-                state.active_synergies = self._synergies_from_trait_panel(frame)
+            # can't identify — hex matching produces misses and false
+            # positives. The HUD trait panel is 2D and matches reliably, so
+            # whenever it reads anything, it is the synergy source of truth
+            # (synthetic sim frames have no panel and fall back to the
+            # board-derived synergies in the coach).
+            panel_synergies = self._synergies_from_trait_panel(frame)
+            if panel_synergies:
+                state.active_synergies = panel_synergies
 
         # 5. Augment options (only during augment selection)
         if state.phase == GamePhase.AUGMENT_SELECT:
@@ -362,6 +366,72 @@ class Detector:
             logger.debug(f"OCR failed for {label}: got '{text}'")
             return 0
 
+    # The player list's HP-number column at the right edge. Deliberately
+    # narrow — it excludes summoner names and background scenery while
+    # still containing our enlarged row's digits (which protrude left).
+    # Raw frame ratios (like the trait panel) — at 16:9 the adaptive
+    # viewport is the whole frame.
+    _PLAYER_LIST_STRIP = (0.915, 0.08, 0.978, 0.82)   # x1, y1, x2, y2
+
+    def _ocr_player_hp(self, frame: np.ndarray) -> int:
+        """
+        Read OUR hp from the right-side player list.
+
+        The list reorders by standing every round, so a fixed-position crop
+        reads whichever player happens to sit at that height. Our own row is
+        rendered enlarged (bigger portrait, bigger digits), so instead OCR
+        the whole list strip and take the number drawn with the tallest
+        glyphs; ties go to the leftmost box since our row also protrudes
+        left. Falls back to the fixed ROI if the strip read fails.
+        """
+        if pytesseract is None:
+            return 0
+        h, w = frame.shape[:2]
+        x1r, y1r, x2r, y2r = self._PLAYER_LIST_STRIP
+        strip = frame[int(y1r * h):int(y2r * h), int(x1r * w):int(x2r * w)]
+        if strip.size == 0:
+            return self._ocr_number(frame, self.rois.player_hp, "HP")
+
+        gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
+        gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if np.mean(binary) > 128:
+            binary = cv2.bitwise_not(binary)
+
+        try:
+            data = pytesseract.image_to_data(
+                binary,
+                config="--psm 11 --oem 3 -c tessedit_char_whitelist=0123456789",
+                output_type=pytesseract.Output.DICT,
+            )
+        except Exception as e:
+            logger.debug(f"player-list OCR failed: {e}")
+            return self._ocr_number(frame, self.rois.player_hp, "HP")
+
+        # Tesseract often reports conf=0 for the large-font row we actually
+        # want, so confidence can't be used as a gate. Instead: HP digits
+        # live in the left ~72% of the strip (the right side is the portrait
+        # column, whose circular frames OCR as tall junk digits); among the
+        # remaining boxes the tallest glyphs are our enlarged row.
+        strip_w = binary.shape[1]
+        best: tuple[int, int, int] | None = None   # (height, -left, value)
+        for i, raw in enumerate(data.get("text") or []):
+            txt = (raw or "").strip()
+            if not txt.isdigit():
+                continue
+            value = int(txt)
+            if not (1 <= value <= 100):
+                continue
+            if data["left"][i] > strip_w * 0.72:
+                continue
+            key = (data["height"][i], -data["left"][i], value)
+            if best is None or key > best:
+                best = key
+
+        if best is not None:
+            return best[2]
+        return self._ocr_number(frame, self.rois.player_hp, "HP")
+
     def _ocr_region(self, region: np.ndarray, whitelist: str = "") -> str:
         """
         Run Tesseract OCR on an image region.
@@ -422,17 +492,25 @@ class Detector:
 
         detected = []
 
+        # Inventory icons render at roughly half the (2-column) ROI width;
+        # the CDN templates are a fixed 64px, so resize each template to a
+        # few sizes around the expected slot size before matching.
+        slot_px = max(12, rw // 2)
+        scales = sorted({max(12, int(slot_px * s)) for s in (0.75, 0.9, 1.05)})
+
         for comp_id, template in self.templates.component_templates.items():
-            matches = self._multi_template_match(
-                bench_region, template, COMPONENT_MATCH_THRESHOLD
-            )
-            for mx, my, conf in matches:
-                detected.append(DetectedComponent(
-                    component_id=comp_id,
-                    confidence=conf,
-                    screen_x=x + mx,
-                    screen_y=y + my,
-                ))
+            for size in scales:
+                scaled = cv2.resize(template, (size, size), interpolation=cv2.INTER_AREA)
+                matches = self._multi_template_match(
+                    bench_region, scaled, COMPONENT_MATCH_THRESHOLD
+                )
+                for mx, my, conf in matches:
+                    detected.append(DetectedComponent(
+                        component_id=comp_id,
+                        confidence=conf,
+                        screen_x=x + mx,
+                        screen_y=y + my,
+                    ))
 
         # De-duplicate close matches (within 10px of each other)
         detected = self._deduplicate_detections(detected, min_distance=10)
@@ -557,20 +635,34 @@ class Detector:
 
         counts: dict[str, int] = {}
         for name, _conf, cy in self._detect_trait_rows(frame):
-            # Count text sits immediately right of the symbol column.
-            x1 = int((p.symbol_cx + p.symbol_w / 2) * w)
-            x2 = x1 + int(p.symbol_w * 0.9 * w)
-            y1 = int((cy - p.symbol_h / 2) * h)
-            y2 = int((cy + p.symbol_h / 2) * h)
-            crop = frame[max(0, y1):y2, max(0, x1):x2]
-            text = self._ocr_region(crop, whitelist="0123456789")
-            try:
-                count = int(text)
-            except ValueError:
-                count = 0
-            if count <= 0:
-                breakpoints = (TRAITS.get(name) or {}).get("breakpoints") or [1]
-                count = breakpoints[0]
+            # Active rows show a dark badge with a bright white count digit
+            # right of the symbol; inactive (greyed) rows have no badge and
+            # show dim "1 / 2"-style progress under the name instead.
+            x1 = int((p.symbol_cx + p.symbol_w * 0.15) * w)
+            x2 = x1 + int(p.symbol_w * 0.85 * w)
+            y1 = int((cy - p.symbol_h * 0.32) * h)
+            y2 = int((cy + p.symbol_h * 0.32) * h)
+            badge = frame[max(0, y1):y2, max(0, x1):x2]
+            badge_gray = cv2.cvtColor(badge, cv2.COLOR_BGR2GRAY) if badge.size else None
+            has_badge = badge_gray is not None and float(badge_gray.max()) >= 200
+
+            breakpoints = (TRAITS.get(name) or {}).get("breakpoints") or [1]
+            if has_badge:
+                # Badge digit; the breakpoint line below may leak stray
+                # digits into the OCR — the first digit is the count.
+                text = self._ocr_region(badge, whitelist="0123456789")
+                m = re.match(r"(\d)", text.strip())
+                count = int(m.group(1)) if m else breakpoints[0]
+            else:
+                # Greyed row: read the "count / needed" progress text that
+                # sits in the lower half of the row.
+                ly1 = int((cy + p.symbol_h * 0.02) * h)
+                ly2 = int((cy + p.symbol_h * 0.55) * h)
+                lx2 = x1 + int(p.symbol_w * 1.6 * w)
+                line = frame[max(0, ly1):ly2, max(0, x1):lx2]
+                text = self._ocr_region(line, whitelist="0123456789/")
+                m = re.search(r"(\d)\s*/", text)
+                count = int(m.group(1)) if m else max(1, breakpoints[0] - 1)
             counts[name] = count
 
         return synergies_from_counts(counts)
