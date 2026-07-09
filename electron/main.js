@@ -18,6 +18,10 @@ const path = require("path");
 let overlayWindow = null;
 let isInteractive = false;
 let isVisible = true;
+// Ghost lock: while true the overlay never captures the mouse, even on
+// hover — needed when clicking game UI that sits underneath it (the
+// player list used for scouting other boards is right below the panel).
+let hoverLocked = false;
 
 function createOverlayWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
@@ -50,6 +54,12 @@ function createOverlayWindow() {
     },
   });
 
+  // Exclude the overlay from screen capture (WDA_EXCLUDEFROMCAPTURE on
+  // Windows). Without this the backend's own capture includes the overlay
+  // pixels — it sits exactly over the game's player-HP list, corrupting
+  // OCR of everything underneath it.
+  overlayWindow.setContentProtection(true);
+
   // Enable click-through initially
   setClickThrough(true);
 
@@ -79,9 +89,21 @@ function createOverlayWindow() {
 
   console.log("[TFT Coach] Overlay window created");
   console.log("[TFT Coach] Hotkeys:");
+  console.log("  Ctrl+Shift+G  — Ghost lock (overlay never captures the mouse — scout freely)");
   console.log("  Ctrl+Shift+T  — Toggle click-through (interact with overlay)");
   console.log("  Ctrl+Shift+H  — Show/Hide overlay");
   console.log("  Ctrl+Shift+Q  — Quit TFT Coach");
+}
+
+function setHoverLock(locked) {
+  hoverLocked = locked;
+  if (locked) {
+    setClickThrough(true);   // release the mouse immediately
+  }
+  if (overlayWindow) {
+    overlayWindow.webContents.send("hover-lock", hoverLocked);
+  }
+  console.log(`[TFT Coach] Ghost lock: ${locked ? "ON — overlay is pure glass" : "OFF"}`);
 }
 
 function setClickThrough(enabled) {
@@ -118,8 +140,17 @@ function registerHotkeys() {
     return ok;
   };
 
+  // Ghost lock — overlay stays visible but never captures the mouse.
+  // Use while scouting: the game's player list sits underneath the panel.
+  register("Ctrl+Shift+G", () => {
+    setHoverLock(!hoverLocked);
+  });
+
   // Toggle click-through
   register("Ctrl+Shift+T", () => {
+    if (hoverLocked) {
+      setHoverLock(false);  // manual toggle overrides the lock
+    }
     setClickThrough(isInteractive); // Toggle
   });
 
@@ -194,6 +225,9 @@ function startHoverRelease() {
 }
 
 ipcMain.on("set-interactive", (event, enabled) => {
+  if (hoverLocked) {
+    return;   // ghost lock: hover never grabs the mouse
+  }
   if (enabled && !isInteractive) {
     setClickThrough(false);
     startHoverRelease();

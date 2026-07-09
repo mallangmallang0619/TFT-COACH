@@ -100,3 +100,5 @@ Desktop.ini
 # Diagnostic output (diagnose_capture.py writes timestamped frames here)
 backend/_debug/diagnose_*.png
 backend/_debug/hexes_*/
+backend/_debug/*.png
+backend/_training/

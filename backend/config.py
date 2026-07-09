@@ -128,7 +128,10 @@ GAME_WINDOW_TITLE = "League of Legends"  # Window title to locate
 CONFIDENCE_THRESHOLD = 0.80   # Template match confidence minimum
 OCR_CONFIDENCE_MIN = 60       # Tesseract confidence minimum (0-100)
 COMPONENT_MATCH_THRESHOLD = 0.82
-CHAMPION_MATCH_THRESHOLD = 0.78
+# 0.78 produced false positives on live frames (3D unit models randomly
+# matching portraits); synthetic-board confidences all land ≥ 0.85, so 0.83
+# keeps sim mode intact while cutting live noise.
+CHAMPION_MATCH_THRESHOLD = 0.83
 # Trait symbols are matched multi-scale + polarity-invariant; validated against a
 # real frame where actives scored 0.78–0.90 and the best wrong guess was ~0.75.
 TRAIT_MATCH_THRESHOLD = 0.76
@@ -214,9 +217,13 @@ class GameROIs:
         default_factory=lambda: RegionOfInterest(0.148, 0.820, 0.060, 0.034)
     )
 
-    # Item bench — the component storage area (bottom-left of board)
+    # Item bench — the component inventory: a slot column on the far LEFT
+    # edge. It fills upward from the bottom, so with many items the icons
+    # sit high (level with the trait rows) and with few they sit low —
+    # cover the whole strip. (Verified against the real fixture and a live
+    # 2560x1440 capture; the old bottom-center box was the champion bench.)
     item_bench: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.325, 0.775, 0.35, 0.045)
+        default_factory=lambda: RegionOfInterest(0.002, 0.24, 0.053, 0.58)
     )
 
     # Champion bench — the bench row below the board
@@ -252,8 +259,26 @@ class TraitPanel:
     symbol_w: float = 0.028     # search-window width (ratio of frame width)
     symbol_h: float = 0.040     # search-window height (ratio of frame height)
     first_row_cy: float = 0.285 # vertical center of the top trait row
-    row_pitch: float = 0.0485   # vertical spacing between rows
+    # Measured on both the 3600x2026 fixture and a live 2560x1440 capture —
+    # 0.0485 drifted a quarter-row down by row 5, corrupting count OCR.
+    row_pitch: float = 0.0466   # vertical spacing between rows
     max_rows: int = 12          # how many row slots to scan
+
+
+# ── Shop Cards ────────────────────────────────────────────────────────────────
+# The five shop cards at the bottom. Champion names are OCR'd from each
+# card's bottom banner (white bold text — far more reliable than matching
+# the card art, and skin-proof). Geometry measured on a live 2560x1440
+# capture and the 3600x2026 fixture; raw frame ratios like the trait panel.
+
+@dataclass
+class ShopGeometry:
+    cards_x0: float = 0.2495    # left edge of the first card
+    card_pitch: float = 0.1002  # horizontal distance between card left edges
+    name_y0: float = 0.960      # top of the name banner
+    name_y1: float = 0.992      # bottom of the name banner
+    name_pad_x: float = 0.004   # skip the banner's left border
+    cost_pad_x: float = 0.026   # exclude the cost number on the banner's right
 
 
 # ── Board Hex Grid Mapping ────────────────────────────────────────────────────

@@ -96,8 +96,16 @@ npm start                     # terminal 3 (Electron overlay)
 The overlay is click-through ("ghost mode") by default so game clicks pass
 underneath — **hover over the panel to interact with it**; move the cursor
 off and it goes back to ghost mode. The badge in the header shows the
-current mode. Hotkeys: `Ctrl+Shift+T` manual click-through toggle ·
-`Ctrl+Shift+H` show/hide · `Ctrl+Shift+Q` quit.
+current mode.
+
+Hotkeys (global — they work while the game has focus):
+
+| Keys | Action |
+|------|--------|
+| `Ctrl+Shift+G` | **Ghost lock** — overlay never captures the mouse, even on hover. Use while scouting: TFT's player list sits underneath the panel, and this lets your clicks reach it. Press again to unlock. |
+| `Ctrl+Shift+H` | Show / hide the overlay (e.g. before alt-tabbing — the overlay floats above other apps). |
+| `Ctrl+Shift+T` | Manual click-through toggle (also clears ghost lock). |
+| `Ctrl+Shift+Q` | Quit TFT Coach. |
 
 ### Troubleshooting live detection
 
@@ -232,7 +240,10 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] Context-aware comp direction (held components + taken augments boost matching comps)
 - [x] Contextual augment picks (offers scored by tier + comp fit + active synergies, best flagged ★ PICK)
 - [x] Meta board layouts (Position tab renders TFT Academy's recommended placement, stars, and items for your comp)
-- [ ] Live unit identification — board/bench are 3D models; needs an in-game template library (collect with `diagnose_capture.py --dump-hexes`)
+- [x] Shop-card reading (name-banner OCR + fuzzy roster matching — skin-proof, no art templates)
+- [x] Purchase-tracking roster — shop diffs between frames reveal buys; owned units (with 3-copy star-ups) feed comp direction as held units
+- [x] Auto-labeling training-data harvester — every purchase saves the bench crop it lands in, labeled by the shop card name, to `backend/_training/` (gitignored). Just play games and the classifier dataset builds itself. Raw crops stay local; only the trained model will ship in the repo (`assets/models/`), so users never collect or train. Pool crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
+- [ ] Live unit identification — a small per-hex CNN classifier trained on the harvested crops (needs a few games of collected data first)
 - [ ] Player-HP row tracking — the right-side player list reorders by standing, so the fixed HP ROI reads the wrong row late-game
 - [ ] Opponent scouting + positioning prediction (read enemy boards during combat, suggest counter-positioning)
 - [ ] New-set data migration — `game_data.py` CHAMPIONS/TRAITS/META_COMPS seeds are still hand-written per set; templates need a `--force` re-fetch
