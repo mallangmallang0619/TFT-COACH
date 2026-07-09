@@ -96,8 +96,16 @@ npm start                     # terminal 3 (Electron overlay)
 The overlay is click-through ("ghost mode") by default so game clicks pass
 underneath — **hover over the panel to interact with it**; move the cursor
 off and it goes back to ghost mode. The badge in the header shows the
-current mode. Hotkeys: `Ctrl+Shift+T` manual click-through toggle ·
-`Ctrl+Shift+H` show/hide · `Ctrl+Shift+Q` quit.
+current mode.
+
+Hotkeys (global — they work while the game has focus):
+
+| Keys | Action |
+|------|--------|
+| `Ctrl+Shift+G` | **Ghost lock** — overlay never captures the mouse, even on hover. Use while scouting: TFT's player list sits underneath the panel, and this lets your clicks reach it. Press again to unlock. |
+| `Ctrl+Shift+H` | Show / hide the overlay (e.g. before alt-tabbing — the overlay floats above other apps). |
+| `Ctrl+Shift+T` | Manual click-through toggle (also clears ghost lock). |
+| `Ctrl+Shift+Q` | Quit TFT Coach. |
 
 ### Troubleshooting live detection
 

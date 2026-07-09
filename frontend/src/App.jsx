@@ -832,11 +832,13 @@ export default function App() {
   // main process to capture the mouse, mouse-out releases it again.
   const inElectron = typeof window !== "undefined" && !!window.electronAPI;
   const [isInteractive, setIsInteractive] = useState(!inElectron);
+  const [hoverLocked, setHoverLocked] = useState(false);
   useEffect(() => {
     if (!inElectron) return;
     window.electronAPI.onInteractionMode?.((interactive) =>
       setIsInteractive(interactive)
     );
+    window.electronAPI.onHoverLock?.((locked) => setHoverLocked(locked));
   }, [inElectron]);
   // Only request interactivity on enter — release is handled by the main
   // process polling the cursor position, since renderer mouseleave events
@@ -952,17 +954,19 @@ export default function App() {
           <ConnectionBadge isConnected={isConnected} isDemo={isDemo} />
           {inElectron && (
             <span
-              title={isInteractive
-                ? "Interactive — clicks stay on the overlay"
-                : "Ghost mode — clicks pass through to the game (hover to interact)"}
+              title={hoverLocked
+                ? "Ghost lock — overlay never captures the mouse; scout and click the game freely. Ctrl+Shift+G to unlock."
+                : isInteractive
+                ? "Interactive — clicks stay on the overlay. Hotkeys: Ctrl+Shift+G ghost lock · Ctrl+Shift+H hide · Ctrl+Shift+Q quit"
+                : "Ghost mode — clicks pass through to the game (hover to interact). Hotkeys: Ctrl+Shift+G ghost lock · Ctrl+Shift+H hide · Ctrl+Shift+Q quit"}
               style={{
                 fontFamily: "var(--mono)", fontSize: "9px", fontWeight: 700,
                 letterSpacing: "1px", padding: "3px 8px", borderRadius: "5px",
-                color: isInteractive ? "#4ade80" : "#8b8fa3",
-                border: `1px solid ${isInteractive ? "#4ade8040" : "#2a2d35"}`,
+                color: hoverLocked ? "#f59e0b" : isInteractive ? "#4ade80" : "#8b8fa3",
+                border: `1px solid ${hoverLocked ? "#f59e0b55" : isInteractive ? "#4ade8040" : "#2a2d35"}`,
               }}
             >
-              {isInteractive ? "🖱 ACTIVE" : "👻 GHOST"}
+              {hoverLocked ? "🔒 LOCKED" : isInteractive ? "🖱 ACTIVE" : "👻 GHOST"}
             </span>
           )}
         </div>

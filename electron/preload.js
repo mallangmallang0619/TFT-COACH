@@ -33,6 +33,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
       callback(isInteractive)
     ),
 
+  // Listen for ghost-lock state changes (Ctrl+Shift+G)
+  onHoverLock: (callback) =>
+    ipcRenderer.on("hover-lock", (event, locked) => callback(locked)),
+
   // Check if running in Electron
   isElectron: true,
 });
