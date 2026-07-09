@@ -265,6 +265,22 @@ class TraitPanel:
     max_rows: int = 12          # how many row slots to scan
 
 
+# ── Shop Cards ────────────────────────────────────────────────────────────────
+# The five shop cards at the bottom. Champion names are OCR'd from each
+# card's bottom banner (white bold text — far more reliable than matching
+# the card art, and skin-proof). Geometry measured on a live 2560x1440
+# capture and the 3600x2026 fixture; raw frame ratios like the trait panel.
+
+@dataclass
+class ShopGeometry:
+    cards_x0: float = 0.2495    # left edge of the first card
+    card_pitch: float = 0.1002  # horizontal distance between card left edges
+    name_y0: float = 0.960      # top of the name banner
+    name_y1: float = 0.992      # bottom of the name banner
+    name_pad_x: float = 0.004   # skip the banner's left border
+    cost_pad_x: float = 0.026   # exclude the cost number on the banner's right
+
+
 # ── Board Hex Grid Mapping ────────────────────────────────────────────────────
 #
 # TFT board is 7 columns × 4 rows. Each hex center is mapped as a ratio

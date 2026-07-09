@@ -578,6 +578,72 @@ def test_augment_pick_context():
     return f"pick={picks[0]['name']} (score {picks[0]['context_score']}), reasons OK"
 
 
+def test_roster_tracker():
+    """Shop-diff purchase tracking: buys, rerolls, star-ups, new-game reset."""
+    from roster import RosterTracker
+    from game_state import GameState, GamePhase
+
+    def state(stage, shop):
+        return GameState(phase=GamePhase.PLANNING, stage=stage, shop_units=shop)
+
+    r = RosterTracker()
+    # First frame establishes the baseline — no purchases yet.
+    r.update(state("2-1", ["Gwen", "Riven", "Poppy", "Lulu", "Gnar"]))
+    assert r.total_purchases == 0
+
+    # One card vanished, rest unchanged → purchase.
+    r.update(state("2-1", ["Gwen", None, "Poppy", "Lulu", "Gnar"]))
+    assert r.total_purchases == 1
+
+    # Two more vanish in the same tick (double buy) → both counted.
+    r.update(state("2-1", [None, None, "Poppy", None, "Gnar"]))
+    assert r.total_purchases == 3
+
+    # Full reroll (all slots replaced) → no purchases inferred.
+    r.update(state("2-2", ["Sona", "Shen", "Zed", "Akali", "Fiora"]))
+    assert r.total_purchases == 3
+
+    # Buy Gwen twice more → 3 copies auto-combine into one 2-star.
+    r.update(state("2-2", ["Gwen", "Shen", "Zed", "Akali", "Gwen"]))   # reroll-ish? replaced=2 → skip
+    r.update(state("2-2", [None, "Shen", "Zed", "Akali", "Gwen"]))
+    r.update(state("2-2", [None, "Shen", "Zed", "Akali", None]))
+    units = r.owned_units()
+    gwens = [u for u in units if u.name == "Gwen"]
+    assert len(gwens) == 1 and gwens[0].star_level == 2, \
+        f"3 Gwen copies should combine to one 2-star, got {[(u.name, u.star_level) for u in gwens]}"
+
+    # New game (stage number goes backwards) → roster resets.
+    r.update(state("1-1", ["Poppy", "Gnar", "Lulu", "Sona", "Shen"]))
+    assert r.total_purchases == 0, "stage going backwards should reset the roster"
+
+    return "buys, double-buy, reroll skip, star-up combine, reset OK"
+
+
+def test_shop_ocr_real_frame():
+    """Shop card names read correctly from the real fixture screenshot."""
+    import cv2
+    from pathlib import Path
+    fixture = Path(__file__).parent / "fixtures" / "tft_screenshot.png"
+    if not fixture.exists():
+        return "fixture missing — skipped"
+    # detector's import sets the Windows tesseract path fallback — import
+    # it before probing for the binary.
+    from detector import Detector, TemplateStore
+    try:
+        import pytesseract
+        pytesseract.get_tesseract_version()
+    except Exception:
+        return "tesseract unavailable — skipped"
+    t = TemplateStore()
+    t.load()
+    d = Detector(t)
+    frame = cv2.imread(str(fixture))
+    got = d._detect_shop(frame)
+    expected = ["Gwen", None, "Rek'Sai", "Miss Fortune", "Ornn"]
+    assert got == expected, f"shop OCR mismatch: {got} != {expected}"
+    return f"5 slots read: {got}"
+
+
 def test_set_autodetect():
     """Current-set detection from CDragon payload and comp slugs."""
     from tftacademy_live import current_set_number, CURRENT_SET_NUMBER
@@ -764,6 +830,8 @@ def main():
     test("Set auto-detection", test_set_autodetect)
     test("Context comp scoring", test_context_comp_scoring)
     test("Augment pick context", test_augment_pick_context)
+    test("Roster tracker", test_roster_tracker)
+    test("Shop OCR (real frame)", test_shop_ocr_real_frame)
     test("TFT Academy debounce", test_tftacademy_debounce)
 
     print("\n[Dependencies]")

@@ -53,8 +53,10 @@ from config import (
     LOG_DETECTION_FRAMES,
     LOG_FRAME_DIR,
     GameROIs,
+    ShopGeometry,
     TraitPanel,
 )
+from game_data import find_champion_name
 from game_state import (
     GameState,
     GamePhase,
@@ -251,6 +253,11 @@ class Detector:
             panel_synergies = self._synergies_from_trait_panel(frame)
             if panel_synergies:
                 state.active_synergies = panel_synergies
+
+            # Shop card names — feeds the purchase-tracking roster, which
+            # is the reliable source of "what units does the player own"
+            # while board/bench unit ID isn't viable on live frames.
+            state.shop_units = self._detect_shop(frame)
 
         # 5. Augment options (only during augment selection)
         if state.phase == GamePhase.AUGMENT_SELECT:
@@ -473,6 +480,31 @@ class Detector:
         except Exception as e:
             logger.debug(f"OCR error: {e}")
             return ""
+
+    def _detect_shop(self, frame: np.ndarray) -> list[Optional[str]]:
+        """
+        Read the five shop card names.
+
+        Card art is 3D-ish splash art, but the name banner at each card's
+        bottom is clean white text — OCR it and resolve against the champion
+        roster (fuzzy, like augment names). Empty or unreadable slots come
+        back as None.
+        """
+        h, w = frame.shape[:2]
+        g = ShopGeometry()
+        names: list[Optional[str]] = []
+        for i in range(5):
+            x1 = int((g.cards_x0 + i * g.card_pitch + g.name_pad_x) * w)
+            x2 = int((g.cards_x0 + (i + 1) * g.card_pitch - g.cost_pad_x) * w)
+            y1 = int(g.name_y0 * h)
+            y2 = int(g.name_y1 * h)
+            crop = frame[y1:y2, x1:x2]
+            text = self._ocr_region(
+                crop,
+                whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'. ",
+            )
+            names.append(find_champion_name(text))
+        return names
 
     # ── Component Detection ───────────────────────────────────────────────────
 

@@ -200,6 +200,10 @@ class GameState(BaseModel):
     augment_options: list[DetectedAugment] = Field(default_factory=list)
     selected_augments: list[str] = Field(default_factory=list)  # Already chosen augments
 
+    # The five shop card names (None = empty/unreadable slot). Read via
+    # name-banner OCR; feeds the purchase-tracking roster.
+    shop_units: list[Optional[str]] = Field(default_factory=list)
+
     # Coaching (populated by coach.py)
     advice: Optional[CoachingAdvice] = None
 

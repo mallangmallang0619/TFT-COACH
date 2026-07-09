@@ -708,3 +708,39 @@ def find_augment_rating(name: str) -> tuple[str | None, dict | None]:
         key = index[close[0]]
         return key, AUGMENT_RATINGS[key]
     return None, None
+
+
+# ── Champion name lookup ──────────────────────────────────────────────────────
+# Shop-card OCR is noisy the same way augment OCR is; resolve reads against
+# the champion roster with the same exact → normalized → fuzzy ladder.
+
+_champion_norm_index: dict[str, str] = {}
+
+
+def _champion_index() -> dict[str, str]:
+    global _champion_norm_index
+    if not _champion_norm_index:
+        _champion_norm_index = {
+            _normalize_augment_name(k): k for k in CHAMPIONS
+        }
+    return _champion_norm_index
+
+
+def find_champion_name(text: str) -> str | None:
+    """
+    Resolve OCR'd shop-card text to a champion name, or None when the text
+    doesn't plausibly match any champion (empty slot, garbage read).
+    """
+    if not text:
+        return None
+    norm = _normalize_augment_name(text)
+    if len(norm) < 3:
+        return None
+    index = _champion_index()
+    key = index.get(norm)
+    if key:
+        return key
+    close = _difflib.get_close_matches(norm, list(index), n=1, cutoff=0.75)
+    if close:
+        return index[close[0]]
+    return None

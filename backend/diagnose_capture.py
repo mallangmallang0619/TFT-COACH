@@ -191,6 +191,7 @@ def main() -> int:
     print(f"  gold:       {state.gold}")
     print(f"  level:      {state.level}")
     print(f"  components: {state.component_ids}")
+    print(f"  shop:       {state.shop_units}")
     print(f"  board:      {[(c.name, c.board_row, c.board_col) for c in state.board_champions]}")
     print(f"  bench:      {[c.name for c in state.bench_champions]}")
     print(f"  synergies:  {[(s.name, s.count) for s in state.active_synergies]}")
