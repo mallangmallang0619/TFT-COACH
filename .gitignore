@@ -101,3 +101,4 @@ Desktop.ini
 backend/_debug/diagnose_*.png
 backend/_debug/hexes_*/
 backend/_debug/*.png
+backend/_training/

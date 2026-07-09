@@ -619,6 +619,50 @@ def test_roster_tracker():
     return "buys, double-buy, reroll skip, star-up combine, reset OK"
 
 
+def test_bench_harvester():
+    """Purchases pair with newly-occupied bench slots and save labeled crops."""
+    import tempfile
+    import numpy as np
+    from pathlib import Path
+    from harvest import BenchHarvester
+    from config import GameROIs
+
+    h, w = 720, 1280
+    rois = GameROIs()
+    bx, by, bw, bh = rois.champion_bench.to_pixels(w, h)
+    slot_w = bw // 9
+
+    def frame(occupied_slots):
+        f = np.full((h, w, 3), 40, dtype=np.uint8)   # flat = empty bench
+        rng = np.random.default_rng(7)
+        for s in occupied_slots:
+            noise = rng.integers(0, 255, (bh, slot_w, 3), dtype=np.uint8)
+            f[by:by + bh, bx + s * slot_w: bx + (s + 1) * slot_w] = noise
+        return f
+
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp))
+
+        # Baseline frame — nothing saved even with a purchase (no previous
+        # occupancy to diff against).
+        assert hv.process(frame([]), ["Gwen"]) == 0
+
+        # Gwen bought → slot 0 flips occupied → labeled crop saved.
+        assert hv.process(frame([0]), ["Gwen"]) == 1
+        saved = list(Path(tmp).rglob("*.png"))
+        assert len(saved) == 1 and "Gwen" in str(saved[0].parent)
+
+        # No purchase → occupancy change alone saves nothing (unit moved).
+        assert hv.process(frame([0, 1]), []) == 0
+
+        # Double buy → two new slots, two crops, paired in order.
+        assert hv.process(frame([0, 1, 2, 3]), ["Riven", "Poppy"]) == 2
+        names = {p.parent.name for p in Path(tmp).rglob("*.png")}
+        assert names == {"Gwen", "Riven", "Poppy"}, names
+
+    return "baseline, single buy, move-ignore, double buy OK"
+
+
 def test_shop_ocr_real_frame():
     """Shop card names read correctly from the real fixture screenshot."""
     import cv2
@@ -831,6 +875,7 @@ def main():
     test("Context comp scoring", test_context_comp_scoring)
     test("Augment pick context", test_augment_pick_context)
     test("Roster tracker", test_roster_tracker)
+    test("Bench harvester", test_bench_harvester)
     test("Shop OCR (real frame)", test_shop_ocr_real_frame)
     test("TFT Academy debounce", test_tftacademy_debounce)
 

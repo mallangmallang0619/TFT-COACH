@@ -21,6 +21,7 @@ from config import WEBSOCKET_HOST, WEBSOCKET_PORT, CAPTURE_FPS
 from capture import ScreenCapture
 from detector import Detector, TemplateStore
 from coach import Coach
+from harvest import BenchHarvester
 from roster import RosterTracker
 from game_state import GameState, GamePhase
 from game_data import ITEM_RECIPES, COMPONENT_IDS, COMPONENT_NAMES, SHRED_ITEMS, BURN_ITEMS
@@ -41,6 +42,7 @@ class TFTCoachServer:
         self.detector = Detector(self.templates)
         self.coach = Coach()
         self.roster = RosterTracker()
+        self.harvester = BenchHarvester()
 
         self.clients: Set[WebSocketServerProtocol] = set()
         self.latest_state: GameState = GameState()
@@ -271,8 +273,11 @@ class TFTCoachServer:
                 # Track shop purchases → owned units. Board/bench unit ID
                 # isn't viable on live frames (3D models), so the roster is
                 # the source for "what units the player holds" — feed it in
-                # as bench champions for comp direction.
-                self.roster.update(state)
+                # as bench champions for comp direction. Each purchase also
+                # auto-labels the bench crop it lands in (classifier
+                # training data).
+                purchases = self.roster.update(state)
+                self.harvester.process(frame, purchases)
                 if not state.bench_champions:
                     state.bench_champions = self.roster.owned_units()
 

@@ -242,7 +242,8 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] Meta board layouts (Position tab renders TFT Academy's recommended placement, stars, and items for your comp)
 - [x] Shop-card reading (name-banner OCR + fuzzy roster matching — skin-proof, no art templates)
 - [x] Purchase-tracking roster — shop diffs between frames reveal buys; owned units (with 3-copy star-ups) feed comp direction as held units
-- [ ] Live unit identification — planned as a small per-hex CNN classifier; the purchase tracker doubles as the auto-labeling pipeline (shop tells us what was bought, the bench crop that appears is the labeled sample)
+- [x] Auto-labeling training-data harvester — every purchase saves the bench crop it lands in, labeled by the shop card name, to `backend/_training/` (gitignored). Just play games and the classifier dataset builds itself
+- [ ] Live unit identification — a small per-hex CNN classifier trained on the harvested crops (needs a few games of collected data first)
 - [ ] Player-HP row tracking — the right-side player list reorders by standing, so the fixed HP ROI reads the wrong row late-game
 - [ ] Opponent scouting + positioning prediction (read enemy boards during combat, suggest counter-positioning)
 - [ ] New-set data migration — `game_data.py` CHAMPIONS/TRAITS/META_COMPS seeds are still hand-written per set; templates need a `--force` re-fetch

@@ -42,20 +42,28 @@ class RosterTracker:
         self._prev_shop = None
         self._prev_stage = None
 
-    def update(self, state: GameState) -> None:
-        """Diff this frame's shop against the previous one."""
+    def update(self, state: GameState) -> list[str]:
+        """
+        Diff this frame's shop against the previous one.
+
+        Returns the champions purchased in this frame (shop slot order) so
+        callers can pair them with newly-occupied bench slots — that pairing
+        is the auto-labeling source for unit-classifier training data.
+        """
         stage = state.stage if state.stage and state.stage != "?" else None
         if stage and self._is_new_game(stage):
             logger.info("Roster reset — new game detected")
             self.reset()
 
+        purchases: list[str] = []
         shop = list(state.shop_units or [])
         if len(shop) == 5:
             if self._prev_shop is not None:
-                self._diff_shop(self._prev_shop, shop)
+                purchases = self._diff_shop(self._prev_shop, shop)
             self._prev_shop = shop
         if stage:
             self._prev_stage = stage
+        return purchases
 
     def owned_units(self) -> list[DetectedChampion]:
         """Current roster as bench-style champions (no board position)."""
@@ -85,15 +93,18 @@ class RosterTracker:
         except (ValueError, IndexError):
             return False
 
-    def _diff_shop(self, prev: list[Optional[str]], cur: list[Optional[str]]) -> None:
+    def _diff_shop(
+        self, prev: list[Optional[str]], cur: list[Optional[str]]
+    ) -> list[str]:
         vanished = [a for a, b in zip(prev, cur) if a and b is None]
         replaced = sum(1 for a, b in zip(prev, cur) if a and b and a != b)
 
         # Two or more cards swapped for different ones = reroll or round
         # rollover — the whole shop changed, nothing was necessarily bought.
         if replaced >= 2:
-            return
+            return []
 
         for name in vanished:
             self._copies[name] += 1
             logger.info(f"Purchase detected: {name} (copies: {self._copies[name]})")
+        return vanished
