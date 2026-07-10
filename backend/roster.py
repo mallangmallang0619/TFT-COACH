@@ -36,11 +36,15 @@ class RosterTracker:
         self._copies: Counter[str] = Counter()   # 1-star-equivalent copies
         self._prev_shop: Optional[list[Optional[str]]] = None
         self._prev_stage: Optional[str] = None
+        self._prev_gold: Optional[int] = None
+        self._reset_pending = False
 
     def reset(self) -> None:
         self._copies.clear()
         self._prev_shop = None
         self._prev_stage = None
+        self._prev_gold = None
+        self._reset_pending = False
 
     def update(self, state: GameState) -> list[str]:
         """
@@ -51,19 +55,58 @@ class RosterTracker:
         is the auto-labeling source for unit-classifier training data.
         """
         stage = state.stage if state.stage and state.stage != "?" else None
-        if stage and self._is_new_game(stage):
-            logger.info("Roster reset — new game detected")
-            self.reset()
+        if stage:
+            # A single OCR misread ("4-5" seen as "1-5") must not wipe the
+            # roster — require the stage regression on two consecutive
+            # frames before treating it as a new game.
+            if self._is_new_game(stage):
+                if self._reset_pending:
+                    logger.info("Roster reset — new game detected")
+                    self.reset()
+                else:
+                    self._reset_pending = True
+            else:
+                self._reset_pending = False
 
         purchases: list[str] = []
         shop = list(state.shop_units or [])
-        if len(shop) == 5:
+        gold = state.gold if state.gold is not None and state.gold >= 0 else None
+
+        # A shop with no readable card is an obscured shop (carousel,
+        # transitions, overlays) — diffing against it would count every
+        # previous card as "purchased". Skip the frame and keep the old
+        # baseline; when the shop reappears with new cards, the ≥2-replaced
+        # guard treats it as a refresh.
+        if len(shop) == 5 and any(shop):
             if self._prev_shop is not None:
                 purchases = self._diff_shop(self._prev_shop, shop)
+                if purchases and not self._gold_supports_purchase(gold):
+                    logger.debug(
+                        f"Ignoring vanished cards {purchases} — gold did not drop"
+                    )
+                    purchases = []
+                for name in purchases:
+                    self._copies[name] += 1
+                    logger.info(
+                        f"Purchase detected: {name} (copies: {self._copies[name]})"
+                    )
             self._prev_shop = shop
-        if stage:
+
+        # While a reset is pending, keep the old stage baseline — updating
+        # it to the regressed value would make the confirming second frame
+        # look like normal progression.
+        if stage and not self._reset_pending:
             self._prev_stage = stage
+        if gold is not None:
+            self._prev_gold = gold
         return purchases
+
+    def _gold_supports_purchase(self, gold: Optional[int]) -> bool:
+        """Purchases cost gold — if we can read both frames' gold and it
+        didn't drop, the vanished cards weren't bought (misread/occlusion)."""
+        if gold is None or self._prev_gold is None:
+            return True   # can't verify — don't block real purchases
+        return gold < self._prev_gold
 
     def owned_units(self) -> list[DetectedChampion]:
         """Current roster as bench-style champions (no board position)."""
@@ -96,6 +139,7 @@ class RosterTracker:
     def _diff_shop(
         self, prev: list[Optional[str]], cur: list[Optional[str]]
     ) -> list[str]:
+        """Returns the cards that look purchased; caller applies them."""
         vanished = [a for a, b in zip(prev, cur) if a and b is None]
         replaced = sum(1 for a, b in zip(prev, cur) if a and b and a != b)
 
@@ -104,7 +148,10 @@ class RosterTracker:
         if replaced >= 2:
             return []
 
-        for name in vanished:
-            self._copies[name] += 1
-            logger.info(f"Purchase detected: {name} (copies: {self._copies[name]})")
+        # Three or more cards gone at once within a single capture interval
+        # is almost certainly the shop being obscured mid-read, not a
+        # triple-buy — don't poison the roster (or the training labels).
+        if len(vanished) >= 3:
+            return []
+
         return vanished

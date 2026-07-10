@@ -579,44 +579,62 @@ def test_augment_pick_context():
 
 
 def test_roster_tracker():
-    """Shop-diff purchase tracking: buys, rerolls, star-ups, new-game reset."""
+    """Shop-diff purchase tracking: buys, rerolls, star-ups, guards, reset."""
     from roster import RosterTracker
     from game_state import GameState, GamePhase
 
-    def state(stage, shop):
-        return GameState(phase=GamePhase.PLANNING, stage=stage, shop_units=shop)
+    def state(stage, shop, gold):
+        return GameState(phase=GamePhase.PLANNING, stage=stage,
+                         shop_units=shop, gold=gold)
 
     r = RosterTracker()
     # First frame establishes the baseline — no purchases yet.
-    r.update(state("2-1", ["Gwen", "Riven", "Poppy", "Lulu", "Gnar"]))
+    r.update(state("2-1", ["Gwen", "Riven", "Poppy", "Lulu", "Gnar"], 30))
     assert r.total_purchases == 0
 
-    # One card vanished, rest unchanged → purchase.
-    r.update(state("2-1", ["Gwen", None, "Poppy", "Lulu", "Gnar"]))
+    # One card vanished, rest unchanged, gold dropped → purchase.
+    r.update(state("2-1", ["Gwen", None, "Poppy", "Lulu", "Gnar"], 27))
     assert r.total_purchases == 1
 
     # Two more vanish in the same tick (double buy) → both counted.
-    r.update(state("2-1", [None, None, "Poppy", None, "Gnar"]))
+    r.update(state("2-1", [None, None, "Poppy", None, "Gnar"], 22))
     assert r.total_purchases == 3
 
     # Full reroll (all slots replaced) → no purchases inferred.
-    r.update(state("2-2", ["Sona", "Shen", "Zed", "Akali", "Fiora"]))
+    r.update(state("2-2", ["Sona", "Shen", "Zed", "Akali", "Fiora"], 20))
     assert r.total_purchases == 3
 
-    # Buy Gwen twice more → 3 copies auto-combine into one 2-star.
-    r.update(state("2-2", ["Gwen", "Shen", "Zed", "Akali", "Gwen"]))   # reroll-ish? replaced=2 → skip
-    r.update(state("2-2", [None, "Shen", "Zed", "Akali", "Gwen"]))
-    r.update(state("2-2", [None, "Shen", "Zed", "Akali", None]))
+    # Shop obscured (carousel/transition — all slots unreadable) → no
+    # false purchases, and the baseline survives for the next real frame.
+    r.update(state("2-2", [None, None, None, None, None], 20))
+    assert r.total_purchases == 3, "obscured shop must not count as purchases"
+
+    # Card vanished but gold did NOT drop → misread, not a buy.
+    r.update(state("2-2", [None, "Shen", "Zed", "Akali", "Fiora"], 20))
+    assert r.total_purchases == 3, "no gold drop → no purchase"
+
+    # Re-establish baseline, then buy Gwen 3 times total → one 2-star.
+    r.reset()
+    r.update(state("2-3", ["Gwen", "Shen", "Zed", "Akali", "Gwen"], 20))
+    r.update(state("2-3", [None, "Shen", "Zed", "Akali", "Gwen"], 17))
+    r.update(state("2-3", [None, "Shen", "Zed", "Akali", None], 14))
+    r.update(state("2-3", ["Gwen", "Shen", "Zed", "Akali", None], 14))  # new card appears
+    r.update(state("2-3", [None, "Shen", "Zed", "Akali", None], 11))
     units = r.owned_units()
     gwens = [u for u in units if u.name == "Gwen"]
     assert len(gwens) == 1 and gwens[0].star_level == 2, \
         f"3 Gwen copies should combine to one 2-star, got {[(u.name, u.star_level) for u in gwens]}"
 
-    # New game (stage number goes backwards) → roster resets.
-    r.update(state("1-1", ["Poppy", "Gnar", "Lulu", "Sona", "Shen"]))
-    assert r.total_purchases == 0, "stage going backwards should reset the roster"
+    # A single backwards-stage frame (OCR misread) must NOT reset...
+    r.update(state("1-5", ["Poppy", "Gnar", "Lulu", "Sona", "Shen"], 30))
+    assert r.total_purchases == 3, "single stage misread must not wipe the roster"
+    r.update(state("2-3", [None, "Shen", "Zed", "Akali", None], 11))
+    # ...but two consecutive backwards frames = a real new game → reset.
+    r.update(state("1-1", ["Poppy", "Gnar", "Lulu", "Sona", "Shen"], 0))
+    r.update(state("1-1", ["Poppy", "Gnar", "Lulu", "Sona", "Shen"], 0))
+    assert r.total_purchases == 0, "two consecutive regressions should reset"
 
-    return "buys, double-buy, reroll skip, star-up combine, reset OK"
+    return "buys, guards (occlusion/gold/misread), star-up, debounced reset OK"
 
 
 def test_bench_harvester():
