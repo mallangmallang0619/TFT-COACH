@@ -592,34 +592,48 @@ def test_roster_tracker():
     r.update(state("2-1", ["Gwen", "Riven", "Poppy", "Lulu", "Gnar"], 30))
     assert r.total_purchases == 0
 
-    # One card vanished, rest unchanged, gold dropped → purchase.
+    # A vanished card is only PENDING — it confirms on the next readable
+    # frame where it's still gone (transient occlusions cancel instead).
     r.update(state("2-1", ["Gwen", None, "Poppy", "Lulu", "Gnar"], 27))
+    assert r.total_purchases == 0, "vanish should be pending, not counted yet"
+
+    # Next frame: Riven still gone → confirmed. Two more vanish → pending.
+    r.update(state("2-1", [None, None, "Poppy", None, "Gnar"], 22))
     assert r.total_purchases == 1
 
-    # Two more vanish in the same tick (double buy) → both counted.
+    # Next frame: Gwen + Lulu still gone → confirmed (double buy).
     r.update(state("2-1", [None, None, "Poppy", None, "Gnar"], 22))
     assert r.total_purchases == 3
 
+    # Hover glitch: card unreadable for one frame while gold drops (bought
+    # XP), then it reappears → cancelled, no phantom purchase.
+    r.update(state("2-1", [None, None, None, None, "Gnar"], 18))
+    r.update(state("2-1", [None, None, "Poppy", None, "Gnar"], 18))
+    assert r.total_purchases == 3, "reappearing card must cancel the pending buy"
+
     # Full reroll (all slots replaced) → no purchases inferred.
-    r.update(state("2-2", ["Sona", "Shen", "Zed", "Akali", "Fiora"], 20))
+    r.update(state("2-2", ["Sona", "Shen", "Zed", "Akali", "Fiora"], 16))
     assert r.total_purchases == 3
 
-    # Shop obscured (carousel/transition — all slots unreadable) → no
-    # false purchases, and the baseline survives for the next real frame.
-    r.update(state("2-2", [None, None, None, None, None], 20))
+    # Shop obscured (carousel — all slots unreadable) → frame skipped,
+    # baseline survives.
+    r.update(state("2-2", [None, None, None, None, None], 16))
+    r.update(state("2-2", ["Sona", "Shen", "Zed", "Akali", "Fiora"], 16))
     assert r.total_purchases == 3, "obscured shop must not count as purchases"
 
-    # Card vanished but gold did NOT drop → misread, not a buy.
-    r.update(state("2-2", [None, "Shen", "Zed", "Akali", "Fiora"], 20))
+    # Card vanished but gold did NOT drop → misread, never even pending.
+    r.update(state("2-2", [None, "Shen", "Zed", "Akali", "Fiora"], 16))
+    r.update(state("2-2", [None, "Shen", "Zed", "Akali", "Fiora"], 16))
     assert r.total_purchases == 3, "no gold drop → no purchase"
 
-    # Re-establish baseline, then buy Gwen 3 times total → one 2-star.
+    # Fresh roster: buy Gwen 3 times → one 2-star (with confirm frames).
     r.reset()
     r.update(state("2-3", ["Gwen", "Shen", "Zed", "Akali", "Gwen"], 20))
-    r.update(state("2-3", [None, "Shen", "Zed", "Akali", "Gwen"], 17))
-    r.update(state("2-3", [None, "Shen", "Zed", "Akali", None], 14))
-    r.update(state("2-3", ["Gwen", "Shen", "Zed", "Akali", None], 14))  # new card appears
-    r.update(state("2-3", [None, "Shen", "Zed", "Akali", None], 11))
+    r.update(state("2-3", [None, "Shen", "Zed", "Akali", None], 14))   # both pending
+    r.update(state("2-3", [None, "Shen", "Zed", "Akali", None], 14))   # confirmed x2
+    r.update(state("2-3", ["Gwen", "Shen", "Zed", "Akali", None], 14)) # new Gwen appears
+    r.update(state("2-3", [None, "Shen", "Zed", "Akali", None], 11))   # pending
+    r.update(state("2-3", [None, "Shen", "Zed", "Akali", None], 11))   # confirmed
     units = r.owned_units()
     gwens = [u for u in units if u.name == "Gwen"]
     assert len(gwens) == 1 and gwens[0].star_level == 2, \
@@ -634,7 +648,7 @@ def test_roster_tracker():
     r.update(state("1-1", ["Poppy", "Gnar", "Lulu", "Sona", "Shen"], 0))
     assert r.total_purchases == 0, "two consecutive regressions should reset"
 
-    return "buys, guards (occlusion/gold/misread), star-up, debounced reset OK"
+    return "pending-confirm buys, hover cancel, occlusion/gold guards, star-up, debounced reset OK"
 
 
 def test_bench_harvester():
@@ -665,20 +679,28 @@ def test_bench_harvester():
         # occupancy to diff against).
         assert hv.process(frame([]), ["Gwen"]) == 0
 
-        # Gwen bought → slot 0 flips occupied → labeled crop saved.
+        # Purchases confirm one frame after the unit lands: slot 0 fills,
+        # then the confirmed purchase arrives → the 2-frame window still
+        # pairs it.
+        assert hv.process(frame([0]), []) == 0
         assert hv.process(frame([0]), ["Gwen"]) == 1
         saved = list(Path(tmp).rglob("*.png"))
         assert len(saved) == 1 and "Gwen" in str(saved[0].parent)
 
         # No purchase → occupancy change alone saves nothing (unit moved).
         assert hv.process(frame([0, 1]), []) == 0
+        assert hv.process(frame([0, 1]), []) == 0   # age slot 1 out of the window
 
-        # Double buy → two new slots, two crops, paired in order.
+        # Double buy confirming immediately → two new slots, two crops.
         assert hv.process(frame([0, 1, 2, 3]), ["Riven", "Poppy"]) == 2
         names = {p.parent.name for p in Path(tmp).rglob("*.png")}
         assert names == {"Gwen", "Riven", "Poppy"}, names
 
-    return "baseline, single buy, move-ignore, double buy OK"
+        # Ambiguous frame: more new slots than purchases → skip entirely
+        # (a wrong label is worse than a missing sample).
+        assert hv.process(frame([0, 1, 2, 3, 4, 5]), ["Zed"]) == 0
+
+    return "baseline, delayed confirm, move-ignore, double buy, ambiguity skip OK"
 
 
 def test_shop_ocr_real_frame():
