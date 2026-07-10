@@ -47,7 +47,11 @@ class BenchHarvester:
     def __init__(self, out_dir: Path = TRAINING_DIR):
         self.out_dir = out_dir
         self.rois = GameROIs()
-        self._prev_occupied: Optional[list[bool]] = None
+        # Last two occupancy snapshots — purchases are confirmed one frame
+        # after the unit lands, so "newly occupied" must look two frames
+        # back.
+        self._occ_prev: Optional[list[bool]] = None
+        self._occ_prev2: Optional[list[bool]] = None
         self.saved_count = 0
 
     def process(self, frame: np.ndarray, purchases: list[str]) -> int:
@@ -56,23 +60,36 @@ class BenchHarvester:
         occupied = [self._is_occupied(c) for c in crops]
 
         saved = 0
-        if purchases and self._prev_occupied is not None:
+        if purchases and self._occ_prev is not None:
             newly = [
                 i for i in range(BENCH_SLOTS)
-                if occupied[i] and not self._prev_occupied[i]
+                if occupied[i] and (
+                    not self._occ_prev[i]
+                    or (self._occ_prev2 is not None and not self._occ_prev2[i])
+                )
             ]
-            # Bought units fill leftmost-first — pair them in order. If the
-            # counts disagree (a combine consumed copies, a unit was moved
-            # in the same tick), only pair what matches unambiguously.
-            for name, slot in zip(purchases, newly):
-                if self._save(crops[slot], name, slot):
-                    saved += 1
+            # Label purity beats coverage: only save when the number of
+            # newly-occupied slots matches the confirmed purchases exactly.
+            # A mismatch (unit moved board↔bench in the window, a combine
+            # consumed the copies) risks pairing the wrong crop with the
+            # name — skip those frames; more games bring more clean ones.
+            if len(newly) == len(purchases):
+                for name, slot in zip(purchases, newly):
+                    if self._save(crops[slot], name, slot):
+                        saved += 1
+            else:
+                logger.debug(
+                    f"Skipping harvest: {len(purchases)} purchases vs "
+                    f"{len(newly)} new bench slots (ambiguous pairing)"
+                )
 
-        self._prev_occupied = occupied
+        self._occ_prev2 = self._occ_prev
+        self._occ_prev = occupied
         return saved
 
     def reset(self) -> None:
-        self._prev_occupied = None
+        self._occ_prev = None
+        self._occ_prev2 = None
 
     # ── Internals ─────────────────────────────────────────────────────────────
 
