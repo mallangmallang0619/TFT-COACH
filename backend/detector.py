@@ -205,10 +205,24 @@ class Detector:
     the complete game state using template matching and OCR.
     """
 
+    # Trait counts only change when the board changes — re-OCR them at most
+    # every N frames while the detected trait names stay the same.
+    TRAIT_COUNT_REFRESH_FRAMES = 6
+
     def __init__(self, templates: Optional[TemplateStore] = None):
         self.templates = templates or TemplateStore()
         self.rois = GameROIs()
         self._frame_count = 0
+
+        # Live frames render units as 3D models the portrait templates can't
+        # identify — hex matching there costs ~2.3s/frame and yields only
+        # false positives, so the live server turns it off. Synthetic sim
+        # frames use real portraits and keep it on.
+        self.match_board_units = True
+
+        # (trait names tuple, {trait: count}) + age, for count caching.
+        self._trait_cache: Optional[tuple[tuple, dict]] = None
+        self._trait_cache_age = 0
 
         if not self.templates.is_loaded:
             self.templates.load()
@@ -242,8 +256,9 @@ class Detector:
 
         # 4. Board champions (only during planning/combat)
         if state.phase in (GamePhase.PLANNING, GamePhase.COMBAT):
-            state.board_champions = self._detect_board_champions(frame)
-            state.bench_champions = self._detect_bench_champions(frame)
+            if self.match_board_units:
+                state.board_champions = self._detect_board_champions(frame)
+                state.bench_champions = self._detect_bench_champions(frame)
             # Live frames render units as 3D models the portrait templates
             # can't identify — hex matching produces misses and false
             # positives. The HUD trait panel is 2D and matches reliably, so
@@ -359,7 +374,12 @@ class Detector:
         roi: "RegionOfInterest",
         label: str = "",
     ) -> int:
-        """OCR a numeric value from a specific ROI."""
+        """OCR a numeric value from a specific ROI.
+
+        Returns -1 when nothing readable was found — distinct from a real
+        "0" on screen, so callers can hold the last good value across
+        frames where the region is obscured (combat effects, transitions).
+        """
         h, w = frame.shape[:2]
         x, y, rw, rh = roi.to_pixels(w, h)
         region = frame[y:y+rh, x:x+rw]
@@ -371,7 +391,7 @@ class Detector:
             return value
         except ValueError:
             logger.debug(f"OCR failed for {label}: got '{text}'")
-            return 0
+            return -1
 
     # The player list's HP-number column at the right edge. Deliberately
     # narrow — it excludes summoner names and background scenery while
@@ -486,25 +506,54 @@ class Detector:
         Read the five shop card names.
 
         Card art is 3D-ish splash art, but the name banner at each card's
-        bottom is clean white text — OCR it and resolve against the champion
-        roster (fuzzy, like augment names). Empty or unreadable slots come
-        back as None.
+        bottom is clean white text. One tesseract pass over the whole
+        banner band (each call spawns a process — five separate calls cost
+        ~0.5s), then words are assigned to card slots by x position and
+        resolved against the champion roster (fuzzy, like augment names).
+        Empty or unreadable slots come back as None.
         """
+        if pytesseract is None:
+            return [None] * 5
         h, w = frame.shape[:2]
         g = ShopGeometry()
-        names: list[Optional[str]] = []
-        for i in range(5):
-            x1 = int((g.cards_x0 + i * g.card_pitch + g.name_pad_x) * w)
-            x2 = int((g.cards_x0 + (i + 1) * g.card_pitch - g.cost_pad_x) * w)
-            y1 = int(g.name_y0 * h)
-            y2 = int(g.name_y1 * h)
-            crop = frame[y1:y2, x1:x2]
-            text = self._ocr_region(
-                crop,
-                whitelist="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'. ",
+        x0 = int(g.cards_x0 * w)
+        band = frame[int(g.name_y0 * h):int(g.name_y1 * h),
+                     x0:int((g.cards_x0 + 5 * g.card_pitch) * w)]
+        if band.size == 0:
+            return [None] * 5
+
+        scale = 2
+        gray = cv2.cvtColor(band, cv2.COLOR_BGR2GRAY)
+        gray = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if np.mean(binary) > 128:
+            binary = cv2.bitwise_not(binary)
+
+        try:
+            data = pytesseract.image_to_data(
+                binary,
+                config="--psm 11 --oem 3",
+                output_type=pytesseract.Output.DICT,
             )
-            names.append(find_champion_name(text))
-        return names
+        except Exception as e:
+            logger.debug(f"shop OCR failed: {e}")
+            return [None] * 5
+
+        pitch_px = g.card_pitch * w * scale
+        slot_words: list[list[tuple[int, str]]] = [[] for _ in range(5)]
+        for i, raw in enumerate(data.get("text") or []):
+            txt = (raw or "").strip()
+            # Names are alphabetic (plus ' and .) — drops the cost digits.
+            if not txt or not any(c.isalpha() for c in txt):
+                continue
+            slot = int(data["left"][i] // pitch_px)
+            if 0 <= slot < 5:
+                slot_words[slot].append((data["left"][i], txt))
+
+        return [
+            find_champion_name(" ".join(t for _, t in sorted(words)))
+            for words in slot_words
+        ]
 
     # ── Component Detection ───────────────────────────────────────────────────
 
@@ -665,8 +714,22 @@ class Detector:
         h, w = frame.shape[:2]
         p = TraitPanel()
 
+        rows = self._detect_trait_rows(frame)
+        row_names = tuple(name for name, _c, _y in rows)
+
+        # Count OCR is ~9 tesseract calls; reuse cached counts while the
+        # panel shows the same traits, refreshing periodically to catch
+        # count-only changes (adding a second copy of a held trait).
+        if (
+            self._trait_cache is not None
+            and self._trait_cache[0] == row_names
+            and self._trait_cache_age < self.TRAIT_COUNT_REFRESH_FRAMES
+        ):
+            self._trait_cache_age += 1
+            return synergies_from_counts(dict(self._trait_cache[1]))
+
         counts: dict[str, int] = {}
-        for name, _conf, cy in self._detect_trait_rows(frame):
+        for name, _conf, cy in rows:
             # Active rows show a dark badge with a bright white count digit
             # right of the symbol; inactive (greyed) rows have no badge and
             # show dim "1 / 2"-style progress under the name instead.
@@ -697,6 +760,8 @@ class Detector:
                 count = int(m.group(1)) if m else max(1, breakpoints[0] - 1)
             counts[name] = count
 
+        self._trait_cache = (row_names, dict(counts))
+        self._trait_cache_age = 0
         return synergies_from_counts(counts)
 
     def _detect_board_champions(self, frame: np.ndarray) -> list[DetectedChampion]:

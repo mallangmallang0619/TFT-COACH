@@ -44,6 +44,11 @@ class TFTCoachServer:
         self.roster = RosterTracker()
         self.harvester = BenchHarvester()
 
+        # Hex template matching can't identify live 3D unit models and eats
+        # ~2.3s/frame — turn it off so the loop runs at real capture FPS.
+        # The roster (shop tracking) supplies held units instead.
+        self.detector.match_board_units = False
+
         self.clients: Set[WebSocketServerProtocol] = set()
         self.latest_state: GameState = GameState()
         self.is_running = False
@@ -269,6 +274,16 @@ class TFTCoachServer:
                 state = await loop.run_in_executor(
                     None, self.detector.detect, frame
                 )
+
+                # A single frame's OCR can fail while the region is obscured
+                # (combat effects, transitions) — hold the last good reading
+                # instead of flashing zeros at the user.
+                prev = self.latest_state
+                if state.stage in ("?", "") and prev.stage not in ("?", ""):
+                    state.stage = prev.stage
+                for field in ("player_hp", "gold", "level"):
+                    if getattr(state, field) < 0:
+                        setattr(state, field, max(0, getattr(prev, field, 0)))
 
                 # Track shop purchases → owned units. Board/bench unit ID
                 # isn't viable on live frames (3D models), so the roster is
