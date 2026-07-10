@@ -419,8 +419,16 @@ class Coach:
         Identify which comps the current board is matching, surface them as
         suggestions, and add a top-line tip when a clear primary comp emerges.
         """
-        # Skip the very early game — too few units to draw conclusions
-        if len(state.board_champions) < 2:
+        # Skip the very early game — too few signals to draw conclusions.
+        # Live mode identifies units via the shop-tracking roster (fed in
+        # as bench champions) and synergies via the trait panel, so count
+        # every source, not just board detections.
+        signals = (
+            len(state.board_champions)
+            + len(state.bench_champions)
+            + sum(1 for s in state.active_synergies if s.is_active)
+        )
+        if signals < 2:
             return
 
         suggestions = detect_comp_direction(
