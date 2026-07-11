@@ -56,6 +56,8 @@ class TFTCoachServer:
         # Stats
         self._frames_processed = 0
         self._total_detection_ms = 0.0
+        # Pending large HP change awaiting a confirming second frame.
+        self._hp_candidate: int | None = None
 
     async def start(self):
         """Start the WebSocket server and capture loop."""
@@ -284,6 +286,23 @@ class TFTCoachServer:
                 for field in ("player_hp", "gold", "level"):
                     if getattr(state, field) < 0:
                         setattr(state, field, max(0, getattr(prev, field, 0)))
+
+                # Guard HP against single-frame misreads of another player's
+                # row (scouting shifts, list animations): a jump bigger than
+                # any one round can deal must repeat on the next frame to be
+                # believed.
+                if prev.player_hp > 0 and state.player_hp > 0:
+                    if abs(state.player_hp - prev.player_hp) > 25:
+                        if (
+                            self._hp_candidate is not None
+                            and abs(state.player_hp - self._hp_candidate) <= 6
+                        ):
+                            self._hp_candidate = None   # confirmed twice
+                        else:
+                            self._hp_candidate = state.player_hp
+                            state.player_hp = prev.player_hp
+                    else:
+                        self._hp_candidate = None
 
                 # Track shop purchases → owned units. Board/bench unit ID
                 # isn't viable on live frames (3D models), so the roster is

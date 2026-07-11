@@ -223,12 +223,15 @@ class GameROIs:
     # cover the whole strip. (Verified against the real fixture and a live
     # 2560x1440 capture; the old bottom-center box was the champion bench.)
     item_bench: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.002, 0.24, 0.053, 0.58)
+        default_factory=lambda: RegionOfInterest(0.002, 0.24, 0.030, 0.58)
     )
 
-    # Champion bench — the bench row below the board
+    # Champion bench — the nine slots under the board. The box must cover
+    # the standing 3D unit MODELS, not the platform: on a live 1440p frame
+    # the units' bodies span y≈0.60-0.78 while the old platform-level box
+    # (y 0.77+) caught only their feet. Slot 0 starts near x 0.185.
     champion_bench: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.30, 0.77, 0.40, 0.07)
+        default_factory=lambda: RegionOfInterest(0.183, 0.60, 0.565, 0.18)
     )
 
     # Board area — the hex grid where champions are placed

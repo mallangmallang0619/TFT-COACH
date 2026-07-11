@@ -118,7 +118,9 @@ def annotate(frame: np.ndarray) -> np.ndarray:
         cv2.putText(out, f"{hexpos.row},{hexpos.col}", (cx - r // 2, cy),
                     cv2.FONT_HERSHEY_SIMPLEX, font_scale * 0.6, (0, 255, 0), 1)
 
-    # Trait panel rows
+    # Trait panel rows. Dark purple, NOT light gray — annotation pixels
+    # land inside OCR/badge-test regions when a saved diagnostic frame is
+    # re-analyzed, and near-white lines masquerade as badge digits.
     tp = TraitPanel()
     for i in range(tp.max_rows):
         cx = int(tp.symbol_cx * w)
@@ -126,7 +128,7 @@ def annotate(frame: np.ndarray) -> np.ndarray:
         half_w = int(tp.symbol_w * w / 2)
         half_h = int(tp.symbol_h * h / 2)
         cv2.rectangle(out, (cx - half_w, cy - half_h), (cx + half_w, cy + half_h),
-                      (200, 200, 200), 1)
+                      (140, 40, 120), 1)
 
     return out
 
