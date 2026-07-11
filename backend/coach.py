@@ -517,6 +517,11 @@ class Coach:
             # back to normalized/close matching against the database.
             matched_name, rating_data = find_augment_rating(aug.name)
             display = matched_name or aug.name
+            # The detector can't read the slot tier off the card reliably —
+            # the augment database knows which slot each augment belongs to.
+            db_slot = (rating_data or {}).get("slot")
+            if db_slot:
+                aug.tier = db_slot.capitalize()
             if rating_data:
                 rating = rating_data["rating"]
                 tip = rating_data["tip"]

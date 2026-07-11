@@ -411,6 +411,34 @@ def fetch_items(
     return ok, missing
 
 
+# ── Frontend icon sync ────────────────────────────────────────────────────────
+
+FRONTEND_ICON_DIR = (
+    Path(__file__).resolve().parent.parent / "frontend" / "public" / "game_icons"
+)
+
+
+def sync_frontend_icons() -> int:
+    """
+    Copy item/component icons into frontend/public so the overlay shows the
+    real game art instead of emoji (which stay as offline fallback). Vite
+    serves public/ in dev and bundles it into dist/ for the packaged app.
+    """
+    import shutil
+
+    copied = 0
+    for src_dir, sub in ((ITEM_TEMPLATE_DIR, "items"),
+                         (COMPONENT_TEMPLATE_DIR, "components")):
+        dest = FRONTEND_ICON_DIR / sub
+        dest.mkdir(parents=True, exist_ok=True)
+        for png in src_dir.glob("*.png"):
+            target = dest / png.name
+            if not target.exists() or target.stat().st_mtime < png.stat().st_mtime:
+                shutil.copy2(png, target)
+                copied += 1
+    return copied
+
+
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 def main() -> int:
@@ -526,6 +554,10 @@ def main() -> int:
         logger.info(f"  Items:      {item_ok}/{len(ITEM_RECIPES)} ok")
         if item_missing_list:
             logger.info(f"    missing: {', '.join(item_missing_list)}")
+
+    if not args.dry_run:
+        copied = sync_frontend_icons()
+        logger.info(f"  Frontend icons synced ({copied} copied)")
 
     any_missing = any((comp_missing_list, champ_missing_list,
                        trait_missing_list, item_missing_list))

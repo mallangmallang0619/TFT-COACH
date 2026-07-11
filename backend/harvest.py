@@ -35,10 +35,13 @@ logger = logging.getLogger(__name__)
 TRAINING_DIR = Path(__file__).parent / "_training"
 BENCH_SLOTS = 9
 
-# A bench slot showing a unit has far more texture than the empty bench
-# platform. Grayscale std above this marks a slot occupied. Logged per
-# frame at debug level so the threshold can be tuned from real captures.
-OCCUPANCY_STD_THRESHOLD = 18.0
+# Bench slots are compared frame-to-frame as small grayscale thumbnails:
+# a unit arriving changes its slot drastically while empty planks stay
+# static. Texture alone can't do this — measured on a real frame, empty
+# plank slots have std 22-27 vs occupied 29-34, far too close to gate on.
+_THUMB_SIZE = (24, 32)          # (w, h) of the comparison thumbnail
+_CHANGE_FLOOR = 9.0             # minimum mean-abs-diff to count as a change
+_CHANGE_OUTLIER_FACTOR = 2.5    # ...and it must stand out vs the other slots
 
 
 class BenchHarvester:
@@ -47,29 +50,38 @@ class BenchHarvester:
     def __init__(self, out_dir: Path = TRAINING_DIR):
         self.out_dir = out_dir
         self.rois = GameROIs()
-        # Last two occupancy snapshots — purchases are confirmed one frame
-        # after the unit lands, so "newly occupied" must look two frames
-        # back.
-        self._occ_prev: Optional[list[bool]] = None
-        self._occ_prev2: Optional[list[bool]] = None
+        # Thumbnails of each slot from the last two frames — purchases are
+        # confirmed one frame after the unit lands, so "just changed" must
+        # look two frames back.
+        self._thumbs_prev: Optional[list[np.ndarray]] = None
+        self._thumbs_prev2: Optional[list[np.ndarray]] = None
         self.saved_count = 0
 
     def process(self, frame: np.ndarray, purchases: list[str]) -> int:
         """Returns how many labeled crops were saved this frame."""
         crops = self._bench_slot_crops(frame)
-        occupied = [self._is_occupied(c) for c in crops]
+        thumbs = [self._thumb(c) for c in crops]
 
         saved = 0
-        if purchases and self._occ_prev is not None:
-            newly = [
-                i for i in range(BENCH_SLOTS)
-                if occupied[i] and (
-                    not self._occ_prev[i]
-                    or (self._occ_prev2 is not None and not self._occ_prev2[i])
-                )
+        if purchases and self._thumbs_prev is not None:
+            baseline = self._thumbs_prev2 or self._thumbs_prev
+            diffs = [
+                float(np.mean(cv2.absdiff(thumbs[i], baseline[i])))
+                if thumbs[i] is not None and baseline[i] is not None else 0.0
+                for i in range(BENCH_SLOTS)
             ]
+            # A slot where a unit just landed is an outlier against the
+            # ambient change of the other slots (lighting, idle animation).
+            typical = float(np.median(diffs)) if diffs else 0.0
+            threshold = max(_CHANGE_FLOOR, typical * _CHANGE_OUTLIER_FACTOR)
+            newly = [i for i in range(BENCH_SLOTS) if diffs[i] >= threshold]
+            logger.debug(
+                f"bench diffs={[f'{d:.0f}' for d in diffs]} "
+                f"threshold={threshold:.0f} newly={newly}"
+            )
+
             # Label purity beats coverage: only save when the number of
-            # newly-occupied slots matches the confirmed purchases exactly.
+            # changed slots matches the confirmed purchases exactly.
             # A mismatch (unit moved board↔bench in the window, a combine
             # consumed the copies) risks pairing the wrong crop with the
             # name — skip those frames; more games bring more clean ones.
@@ -80,16 +92,16 @@ class BenchHarvester:
             else:
                 logger.debug(
                     f"Skipping harvest: {len(purchases)} purchases vs "
-                    f"{len(newly)} new bench slots (ambiguous pairing)"
+                    f"{len(newly)} changed bench slots (ambiguous pairing)"
                 )
 
-        self._occ_prev2 = self._occ_prev
-        self._occ_prev = occupied
+        self._thumbs_prev2 = self._thumbs_prev
+        self._thumbs_prev = thumbs
         return saved
 
     def reset(self) -> None:
-        self._occ_prev = None
-        self._occ_prev2 = None
+        self._thumbs_prev = None
+        self._thumbs_prev2 = None
 
     # ── Internals ─────────────────────────────────────────────────────────────
 
@@ -103,11 +115,11 @@ class BenchHarvester:
         ]
 
     @staticmethod
-    def _is_occupied(crop: np.ndarray) -> bool:
+    def _thumb(crop: np.ndarray) -> Optional[np.ndarray]:
         if crop.size == 0:
-            return False
+            return None
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-        return float(gray.std()) >= OCCUPANCY_STD_THRESHOLD
+        return cv2.resize(gray, _THUMB_SIZE, interpolation=cv2.INTER_AREA)
 
     def _save(self, crop: np.ndarray, name: str, slot: int) -> bool:
         if crop.size == 0:

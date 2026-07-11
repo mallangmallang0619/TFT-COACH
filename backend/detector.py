@@ -9,12 +9,18 @@ Processes captured frames to extract game state:
 
 from __future__ import annotations
 import logging
+import os
 import re
 import shutil
 import sys
 import time
 from pathlib import Path
 from typing import Optional
+
+# Tesseract parallelizes each tiny OCR call across all cores via OpenMP,
+# which burns CPU for zero benefit on our postage-stamp crops — and we
+# spawn several calls per frame. Cap it before pytesseract ever runs.
+os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 
 try:
     import cv2
@@ -206,8 +212,11 @@ class Detector:
     """
 
     # Trait counts only change when the board changes — re-OCR them at most
-    # every N frames while the detected trait names stay the same.
+    # every N frames while the detected trait names stay the same. Row
+    # (symbol) matching is also cached, at a shorter interval since it is
+    # the change detector.
     TRAIT_COUNT_REFRESH_FRAMES = 6
+    TRAIT_ROWS_REFRESH_FRAMES = 3
 
     def __init__(self, templates: Optional[TemplateStore] = None):
         self.templates = templates or TemplateStore()
@@ -223,6 +232,9 @@ class Detector:
         # (trait names tuple, {trait: count}) + age, for count caching.
         self._trait_cache: Optional[tuple[tuple, dict]] = None
         self._trait_cache_age = 0
+        # Cached trait-panel rows (symbol matching ≈0.7s/frame).
+        self._trait_rows_cache: Optional[list[tuple[str, float, float]]] = None
+        self._trait_rows_age = 0
 
         if not self.templates.is_loaded:
             self.templates.load()
@@ -421,42 +433,62 @@ class Detector:
 
         gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
         gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
-        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        if np.mean(binary) > 128:
-            binary = cv2.bitwise_not(binary)
 
-        try:
-            data = pytesseract.image_to_data(
-                binary,
-                config="--psm 11 --oem 3 -c tessedit_char_whitelist=0123456789",
-                output_type=pytesseract.Output.DICT,
-            )
-        except Exception as e:
-            logger.debug(f"player-list OCR failed: {e}")
-            return self._ocr_number(frame, self.rois.player_hp, "HP")
+        # Two binarizations, candidates merged: global Otsu handles typical
+        # frames; adaptive rescues our enlarged row when it protrudes onto
+        # bright arena scenery that pulls the global threshold too high.
+        _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if np.mean(otsu) > 128:
+            otsu = cv2.bitwise_not(otsu)
+        adaptive = cv2.adaptiveThreshold(
+            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY_INV, 41, 12,
+        )
 
         # Tesseract often reports conf=0 for the large-font row we actually
         # want, so confidence can't be used as a gate. Instead: HP digits
         # live in the left ~72% of the strip (the right side is the portrait
         # column, whose circular frames OCR as tall junk digits); among the
         # remaining boxes the tallest glyphs are our enlarged row.
-        strip_w = binary.shape[1]
-        best: tuple[int, int, int] | None = None   # (height, -left, value)
-        for i, raw in enumerate(data.get("text") or []):
-            txt = (raw or "").strip()
-            if not txt.isdigit():
+        candidates: list[tuple[int, int, int]] = []   # (height, -left, value)
+        for binary in (otsu, adaptive):
+            try:
+                data = pytesseract.image_to_data(
+                    binary,
+                    config="--psm 11 --oem 3 -c tessedit_char_whitelist=0123456789",
+                    output_type=pytesseract.Output.DICT,
+                )
+            except Exception as e:
+                logger.debug(f"player-list OCR failed: {e}")
                 continue
-            value = int(txt)
-            if not (1 <= value <= 100):
-                continue
-            if data["left"][i] > strip_w * 0.72:
-                continue
-            key = (data["height"][i], -data["left"][i], value)
-            if best is None or key > best:
-                best = key
+            strip_w = binary.shape[1]
+            for i, raw in enumerate(data.get("text") or []):
+                txt = (raw or "").strip()
+                if not txt.isdigit():
+                    continue
+                value = int(txt)
+                if not (1 <= value <= 100):
+                    continue
+                if data["left"][i] > strip_w * 0.72:
+                    continue
+                # Digit glyphs have a stable shape: width ≈ 0.68-0.79 of
+                # height per character (measured across real frames). UI
+                # edges and combat effects OCR as boxes far outside that
+                # band — vertical lines read as skinny-tall "1"s, smears
+                # as wide blobs.
+                aspect = data["width"][i] / max(1, data["height"][i] * len(txt))
+                if not (0.45 <= aspect <= 0.90):
+                    continue
+                # ...and a bounded size: the enlarged row's digits measure
+                # at most ~5.6% of the strip height on real frames; bigger
+                # boxes are scenery artifacts.
+                if data["height"][i] > 0.065 * binary.shape[0]:
+                    continue
+                candidates.append((data["height"][i], -data["left"][i], value))
 
-        if best is not None:
-            return best[2]
+        if candidates:
+            # The tallest remaining glyphs are our enlarged row.
+            return max(candidates)[2]
         return self._ocr_number(frame, self.rois.player_hp, "HP")
 
     def _ocr_region(self, region: np.ndarray, whitelist: str = "") -> str:
@@ -573,11 +605,10 @@ class Detector:
 
         detected = []
 
-        # Inventory icons render at roughly half the (2-column) ROI width;
-        # the CDN templates are a fixed 64px, so resize each template to a
-        # few sizes around the expected slot size before matching.
-        slot_px = max(12, rw // 2)
-        scales = sorted({max(12, int(slot_px * s)) for s in (0.75, 0.9, 1.05)})
+        # Inventory icons measure ≈0.017 of the frame width on live 1440p
+        # captures; the CDN templates are a fixed 64px, so resize each
+        # template to a few sizes around that before matching.
+        scales = sorted({max(12, int(w * s)) for s in (0.0135, 0.0165, 0.0195)})
 
         for comp_id, template in self.templates.component_templates.items():
             for size in scales:
@@ -714,7 +745,18 @@ class Detector:
         h, w = frame.shape[:2]
         p = TraitPanel()
 
-        rows = self._detect_trait_rows(frame)
+        # Symbol matching is expensive; reuse the last row scan for a few
+        # frames (traits change on board edits, which take seconds anyway).
+        if (
+            self._trait_rows_cache is not None
+            and self._trait_rows_age < self.TRAIT_ROWS_REFRESH_FRAMES
+        ):
+            self._trait_rows_age += 1
+            rows = self._trait_rows_cache
+        else:
+            rows = self._detect_trait_rows(frame)
+            self._trait_rows_cache = rows
+            self._trait_rows_age = 0
         row_names = tuple(name for name, _c, _y in rows)
 
         # Count OCR is ~9 tesseract calls; reuse cached counts while the
@@ -739,7 +781,9 @@ class Detector:
             y2 = int((cy + p.symbol_h * 0.32) * h)
             badge = frame[max(0, y1):y2, max(0, x1):x2]
             badge_gray = cv2.cvtColor(badge, cv2.COLOR_BGR2GRAY) if badge.size else None
-            has_badge = badge_gray is not None and float(badge_gray.max()) >= 200
+            # Badge digits are pure white (~255); 215 keeps margin above
+            # bright UI lines without missing real badges.
+            has_badge = badge_gray is not None and float(badge_gray.max()) >= 215
 
             breakpoints = (TRAITS.get(name) or {}).get("breakpoints") or [1]
             if has_badge:
@@ -839,57 +883,76 @@ class Detector:
 
     # ── Augment Detection ─────────────────────────────────────────────────────
 
+    # Augment card geometry, measured on two real 2560x1440 augment
+    # screens (2-1 and 3-2): the title line sits mid-card at a fixed
+    # height, with the three cards centered at fixed x positions.
+    _AUG_CARD_CX = (0.287, 0.500, 0.713)   # card centers (frame-width ratio)
+    _AUG_NAME_Y0 = 0.484                    # title band top (frame-height ratio)
+    _AUG_NAME_Y1 = 0.522                    # title band bottom
+
     def _detect_augments(self, frame: np.ndarray) -> list[DetectedAugment]:
         """
-        Detect augment options during the augment selection screen.
-        Uses OCR to read augment names from the three card positions.
-        """
-        h, w = frame.shape[:2]
-        ax, ay, aw, ah = self.rois.augment_panel.to_pixels(w, h)
-        panel = frame[ay:ay+ah, ax:ax+aw]
+        Read the three augment titles during the selection screen.
 
-        if panel.size == 0:
+        The titles all sit on one horizontal band mid-card, so a single
+        tesseract pass covers them; words are assigned to cards by x
+        position. Names come back raw — the coach fuzzy-resolves them
+        against the augment database, which also supplies the slot tier.
+        """
+        if pytesseract is None:
+            return []
+        h, w = frame.shape[:2]
+        x0 = int((self._AUG_CARD_CX[0] - 0.11) * w)
+        x1 = int((self._AUG_CARD_CX[2] + 0.11) * w)
+        band = frame[int(self._AUG_NAME_Y0 * h):int(self._AUG_NAME_Y1 * h), x0:x1]
+        if band.size == 0:
             return []
 
-        ph, pw = panel.shape[:2]
-        augments = []
+        scale = 2
+        gray = cv2.cvtColor(band, cv2.COLOR_BGR2GRAY)
+        gray = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if np.mean(binary) > 128:
+            binary = cv2.bitwise_not(binary)
 
-        # Three augment cards are roughly evenly spaced horizontally
-        card_width = pw // 3
-        for i in range(3):
-            cx = i * card_width
-            card = panel[:, cx:cx+card_width]
+        try:
+            data = pytesseract.image_to_data(
+                binary,
+                config="--psm 11 --oem 3",
+                output_type=pytesseract.Output.DICT,
+            )
+        except Exception as e:
+            logger.debug(f"augment OCR failed: {e}")
+            return []
 
-            # The augment name is typically in the upper portion of the card
-            name_region = card[:int(ph * 0.3), :]
-            name_text = self._ocr_region(name_region)
+        card_words: list[list[tuple[int, str]]] = [[], [], []]
+        for i, raw in enumerate(data.get("text") or []):
+            txt = (raw or "").strip()
+            if len(txt) < 2 or not any(c.isalpha() for c in txt):
+                continue
+            # Titles are words and roman numerals — a token with digits or
+            # symbols mixed in is OCR debris, not part of the name.
+            if not all(c.isalpha() or c in "'’-." for c in txt):
+                continue
+            # Assign the word to the nearest card center.
+            word_cx = (x0 + (data["left"][i] + data["width"][i] / 2) / scale) / w
+            slot = min(
+                range(3), key=lambda s: abs(self._AUG_CARD_CX[s] - word_cx)
+            )
+            card_words[slot].append((data["left"][i], txt))
 
-            if name_text and len(name_text) > 2:
-                # Detect tier by analyzing the card border color
-                tier = self._detect_augment_tier(card)
-                augments.append(DetectedAugment(
-                    name=name_text,
-                    tier=tier,
-                    slot_index=i,
-                    confidence=0.6,  # OCR is lower confidence
-                ))
-
+        augments: list[DetectedAugment] = []
+        for i, words in enumerate(card_words):
+            name = " ".join(t for _, t in sorted(words)).strip()
+            if len(name) < 3:
+                continue
+            augments.append(DetectedAugment(
+                name=name,
+                tier="?",   # the coach fills this from the augment database
+                slot_index=i,
+                confidence=0.6,
+            ))
         return augments
-
-    def _detect_augment_tier(self, card_region: np.ndarray) -> str:
-        """Determine augment tier (Silver/Gold/Prismatic) from card border color."""
-        # Sample the border pixels
-        border = card_region[:5, :]  # Top edge
-        hsv = cv2.cvtColor(border, cv2.COLOR_BGR2HSV)
-        mean_hue = np.mean(hsv[:, :, 0])
-        mean_sat = np.mean(hsv[:, :, 1])
-
-        if mean_sat < 50:
-            return "Silver"
-        elif 20 < mean_hue < 35:  # Yellowish
-            return "Gold"
-        else:
-            return "Prismatic"
 
     # ── Template Matching Utilities ───────────────────────────────────────────
 

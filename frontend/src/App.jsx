@@ -254,9 +254,7 @@ function UnitChip({ unit, itemIcons = {}, dim = false }) {
       {unit.items && unit.items.length > 0 && (
         <div style={{ display: "flex", gap: "2px", marginTop: "3px", flexWrap: "wrap" }}>
           {unit.items.map((it, i) => (
-            <span key={i} style={{ fontSize: "11px" }} title={it}>
-              {itemIcons[it] || "🔧"}
-            </span>
+            <GameIcon key={i} kind="items" name={it} emoji={itemIcons[it] || "🔧"} size={13} />
           ))}
         </div>
       )}
@@ -336,9 +334,7 @@ function LiveBoard({ champions, itemIcons = {}, highlightTemplate = null }) {
                       {cell.items && cell.items.length > 0 && (
                         <div style={{ display: "flex", gap: "1px", marginTop: "1px" }}>
                           {cell.items.slice(0, 3).map((it, i) => (
-                            <span key={i} style={{ fontSize: "7px" }} title={it}>
-                              {itemIcons[it] || "•"}
-                            </span>
+                            <GameIcon key={i} kind="items" name={it} emoji={itemIcons[it] || "•"} size={10} />
                           ))}
                         </div>
                       )}
@@ -451,6 +447,28 @@ function MetaTierBadge({ tier, trend }) {
         </span>
       )}
     </span>
+  );
+}
+
+// Real game-art icon with emoji fallback. Icons are synced into
+// public/game_icons/ by backend/fetch_templates.py; when a file is
+// missing (fresh clone, renamed item) the emoji keeps working.
+function GameIcon({ kind, name, emoji, size = 18 }) {
+  const [failed, setFailed] = useState(false);
+  if (failed || !name) {
+    return <span style={{ fontSize: `${Math.round(size * 0.85)}px`, lineHeight: 1 }}>{emoji || "•"}</span>;
+  }
+  return (
+    <img
+      src={`game_icons/${kind}/${encodeURIComponent(name)}.png`}
+      alt={name}
+      title={name}
+      onError={() => setFailed(true)}
+      style={{
+        width: `${size}px`, height: `${size}px`, borderRadius: "3px",
+        objectFit: "cover", display: "block", flexShrink: 0,
+      }}
+    />
   );
 }
 
@@ -787,7 +805,7 @@ function DevPanel({
                 cursor: "pointer", fontSize: "16px",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-              {c.icon}
+              <GameIcon kind="components" name={c.id} emoji={c.icon} size={22} />
             </button>
           ))}
         </div>
@@ -1109,7 +1127,7 @@ export default function App() {
                             justifyContent: "center", cursor: "pointer", transition: "all 0.1s",
                             position: "relative",
                           }}>
-                            <span style={{ fontSize: "18px" }}>{c.icon}</span>
+                            <GameIcon kind="components" name={c.id} emoji={c.icon} size={22} />
                             <span style={{ fontSize: "7px", color: active ? ACCENT : "#555", fontFamily: "var(--mono)" }}>{c.stat}</span>
                             {count > 1 && (
                               <span style={{
@@ -1154,7 +1172,7 @@ export default function App() {
                             background: `${ACCENT}10`, border: `1px solid ${ACCENT}33`,
                             display: "flex", alignItems: "center", gap: "4px",
                           }}>
-                            <span style={{ fontSize: "14px" }}>{comp.icon}</span>
+                            <GameIcon kind="components" name={comp.id} emoji={comp.icon} size={16} />
                             <span style={{ fontSize: "10px", color: ACCENT, fontFamily: "var(--mono)" }}>{comp.stat}</span>
                           </div>
                         ) : null;
@@ -1185,7 +1203,7 @@ export default function App() {
                           padding: "10px 12px", transition: "all 0.15s",
                           display: "flex", alignItems: "center", gap: "10px",
                         }}>
-                          <span style={{ fontSize: "22px", flexShrink: 0 }}>{item.icon}</span>
+                          <GameIcon kind="items" name={item.name} emoji={item.icon} size={26} />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
                               <span style={{ fontWeight: 600, fontSize: "13px" }}>{item.name}</span>
