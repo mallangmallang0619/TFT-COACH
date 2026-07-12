@@ -403,6 +403,13 @@ def _slammed_item_fit(
     return min(_SLAMMED_ITEM_CAP, bonus), matched
 
 
+def _is_pinned_comp(comp_name: str, tfta_name: str | None, pinned: str | None) -> bool:
+    if not pinned:
+        return False
+    p = pinned.strip().lower()
+    return comp_name.strip().lower() == p or (tfta_name or "").strip().lower() == p
+
+
 def detect_comp_direction(
     synergies: list[ActiveSynergy],
     board_champions: list[DetectedChampion],
@@ -410,6 +417,7 @@ def detect_comp_direction(
     top_n: int = 3,
     component_ids: list[str] | None = None,
     selected_augments: list[str] | None = None,
+    pinned_comp: str | None = None,
 ) -> list[CompSuggestion]:
     """
     Rank comps by how well the current board matches each entry in COMPS.
@@ -470,7 +478,12 @@ def detect_comp_direction(
         # Combine into a 0-1 base score
         match_score = min(1.0, (trait_score * _TRAIT_WEIGHT + unit_score) / (1 + _TRAIT_WEIGHT))
 
-        if match_score < _MIN_VIABLE_SCORE:
+        # The pinned comp bypasses the viability cut — the player locked
+        # it, so it must stay visible even before the board supports it.
+        # (Dynamic comps are named by their TFT Academy name, which is what
+        # the frontend pins.)
+        pinned_here = _is_pinned_comp(comp["name"], None, pinned_comp)
+        if match_score < _MIN_VIABLE_SCORE and not pinned_here:
             continue
 
         # Resolve the TFT Academy entry early — its scraped detail feeds
@@ -573,6 +586,19 @@ def detect_comp_direction(
         ))
 
     suggestions.sort(key=lambda s: (-s.match_score, _meta_tier_order(s.tftacademy_tier)))
+
+    # The player's locked comp leads the list regardless of score.
+    if pinned_comp:
+        pinned_s = next(
+            (s for s in suggestions
+             if _is_pinned_comp(s.name, s.tftacademy_name, pinned_comp)),
+            None,
+        )
+        if pinned_s:
+            pinned_s.is_pinned = True
+            suggestions.remove(pinned_s)
+            suggestions.insert(0, pinned_s)
+
     suggestions = suggestions[:top_n]
     if suggestions:
         suggestions[0].is_primary = True

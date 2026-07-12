@@ -392,6 +392,8 @@ class DemoServer:
         self.is_running = False
         self._game: Optional[SimulatedGame] = None
         self._scenario_index = 0
+        # Comp the player locked via the UI (None = follow suggestions).
+        self._pinned_comp: Optional[str] = None
         self._tick = 0
         self._paused = False
         self._tick_ms = self.DEFAULT_TICK_MS
@@ -508,6 +510,11 @@ class DemoServer:
             await self._broadcast_demo_info()
             return
 
+        if t == "pin_comp":
+            self._pinned_comp = (msg.get("name") or "").strip() or None
+            logger.info(f"Comp pinned: {self._pinned_comp or '(unpinned)'}")
+            return
+
         if t == "pause":
             # Allow explicit `paused` field, otherwise toggle
             if "paused" in msg and isinstance(msg["paused"], bool):
@@ -601,6 +608,11 @@ class DemoServer:
                         self._game._process_augment()
                     break
 
+    def _analyze(self, state: GameState) -> None:
+        """Stamp the pinned comp and run the coach (advice set in place)."""
+        state.pinned_comp = self._pinned_comp
+        state.advice = self.coach.analyze(state)
+
     async def _broadcast_demo_info(self):
         """Push current sim-control state to every connected client."""
         if not self.clients:
@@ -633,7 +645,7 @@ class DemoServer:
                     # Still emit a state every ~0.5s while paused so the UI
                     # reflects any overrides (set_hp, override_components, ...)
                     state = self._game._build_state()
-                    state.advice = self.coach.analyze(state)
+                    self._analyze(state)
                     await self._broadcast(state)
                     await asyncio.sleep(0.5)
                     continue
@@ -641,8 +653,7 @@ class DemoServer:
                 self._step_once = False
                 self._tick += 1
                 state = self._game.tick()
-                advice = self.coach.analyze(state)
-                state.advice = advice
+                self._analyze(state)
                 await self._broadcast(state)
                 await asyncio.sleep(self._tick_ms / 1000.0)
 
@@ -650,7 +661,7 @@ class DemoServer:
                 logger.info(f"Game ended — placement #{self._game.placement}")
                 for _ in range(6):
                     state = self._game._build_state()
-                    state.advice = self.coach.analyze(state)
+                    self._analyze(state)
                     await self._broadcast(state)
                     await asyncio.sleep(self._tick_ms / 1000.0)
                 logger.info("Next game in 3 seconds...")

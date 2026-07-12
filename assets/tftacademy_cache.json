@@ -1,7 +1,7 @@
 {
   "patch": "17.6",
   "synced_at": "2026-07-08T00:49:20.124554Z",
-  "last_checked_at": "2026-07-11T06:22:09.449243Z",
+  "last_checked_at": "2026-07-12T04:19:45.527021Z",
   "source_url": "https://tftacademy.com/tierlist/comps",
   "comps": [
     {
@@ -7780,7 +7780,7 @@
   ],
   "augments": {
     "set": 17,
-    "synced_at": "2026-07-12T04:01:59.587620Z",
+    "synced_at": "2026-07-12T04:27:33.263160Z",
     "source_url": "https://tftacademy.com/api/tierlist/augments?set=17",
     "entries": [
       {
