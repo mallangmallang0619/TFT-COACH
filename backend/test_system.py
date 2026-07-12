@@ -530,10 +530,46 @@ def test_context_comp_scoring():
     item_primary = next((s for s in item_boosted if s.name == primary.name), None)
     assert item_primary is not None and item_primary.match_score >= primary.match_score
 
+    # Slammed-item context: ONE completed carry item on our units must pull
+    # the comp harder than fielding one more of the comp's units — items
+    # are commitments, units are interchangeable.
+    carry_name = (meta.get("detail") or {}).get("main_champion", {}).get("name")
+    carry_unit = next(
+        u for u in (meta["detail"]["units"]) if u["name"] == carry_name
+    )
+    carry_item_names = [i["name"] for i in carry_unit["items"]]
+    assert carry_item_names, "carry should have build items in the cache"
+
+    slammed_board = [c.model_copy(deep=True) for c in board]
+    slam_target = next(c for c in slammed_board if c.name == carry_name)
+    slam_target.items = carry_item_names[:1]
+    slammed = detect_comp_direction(compute_active_synergies(slammed_board), slammed_board)
+    slammed_primary = next((s for s in slammed if s.name == primary.name), None)
+    assert slammed_primary is not None
+    slam_gain = slammed_primary.match_score - primary.match_score
+    assert any("build" in n for n in slammed_primary.context_notes), \
+        f"slammed-item note expected, got {slammed_primary.context_notes}"
+
+    # Adding one more comp unit instead (a missing unit from the layout):
+    extra_name = next(
+        u["name"] for u in meta["detail"]["units"]
+        if u["name"] not in {c.name for c in board}
+    )
+    from game_state import DetectedChampion as DC
+    unit_board = board + [DC(name=extra_name, star_level=1, board_row=1, board_col=1)]
+    with_unit = detect_comp_direction(compute_active_synergies(unit_board), unit_board)
+    unit_primary = next((s for s in with_unit if s.name == primary.name), None)
+    unit_gain = (unit_primary.match_score - primary.match_score) if unit_primary else 0.0
+
+    assert slam_gain > unit_gain, (
+        f"one slammed carry item should outweigh one extra unit "
+        f"(+{slam_gain:.3f} vs +{unit_gain:.3f})"
+    )
+
     return (
         f"layout={len(primary.board_layout)} units, "
-        f"augment boost +{boosted_primary.match_score - primary.match_score:.3f}, "
-        f"item boost +{item_primary.match_score - primary.match_score:.3f}"
+        f"augment +{boosted_primary.match_score - primary.match_score:.3f}, "
+        f"slammed item +{slam_gain:.3f} > extra unit +{unit_gain:.3f}"
     )
 
 
@@ -728,6 +764,53 @@ def test_shop_ocr_real_frame():
     return f"5 slots read: {got}"
 
 
+def test_pinned_comp():
+    """Pinning a comp surfaces it first and supercharges its augments."""
+    from synergy import detect_comp_direction, compute_active_synergies
+    from game_state import GameState, GamePhase, DetectedAugment
+    from coach import Coach
+
+    board = _dark_star_board()
+    synergies = compute_active_synergies(board)
+    base = detect_comp_direction(synergies, board)
+    assert len(base) >= 2, "need multiple suggestions to test pinning"
+
+    # Pin the SECOND suggestion — it must jump to the front, flagged.
+    target = base[1]
+    pin_name = target.tftacademy_name or target.name
+    pinned = detect_comp_direction(synergies, board, pinned_comp=pin_name)
+    assert pinned[0].is_pinned and pinned[0].is_primary, \
+        f"pinned comp should lead: {[(s.name, s.is_pinned) for s in pinned]}"
+    assert (pinned[0].tftacademy_name or pinned[0].name) == pin_name
+
+    # Augment offers recommended by the pinned comp carry the locked-comp
+    # reason and outrank the same augment without a pin.
+    rec_augments = pinned[0].recommended_augments
+    if not rec_augments:
+        return f"pin ordering OK ({pin_name}); no augments in cache to test boost"
+
+    def analyze(pin):
+        state = GameState(
+            phase=GamePhase.AUGMENT_SELECT, stage="3-2", player_hp=80, gold=30,
+            board_champions=board, pinned_comp=pin,
+            augment_options=[
+                DetectedAugment(name=rec_augments[0], tier="Gold", slot_index=0),
+            ],
+        )
+        return Coach().analyze(state).augment_ratings[0]
+
+    with_pin = analyze(pin_name)
+    without_pin = analyze(None)
+    assert with_pin["context_score"] > without_pin["context_score"], \
+        "pinned comp's augment should score higher than unpinned"
+    assert any("locked" in r for r in with_pin["reasons"]), with_pin["reasons"]
+
+    return (
+        f"pin ordering OK ({pin_name}), augment boost "
+        f"{without_pin['context_score']} → {with_pin['context_score']}"
+    )
+
+
 def test_set_autodetect():
     """Current-set detection from CDragon payload and comp slugs."""
     from tftacademy_live import current_set_number, CURRENT_SET_NUMBER
@@ -914,6 +997,7 @@ def main():
     test("Set auto-detection", test_set_autodetect)
     test("Context comp scoring", test_context_comp_scoring)
     test("Augment pick context", test_augment_pick_context)
+    test("Pinned comp", test_pinned_comp)
     test("Roster tracker", test_roster_tracker)
     test("Bench harvester", test_bench_harvester)
     test("Shop OCR (real frame)", test_shop_ocr_real_frame)

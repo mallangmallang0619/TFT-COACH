@@ -17,6 +17,8 @@ unit-test without templates, OCR, or a running game.
 
 from __future__ import annotations
 
+from collections import Counter
+
 from game_state import (
     ActiveSynergy,
     CompSuggestion,
@@ -221,6 +223,19 @@ def _augment_names_from_detail(detail: dict) -> list[str]:
     return [a["name"] for a in (detail or {}).get("augments") or [] if a.get("name")]
 
 
+def _carry_items_from_detail(detail: dict) -> set[str]:
+    """The main carry's build items — the strongest itemization signal."""
+    carry = canonical_name(
+        ((detail or {}).get("main_champion") or {}).get("name") or ""
+    )
+    if not carry:
+        return set()
+    for u in (detail or {}).get("units") or []:
+        if canonical_name(u.get("name") or "") == carry:
+            return {canonical_name(i["name"]) for i in (u.get("items") or [])}
+    return set()
+
+
 def build_comps_from_meta() -> list[dict]:
     """
     Convert scraped META_COMPS entries (with `detail.units`) into the same
@@ -270,6 +285,7 @@ def build_comps_from_meta() -> list[dict]:
             "_meta_layout":        layout,
             "_meta_item_names":    item_names,
             "_meta_augments":      augment_names,
+            "_meta_carry_items":   _carry_items_from_detail(detail),
             "_source":             "meta",
         })
     return result
@@ -345,9 +361,53 @@ def _augment_fit(
 
 # Context bonuses — additive on top of the unit/trait base score, so they
 # reorder close calls without letting an empty board "match" a comp.
-_ITEM_FIT_BONUS_MAX  = 0.10   # full bonus when every held component fits
-_AUGMENT_MATCH_BONUS = 0.15   # per taken augment the comp recommends
-_AUGMENT_BONUS_CAP   = 0.30
+#
+# Items outweigh units on purpose: a unit can be sold and replaced in one
+# shop, but a slammed item is permanent — itemization decides the comp.
+# One slammed build-item is worth roughly 2-3 core units of score; carry
+# items count double again.
+_ITEM_FIT_BONUS_MAX   = 0.25   # held components that build into the comp's items
+_SLAMMED_ITEM_BONUS   = 0.12   # each completed item on our units the comp builds
+_SLAMMED_ITEM_CAP     = 0.36
+_CARRY_ITEM_WEIGHT    = 2.0    # slammed items for the comp's CARRY count double
+_AUGMENT_MATCH_BONUS  = 0.15   # per taken augment the comp recommends
+_AUGMENT_BONUS_CAP    = 0.30
+
+
+def _slammed_item_fit(
+    comp_item_names: list[str],
+    carry_items: set[str],
+    board_champions: list[DetectedChampion],
+    bench_champions: list[DetectedChampion] | None,
+) -> tuple[float, list[str]]:
+    """
+    Score the completed items already sitting on the player's units against
+    this comp's build. Returns (bonus, matched item names).
+    """
+    have: Counter[str] = Counter()
+    for champ in list(board_champions) + list(bench_champions or []):
+        for item in champ.items or []:
+            have[item] += 1
+    if not have or not comp_item_names:
+        return 0.0, []
+
+    need = Counter(comp_item_names)
+    bonus = 0.0
+    matched: list[str] = []
+    for name, needed in need.items():
+        count = min(needed, have.get(name, 0))
+        if count:
+            weight = _CARRY_ITEM_WEIGHT if name in carry_items else 1.0
+            bonus += count * _SLAMMED_ITEM_BONUS * weight
+            matched.append(name)
+    return min(_SLAMMED_ITEM_CAP, bonus), matched
+
+
+def _is_pinned_comp(comp_name: str, tfta_name: str | None, pinned: str | None) -> bool:
+    if not pinned:
+        return False
+    p = pinned.strip().lower()
+    return comp_name.strip().lower() == p or (tfta_name or "").strip().lower() == p
 
 
 def detect_comp_direction(
@@ -357,6 +417,7 @@ def detect_comp_direction(
     top_n: int = 3,
     component_ids: list[str] | None = None,
     selected_augments: list[str] | None = None,
+    pinned_comp: str | None = None,
 ) -> list[CompSuggestion]:
     """
     Rank comps by how well the current board matches each entry in COMPS.
@@ -417,7 +478,12 @@ def detect_comp_direction(
         # Combine into a 0-1 base score
         match_score = min(1.0, (trait_score * _TRAIT_WEIGHT + unit_score) / (1 + _TRAIT_WEIGHT))
 
-        if match_score < _MIN_VIABLE_SCORE:
+        # The pinned comp bypasses the viability cut — the player locked
+        # it, so it must stay visible even before the board supports it.
+        # (Dynamic comps are named by their TFT Academy name, which is what
+        # the frontend pins.)
+        pinned_here = _is_pinned_comp(comp["name"], None, pinned_comp)
+        if match_score < _MIN_VIABLE_SCORE and not pinned_here:
             continue
 
         # Resolve the TFT Academy entry early — its scraped detail feeds
@@ -433,16 +499,29 @@ def detect_comp_direction(
             layout = comp.get("_meta_layout") or []
             comp_item_names = comp.get("_meta_item_names") or []
             comp_augments = comp.get("_meta_augments") or []
+            carry_items = comp.get("_meta_carry_items") or set()
         else:
             meta = _match_meta_comp(comp, board_names, syn_by_name)
             detail = (meta or {}).get("detail") or {}
             layout = _layout_from_detail(detail)
             comp_item_names = _item_names_from_detail(detail)
             comp_augments = _augment_names_from_detail(detail)
+            carry_items = _carry_items_from_detail(detail)
 
-        # Context boosts: held components that feed this comp's builds, and
-        # taken augments the comp recommends.
+        # Context boosts. Itemization comes first and weighs heaviest:
+        # completed items already slammed on our units are commitments the
+        # comp must honor, held components are strong hints, and augments
+        # confirm the direction.
         context_notes: list[str] = []
+        slam_bonus, slammed = _slammed_item_fit(
+            comp_item_names, carry_items, board_champions, bench_champions
+        )
+        if slam_bonus > 0:
+            match_score = min(1.0, match_score + slam_bonus)
+            context_notes.append(
+                f"Your {', '.join(slammed[:3])} "
+                f"{'are' if len(slammed) > 1 else 'is'} in this comp's build."
+            )
         fit, item_note = _item_fit(comp_item_names, component_ids or [])
         if fit > 0:
             match_score = min(1.0, match_score + fit * _ITEM_FIT_BONUS_MAX)
@@ -507,6 +586,19 @@ def detect_comp_direction(
         ))
 
     suggestions.sort(key=lambda s: (-s.match_score, _meta_tier_order(s.tftacademy_tier)))
+
+    # The player's locked comp leads the list regardless of score.
+    if pinned_comp:
+        pinned_s = next(
+            (s for s in suggestions
+             if _is_pinned_comp(s.name, s.tftacademy_name, pinned_comp)),
+            None,
+        )
+        if pinned_s:
+            pinned_s.is_pinned = True
+            suggestions.remove(pinned_s)
+            suggestions.insert(0, pinned_s)
+
     suggestions = suggestions[:top_n]
     if suggestions:
         suggestions[0].is_primary = True

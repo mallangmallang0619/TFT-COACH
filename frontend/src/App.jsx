@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useCoachSocket } from "./useCoachSocket";
 
 //frontend made in help using ai
@@ -472,6 +472,94 @@ function GameIcon({ kind, name, emoji, size = 18 }) {
   );
 }
 
+// Item plan for the locked comp: each carry with its target build, and
+// whether you can complete each item from the components you're holding.
+function ItemPlan({ suggestion, componentIds, itemRecipes }) {
+  const recipeByName = useMemo(
+    () => Object.fromEntries(itemRecipes.map((r) => [r.name, r.recipe])),
+    [itemRecipes]
+  );
+  const held = useMemo(() => {
+    const c = {};
+    for (const id of componentIds) c[id] = (c[id] || 0) + 1;
+    return c;
+  }, [componentIds]);
+
+  const carriers = suggestion.board_layout.filter((u) => u.items?.length > 0);
+  if (carriers.length === 0) return null;
+
+  const craftable = (itemName) => {
+    const recipe = recipeByName[itemName];
+    if (!recipe) return { known: false, can: false };
+    const pool = { ...held };
+    for (const comp of recipe) {
+      if (!pool[comp]) return { known: true, can: false, recipe };
+      pool[comp] -= 1;
+    }
+    return { known: true, can: true, recipe };
+  };
+
+  return (
+    <>
+      <div style={{
+        fontSize: "9px", color: "#f5b942", margin: "14px 0 8px",
+        fontFamily: "var(--mono)", letterSpacing: "2px",
+      }}>
+        📌 ITEM PLAN — {(suggestion.tftacademy_name || suggestion.name).toUpperCase()}
+      </div>
+      <div className="card" style={{ borderColor: "#f5b94233" }}>
+        {carriers.map((u, i) => (
+          <div key={i} style={{
+            display: "flex", alignItems: "center", gap: "8px",
+            padding: "7px 0",
+            borderBottom: i < carriers.length - 1 ? "1px solid #1e2028" : "none",
+          }}>
+            <span style={{
+              fontSize: "11px", fontWeight: 700, color: "#c8cad0",
+              width: "84px", flexShrink: 0, overflow: "hidden",
+              textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {u.name}{u.stars > 1 ? ` ${"★".repeat(u.stars)}` : ""}
+            </span>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {u.items.map((it, j) => {
+                const c = craftable(it);
+                return (
+                  <span key={j}
+                    title={c.can
+                      ? `${it} — craftable NOW from your components`
+                      : c.known
+                      ? `${it} — needs ${c.recipe.join(" + ")}`
+                      : it}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: "4px",
+                      padding: "3px 6px", borderRadius: "5px",
+                      border: c.can ? "1px solid #2ed57366" : "1px solid #2a2d35",
+                      background: c.can ? "#2ed5730d" : "transparent",
+                      opacity: c.can ? 1 : 0.75,
+                    }}>
+                    <GameIcon kind="items" name={it} emoji="🔧" size={18} />
+                    <span style={{
+                      fontSize: "9px", fontFamily: "var(--mono)",
+                      color: c.can ? "#2ed573" : "#8b8fa3",
+                    }}>
+                      {c.can ? "CRAFT" : it.length > 14 ? `${it.slice(0, 13)}…` : it}
+                    </span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+        <div style={{ marginTop: "8px", fontSize: "9px", color: "#5a5e6b", lineHeight: 1.5 }}>
+          Green = both components are in your inventory right now. Hover an
+          item for its recipe.
+        </div>
+      </div>
+    </>
+  );
+}
+
 // Single-pixel progress bar visualizing match_score (0-1).
 function MatchScoreBar({ score }) {
   const pct = Math.max(0, Math.min(1, score)) * 100;
@@ -490,14 +578,17 @@ function MatchScoreBar({ score }) {
 
 // Comp suggestion card: shows comp name, internal+TFT Academy tier,
 // progress, held/missing units, and the composed direction tip.
-function CompCard({ comp, primary }) {
-  const accent = primary ? ACCENT : "#5a5e6b";
+function CompCard({ comp, primary, pinned = false, onPin }) {
+  const accent = pinned ? "#f5b942" : primary ? ACCENT : "#5a5e6b";
   return (
-    <div className="card" style={{
-      marginBottom: "8px",
-      borderColor: primary ? `${ACCENT}55` : "#2a2d35",
-      borderLeft: `3px solid ${accent}`,
-    }}>
+    <div
+      className="card"
+      style={{
+        marginBottom: "8px",
+        borderColor: pinned ? "#f5b94266" : primary ? `${ACCENT}55` : "#2a2d35",
+        borderLeft: `3px solid ${accent}`,
+        ...(pinned && { background: "rgba(245,185,66,0.05)" }),
+      }}>
       <div style={{
         display: "flex", alignItems: "center", gap: "8px",
         marginBottom: "6px", flexWrap: "wrap",
@@ -508,6 +599,23 @@ function CompCard({ comp, primary }) {
         }}>
           {comp.name}
         </span>
+        {onPin && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onPin(); }}
+            title={pinned
+              ? "Locked as your comp — click to unlock"
+              : "Lock this as your comp: advice, augments, and the item plan follow it"}
+            style={{
+              fontSize: "8px", fontWeight: 800, cursor: "pointer",
+              color: pinned ? "#f5b942" : "#8b8fa3",
+              background: pinned ? "#f5b94218" : "transparent",
+              padding: "2px 7px", borderRadius: "3px",
+              fontFamily: "var(--mono)", letterSpacing: "1px",
+              border: pinned ? "1px solid #f5b94244" : "1px solid #2a2d35",
+            }}>
+            {pinned ? "📌 LOCKED" : "📌 PIN"}
+          </button>
+        )}
         {comp.tftacademy_tier && (
           <MetaTierBadge tier={comp.tftacademy_tier} trend={comp.tftacademy_trend} />
         )}
@@ -899,6 +1007,37 @@ export default function App() {
   // Champion data for the Comp/Position tabs
   const boardChampions = isLive ? (gameState?.board_champions || []) : [];
   const benchChampions = isLive ? (gameState?.bench_champions || []) : [];
+
+  // Comp pinning — clicking a suggestion locks it as "my comp"; the
+  // backend then keeps it first and boosts its augments. Local state is
+  // the source for manual mode; live mode reflects the server's echo.
+  const [localPin, setLocalPin] = useState(null);
+  const pinnedComp = (isLive ? gameState?.pinned_comp : localPin) ?? localPin;
+  const togglePin = (c) => {
+    const name = c.tftacademy_name || c.name;
+    const next = pinnedComp === name ? null : name;
+    setLocalPin(next);
+    sendCommand("pin_comp", { name: next });
+  };
+  const pinnedSuggestion = compSuggestions.find(
+    (c) => (c.tftacademy_name || c.name) === pinnedComp
+  );
+
+  // During augment selection, jump to the Augments tab automatically and
+  // return to wherever the player was afterwards.
+  const preAugmentTabRef = useRef(null);
+  useEffect(() => {
+    if (isLive && gameState?.phase === "augment_select") {
+      if (preAugmentTabRef.current === null) {
+        preAugmentTabRef.current = tab;
+        setTab("augments");
+      }
+    } else if (preAugmentTabRef.current !== null) {
+      setTab(preAugmentTabRef.current);
+      preAugmentTabRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState?.phase, isLive]);
 
   // Positioning-specific data (drives the Position tab)
   const recommendedTemplateName = backendAdvice?.positioning_template || null;
@@ -1345,9 +1484,33 @@ export default function App() {
                     </div>
                   </div>
                 ) : (
-                  compSuggestions.map((c, i) => (
-                    <CompCard key={i} comp={c} primary={c.is_primary} />
-                  ))
+                  <>
+                    <div style={{
+                      fontSize: "9px", color: "#5a5e6b", marginBottom: "8px",
+                      fontFamily: "var(--mono)",
+                    }}>
+                      📌 PIN a comp to lock it — advice, augments, and the item
+                      plan will follow it.
+                    </div>
+                    {compSuggestions.map((c, i) => (
+                      <CompCard
+                        key={i}
+                        comp={c}
+                        primary={c.is_primary}
+                        pinned={c.is_pinned || (c.tftacademy_name || c.name) === pinnedComp}
+                        onPin={() => togglePin(c)}
+                      />
+                    ))}
+                  </>
+                )}
+
+                {/* Item plan for the locked comp */}
+                {pinnedSuggestion?.board_layout?.length > 0 && (
+                  <ItemPlan
+                    suggestion={pinnedSuggestion}
+                    componentIds={componentIds}
+                    itemRecipes={itemRecipes}
+                  />
                 )}
 
                 {/* Footnote when at least one comp had a TFT Academy match */}

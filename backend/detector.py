@@ -236,6 +236,11 @@ class Detector:
         self._trait_rows_cache: Optional[list[tuple[str, float, float]]] = None
         self._trait_rows_age = 0
 
+        # Last accepted HP — anchors the next read. Late game the player
+        # list shrinks and shifts as players die, so "tallest glyphs" alone
+        # drifts; the candidate closest to the previous value is ours.
+        self._last_hp: Optional[int] = None
+
         if not self.templates.is_loaded:
             self.templates.load()
 
@@ -253,6 +258,7 @@ class Detector:
         state.phase, state.phase_confidence = self._detect_phase(frame)
 
         if state.phase == GamePhase.NOT_IN_GAME:
+            self._last_hp = None   # new game → drop the HP anchor
             state.detection_ms = (time.time() - t_start) * 1000
             return state
 
@@ -487,8 +493,19 @@ class Detector:
                 candidates.append((data["height"][i], -data["left"][i], value))
 
         if candidates:
-            # The tallest remaining glyphs are our enlarged row.
-            return max(candidates)[2]
+            # With an anchor from the previous frame, the candidate closest
+            # to it is our row — HP moves in small steps, other players'
+            # totals differ. Without one (game start), the tallest glyphs
+            # are our enlarged row.
+            pick = None
+            if self._last_hp is not None:
+                near = [c for c in candidates if abs(c[2] - self._last_hp) <= 25]
+                if near:
+                    pick = min(near, key=lambda c: (abs(c[2] - self._last_hp), -c[0]))
+            if pick is None:
+                pick = max(candidates)
+            self._last_hp = pick[2]
+            return pick[2]
         return self._ocr_number(frame, self.rois.player_hp, "HP")
 
     def _ocr_region(self, region: np.ndarray, whitelist: str = "") -> str:

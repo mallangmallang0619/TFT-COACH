@@ -133,6 +133,8 @@ class CompSuggestion(BaseModel):
     recommended_augments: list[str] = Field(default_factory=list)
     # Human-readable notes on why the score got context boosts (items/augments).
     context_notes: list[str] = Field(default_factory=list)
+    # True when the player clicked this comp to lock it as their direction.
+    is_pinned: bool = False
 
 
 class CoachingAdvice(BaseModel):
@@ -203,6 +205,11 @@ class GameState(BaseModel):
     # The five shop card names (None = empty/unreadable slot). Read via
     # name-banner OCR; feeds the purchase-tracking roster.
     shop_units: list[Optional[str]] = Field(default_factory=list)
+
+    # The comp the player clicked to lock as their direction (matched
+    # against suggestion names / TFT Academy names). Set by the server
+    # from the frontend's pin_comp message.
+    pinned_comp: Optional[str] = None
 
     # Coaching (populated by coach.py)
     advice: Optional[CoachingAdvice] = None
