@@ -530,10 +530,46 @@ def test_context_comp_scoring():
     item_primary = next((s for s in item_boosted if s.name == primary.name), None)
     assert item_primary is not None and item_primary.match_score >= primary.match_score
 
+    # Slammed-item context: ONE completed carry item on our units must pull
+    # the comp harder than fielding one more of the comp's units — items
+    # are commitments, units are interchangeable.
+    carry_name = (meta.get("detail") or {}).get("main_champion", {}).get("name")
+    carry_unit = next(
+        u for u in (meta["detail"]["units"]) if u["name"] == carry_name
+    )
+    carry_item_names = [i["name"] for i in carry_unit["items"]]
+    assert carry_item_names, "carry should have build items in the cache"
+
+    slammed_board = [c.model_copy(deep=True) for c in board]
+    slam_target = next(c for c in slammed_board if c.name == carry_name)
+    slam_target.items = carry_item_names[:1]
+    slammed = detect_comp_direction(compute_active_synergies(slammed_board), slammed_board)
+    slammed_primary = next((s for s in slammed if s.name == primary.name), None)
+    assert slammed_primary is not None
+    slam_gain = slammed_primary.match_score - primary.match_score
+    assert any("build" in n for n in slammed_primary.context_notes), \
+        f"slammed-item note expected, got {slammed_primary.context_notes}"
+
+    # Adding one more comp unit instead (a missing unit from the layout):
+    extra_name = next(
+        u["name"] for u in meta["detail"]["units"]
+        if u["name"] not in {c.name for c in board}
+    )
+    from game_state import DetectedChampion as DC
+    unit_board = board + [DC(name=extra_name, star_level=1, board_row=1, board_col=1)]
+    with_unit = detect_comp_direction(compute_active_synergies(unit_board), unit_board)
+    unit_primary = next((s for s in with_unit if s.name == primary.name), None)
+    unit_gain = (unit_primary.match_score - primary.match_score) if unit_primary else 0.0
+
+    assert slam_gain > unit_gain, (
+        f"one slammed carry item should outweigh one extra unit "
+        f"(+{slam_gain:.3f} vs +{unit_gain:.3f})"
+    )
+
     return (
         f"layout={len(primary.board_layout)} units, "
-        f"augment boost +{boosted_primary.match_score - primary.match_score:.3f}, "
-        f"item boost +{item_primary.match_score - primary.match_score:.3f}"
+        f"augment +{boosted_primary.match_score - primary.match_score:.3f}, "
+        f"slammed item +{slam_gain:.3f} > extra unit +{unit_gain:.3f}"
     )
 
 

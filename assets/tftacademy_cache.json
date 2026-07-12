@@ -7780,7 +7780,7 @@
   ],
   "augments": {
     "set": 17,
-    "synced_at": "2026-07-11T06:22:09.548089Z",
+    "synced_at": "2026-07-12T04:01:59.587620Z",
     "source_url": "https://tftacademy.com/api/tierlist/augments?set=17",
     "entries": [
       {
@@ -7788,8 +7788,8 @@
         "name": "A Magic Roll",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -7797,8 +7797,8 @@
         "name": "AFK",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -7806,8 +7806,8 @@
         "name": "Advanced Loan",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -7815,8 +7815,8 @@
         "name": "Advanced Loan+",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -7824,8 +7824,8 @@
         "name": "An Exalted Adventure",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -7833,91 +7833,14 @@
         "name": "Anima Commander",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
         "api_name": "TFT17_Augment_ApotheoticForge",
         "name": "Apotheotic Forge",
         "slot": "gold",
-        "ratings": {
-          "4-2": "A",
-          "All": "A",
-          "2-1": "A",
-          "3-2": "A"
-        }
-      },
-      {
-        "api_name": "TFT_Augment_ArcaneViktory",
-        "name": "Arcane Viktor-y",
-        "slot": "gold",
-        "ratings": {
-          "4-2": "A",
-          "All": "A",
-          "3-2": "A"
-        }
-      },
-      {
-        "api_name": "TFT9_Augment_Commander_Ascension",
-        "name": "Ascension",
-        "slot": "gold",
-        "ratings": {
-          "4-2": "B",
-          "All": "B",
-          "3-2": "B"
-        }
-      },
-      {
-        "api_name": "TFT11_Augment_AtWhatCost",
-        "name": "At What Cost",
-        "slot": "prismatic",
-        "ratings": {
-          "2-1": "C",
-          "All": "C"
-        }
-      },
-      {
-        "api_name": "TFT_Augment_PowerUp",
-        "name": "Augmented Power",
-        "slot": "silver",
-        "ratings": {
-          "3-2": "A",
-          "2-1": "B",
-          "All": "B"
-        }
-      },
-      {
-        "api_name": "TFT_Augment_AuraFarming",
-        "name": "Aura Farming",
-        "slot": "gold",
-        "ratings": {
-          "All": "A",
-          "2-1": "A"
-        }
-      },
-      {
-        "api_name": "TFT_Augment_BacklineBlueprint",
-        "name": "Backline Blueprint",
-        "slot": "gold",
-        "ratings": {
-          "All": "A",
-          "2-1": "A"
-        }
-      },
-      {
-        "api_name": "TFT_Augment_ComponentQuestBow",
-        "name": "Backup Bows",
-        "slot": "silver",
-        "ratings": {
-          "2-1": "B",
-          "All": "B"
-        }
-      },
-      {
-        "api_name": "TFT7_Augment_BandOfThieves1",
-        "name": "Band of Thieves",
-        "slot": "silver",
         "ratings": {
           "3-2": "A",
           "4-2": "A",
@@ -7926,12 +7849,89 @@
         }
       },
       {
+        "api_name": "TFT_Augment_ArcaneViktory",
+        "name": "Arcane Viktor-y",
+        "slot": "gold",
+        "ratings": {
+          "3-2": "A",
+          "4-2": "A",
+          "All": "A"
+        }
+      },
+      {
+        "api_name": "TFT9_Augment_Commander_Ascension",
+        "name": "Ascension",
+        "slot": "gold",
+        "ratings": {
+          "3-2": "B",
+          "4-2": "B",
+          "All": "B"
+        }
+      },
+      {
+        "api_name": "TFT11_Augment_AtWhatCost",
+        "name": "At What Cost",
+        "slot": "prismatic",
+        "ratings": {
+          "All": "C",
+          "2-1": "C"
+        }
+      },
+      {
+        "api_name": "TFT_Augment_PowerUp",
+        "name": "Augmented Power",
+        "slot": "silver",
+        "ratings": {
+          "All": "B",
+          "2-1": "B",
+          "3-2": "A"
+        }
+      },
+      {
+        "api_name": "TFT_Augment_AuraFarming",
+        "name": "Aura Farming",
+        "slot": "gold",
+        "ratings": {
+          "2-1": "A",
+          "All": "A"
+        }
+      },
+      {
+        "api_name": "TFT_Augment_BacklineBlueprint",
+        "name": "Backline Blueprint",
+        "slot": "gold",
+        "ratings": {
+          "2-1": "A",
+          "All": "A"
+        }
+      },
+      {
+        "api_name": "TFT_Augment_ComponentQuestBow",
+        "name": "Backup Bows",
+        "slot": "silver",
+        "ratings": {
+          "All": "B",
+          "2-1": "B"
+        }
+      },
+      {
+        "api_name": "TFT7_Augment_BandOfThieves1",
+        "name": "Band of Thieves",
+        "slot": "silver",
+        "ratings": {
+          "4-2": "A",
+          "All": "A",
+          "2-1": "A",
+          "3-2": "A"
+        }
+      },
+      {
         "api_name": "TFT6_Augment_BandOfThieves2",
         "name": "Band of Thieves II",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "C",
-          "All": "B"
+          "All": "B",
+          "2-1": "C"
         }
       },
       {
@@ -7977,9 +7977,9 @@
         "name": "Best Friends I",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
           "4-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -7987,9 +7987,9 @@
         "name": "Best Friends II",
         "slot": "gold",
         "ratings": {
+          "3-2": "A",
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -7997,9 +7997,9 @@
         "name": "Big Grab Bag",
         "slot": "gold",
         "ratings": {
+          "3-2": "A",
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -8007,8 +8007,8 @@
         "name": "Birthday Present",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -8016,8 +8016,8 @@
         "name": "Birthday Reunion",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -8025,9 +8025,9 @@
         "name": "Blood Offering",
         "slot": "gold",
         "ratings": {
-          "All": "C",
+          "3-2": "C",
           "2-1": "B",
-          "3-2": "C"
+          "All": "C"
         }
       },
       {
@@ -8035,8 +8035,8 @@
         "name": "Bodyguard Training",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -8044,8 +8044,8 @@
         "name": "Bonk!",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -8053,8 +8053,8 @@
         "name": "Booster Pack",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -8071,8 +8071,8 @@
         "name": "Booster Pack+",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -8080,9 +8080,9 @@
         "name": "Boxing Lessons",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
           "4-2": "S",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -8090,8 +8090,8 @@
         "name": "Branching Out",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "A"
+          "All": "A",
+          "2-1": "B"
         }
       },
       {
@@ -8099,8 +8099,8 @@
         "name": "Branching Out+",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -8108,9 +8108,9 @@
         "name": "Bronze For Life I",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -8128,8 +8128,8 @@
         "name": "Build a Bud",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -8137,8 +8137,8 @@
         "name": "Buried Treasures",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -8146,8 +8146,8 @@
         "name": "Calculated Loss",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -8164,8 +8164,8 @@
         "name": "Care Package",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -8173,8 +8173,8 @@
         "name": "Caretaker's Ally",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -8182,8 +8182,8 @@
         "name": "Carve a Path",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -8191,9 +8191,9 @@
         "name": "Charge Transfer I",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
           "4-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "A"
         }
       },
       {
@@ -8201,9 +8201,9 @@
         "name": "Charge Transfer II",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -8211,8 +8211,8 @@
         "name": "Clear Mind",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -8220,9 +8220,9 @@
         "name": "Climb The Ladder I",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
           "4-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -8230,9 +8230,9 @@
         "name": "Climb The Ladder II",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -8240,9 +8240,9 @@
         "name": "Clockwork Accelerator",
         "slot": "gold",
         "ratings": {
+          "3-2": "C",
           "4-2": "C",
-          "All": "C",
-          "3-2": "C"
+          "All": "C"
         }
       },
       {
@@ -8250,8 +8250,8 @@
         "name": "Cluttered Mind",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -8259,8 +8259,8 @@
         "name": "Cognitive Overload",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -8268,8 +8268,8 @@
         "name": "Cognitive Tax",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -8277,8 +8277,8 @@
         "name": "Cognitive Tax+",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -8286,8 +8286,8 @@
         "name": "Comeback Story",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "C",
-          "All": "C"
+          "All": "C",
+          "2-1": "C"
         }
       },
       {
@@ -8313,8 +8313,8 @@
         "name": "Concentration",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -8322,8 +8322,8 @@
         "name": "Construct a Companion",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -8331,8 +8331,8 @@
         "name": "Continuous Conjuration",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -8340,8 +8340,8 @@
         "name": "Contract Killer",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -8349,9 +8349,9 @@
         "name": "Corrosion",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
           "4-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -8359,8 +8359,8 @@
         "name": "Cosmic Restart",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -8368,8 +8368,8 @@
         "name": "Crafted Crafting",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -8377,9 +8377,9 @@
         "name": "Crash Test Dummies",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -8387,9 +8387,9 @@
         "name": "Cry Me A River",
         "slot": "gold",
         "ratings": {
-          "All": "B",
+          "3-2": "B",
           "2-1": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -8397,8 +8397,8 @@
         "name": "Cursed Crown",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
           "All": "B",
+          "2-1": "B",
           "3-2": "B"
         }
       },
@@ -8407,9 +8407,9 @@
         "name": "Cybernetic Implants",
         "slot": "gold",
         "ratings": {
+          "3-2": "A",
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -8417,9 +8417,9 @@
         "name": "Cybernetic Uplink",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -8427,8 +8427,8 @@
         "name": "Deadlier Blades",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -8436,8 +8436,8 @@
         "name": "Deadlier Caps",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -8445,8 +8445,8 @@
         "name": "Divine Amendment",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -8454,8 +8454,8 @@
         "name": "Dummify",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -8472,8 +8472,8 @@
         "name": "Early Learnings",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -8481,10 +8481,10 @@
         "name": "Electrocharge I",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
           "4-2": "S",
+          "All": "A",
           "2-1": "A",
-          "All": "A"
+          "3-2": "A"
         }
       },
       {
@@ -8492,10 +8492,10 @@
         "name": "Electrocharge II",
         "slot": "gold",
         "ratings": {
+          "3-2": "A",
           "4-2": "A",
-          "All": "A",
           "2-1": "A",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -8503,8 +8503,8 @@
         "name": "Epic Rolldown",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -8512,8 +8512,8 @@
         "name": "Epoch",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -8521,8 +8521,8 @@
         "name": "Epoch+",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -8530,9 +8530,9 @@
         "name": "Exclusive Customization",
         "slot": "gold",
         "ratings": {
+          "3-2": "A",
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -8549,9 +8549,9 @@
         "name": "Exiles I",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
           "4-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -8559,9 +8559,9 @@
         "name": "Exiles II",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -8569,8 +8569,8 @@
         "name": "Expected Unexpectedness",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -8578,8 +8578,8 @@
         "name": "Expedition",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "B"
+          "All": "B",
+          "2-1": "S"
         }
       },
       {
@@ -8587,8 +8587,8 @@
         "name": "Explosive Growth",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -8605,9 +8605,9 @@
         "name": "Feed the Flames",
         "slot": "gold",
         "ratings": {
-          "All": "A",
+          "3-2": "B",
           "2-1": "A",
-          "3-2": "B"
+          "All": "A"
         }
       },
       {
@@ -8615,8 +8615,8 @@
         "name": "Feeling Lucky",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -8624,9 +8624,9 @@
         "name": "Find Your Center",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
           "4-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -8634,8 +8634,8 @@
         "name": "Flexible",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -8643,8 +8643,8 @@
         "name": "Flowing Tears",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -8652,9 +8652,9 @@
         "name": "Focused Fire",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
           "4-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -8671,8 +8671,8 @@
         "name": "Forged in Strength",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -8680,8 +8680,8 @@
         "name": "Forward Thinking",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -8689,8 +8689,8 @@
         "name": "Frontline Foundation",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -8698,8 +8698,8 @@
         "name": "Gain @Gold@ Gold",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -8726,9 +8726,9 @@
         "name": "Glass Cannon I",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
           "4-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -8736,9 +8736,9 @@
         "name": "Glass Cannon II",
         "slot": "gold",
         "ratings": {
+          "3-2": "A",
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -8746,8 +8746,8 @@
         "name": "Going Long",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "C",
-          "All": "C"
+          "All": "C",
+          "2-1": "C"
         }
       },
       {
@@ -8755,8 +8755,8 @@
         "name": "Golden Gamble",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -8782,8 +8782,8 @@
         "name": "Good For Something I",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -8791,9 +8791,9 @@
         "name": "Group Hug I",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
           "4-2": "S",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -8801,9 +8801,9 @@
         "name": "Group Hug II",
         "slot": "gold",
         "ratings": {
+          "3-2": "A",
           "4-2": "S",
-          "All": "A",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -8811,8 +8811,8 @@
         "name": "Hard Commit",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "A"
+          "All": "A",
+          "2-1": "B"
         }
       },
       {
@@ -8820,9 +8820,9 @@
         "name": "Healing Orbs I",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
           "4-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -8830,9 +8830,9 @@
         "name": "Healing Orbs II",
         "slot": "gold",
         "ratings": {
+          "3-2": "A",
           "4-2": "B",
-          "All": "B",
-          "3-2": "A"
+          "All": "B"
         }
       },
       {
@@ -8840,8 +8840,8 @@
         "name": "Heart of Steel",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -8849,8 +8849,8 @@
         "name": "Heart of the Swarm",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -8858,8 +8858,8 @@
         "name": "Heat Death",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -8867,9 +8867,9 @@
         "name": "Heavy Is the Crown",
         "slot": "gold",
         "ratings": {
-          "All": "A",
+          "3-2": "B",
           "2-1": "B",
-          "3-2": "B"
+          "All": "A"
         }
       },
       {
@@ -8877,8 +8877,8 @@
         "name": "Hedge Fund",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -8895,8 +8895,8 @@
         "name": "Heroic Grab Bag",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -8904,8 +8904,8 @@
         "name": "Heroic Grab Bag+",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -8922,9 +8922,9 @@
         "name": "High Voltage",
         "slot": "gold",
         "ratings": {
-          "All": "C",
+          "3-2": "C",
           "2-1": "B",
-          "3-2": "C"
+          "All": "C"
         }
       },
       {
@@ -8942,8 +8942,8 @@
         "name": "Hustler",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -8951,9 +8951,9 @@
         "name": "Indiscriminate Killer",
         "slot": "gold",
         "ratings": {
+          "3-2": "A",
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -8961,8 +8961,8 @@
         "name": "Infinity Protection",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -8970,8 +8970,8 @@
         "name": "Invader Zed",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "B",
+          "All": "A"
         }
       },
       {
@@ -8997,8 +8997,8 @@
         "name": "Iron Assets",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -9006,10 +9006,10 @@
         "name": "Item Grab Bag",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
           "4-2": "B",
+          "All": "B",
           "2-1": "A",
-          "All": "B"
+          "3-2": "B"
         }
       },
       {
@@ -9017,9 +9017,9 @@
         "name": "Jeweled Lotus I",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -9037,9 +9037,9 @@
         "name": "Kahunahuna",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -9047,8 +9047,8 @@
         "name": "Kick Start",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -9056,8 +9056,8 @@
         "name": "Late Game Scaling",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -9065,8 +9065,8 @@
         "name": "Late Game Specialist",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -9074,8 +9074,8 @@
         "name": "Latent Forge",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -9083,8 +9083,8 @@
         "name": "Legion of Threes",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -9092,8 +9092,8 @@
         "name": "Level Up!",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -9101,9 +9101,9 @@
         "name": "Lineup",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
           "4-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -9111,9 +9111,9 @@
         "name": "Little Buddies",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -9121,8 +9121,8 @@
         "name": "Living Forge",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -9130,8 +9130,8 @@
         "name": "Loot Singularity",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -9139,8 +9139,8 @@
         "name": "Lucky Gloves",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -9158,9 +9158,9 @@
         "name": "Lunch Money",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
+          "All": "C",
           "2-1": "C",
-          "All": "C"
+          "3-2": "B"
         }
       },
       {
@@ -9177,9 +9177,9 @@
         "name": "Mace's Will",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -9187,9 +9187,9 @@
         "name": "Makeshift Armor I",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
+          "All": "A",
           "2-1": "A",
-          "All": "A"
+          "3-2": "A"
         }
       },
       {
@@ -9197,9 +9197,9 @@
         "name": "Makeshift Armor II",
         "slot": "gold",
         "ratings": {
-          "All": "B",
+          "3-2": "B",
           "2-1": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -9234,9 +9234,9 @@
         "name": "Misfits",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -9244,9 +9244,9 @@
         "name": "Missed Connections",
         "slot": "silver",
         "ratings": {
-          "3-2": "S",
           "4-2": "A",
-          "All": "S"
+          "All": "S",
+          "3-2": "S"
         }
       },
       {
@@ -9254,8 +9254,8 @@
         "name": "Money Hungry",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -9272,8 +9272,8 @@
         "name": "NO SCOUT NO PIVOT",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -9291,8 +9291,8 @@
         "name": "On a Roll",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -9310,8 +9310,8 @@
         "name": "One Two Three",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -9328,10 +9328,10 @@
         "name": "Pandora's Items",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
           "4-2": "B",
+          "All": "S",
           "2-1": "A",
-          "All": "S"
+          "3-2": "B"
         }
       },
       {
@@ -9339,10 +9339,10 @@
         "name": "Pandora's Items II",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "A",
           "2-1": "A",
-          "3-2": "B"
+          "All": "A"
         }
       },
       {
@@ -9350,8 +9350,8 @@
         "name": "Pandora's Items III",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
           "All": "S",
+          "2-1": "S",
           "3-2": "A"
         }
       },
@@ -9360,9 +9360,9 @@
         "name": "Partial Ascension",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
           "4-2": "A",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -9370,8 +9370,8 @@
         "name": "Patience is a Virtue",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -9379,8 +9379,8 @@
         "name": "Patient Study",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -9396,9 +9396,9 @@
         "name": "Plot Armor",
         "slot": "gold",
         "ratings": {
+          "3-2": "A",
           "4-2": "A",
-          "All": "B",
-          "3-2": "A"
+          "All": "B"
         }
       },
       {
@@ -9406,10 +9406,10 @@
         "name": "Portable Forge",
         "slot": "gold",
         "ratings": {
+          "3-2": "S",
           "4-2": "S",
-          "All": "S",
           "2-1": "S",
-          "3-2": "S"
+          "All": "S"
         }
       },
       {
@@ -9417,8 +9417,8 @@
         "name": "Prismatic Ticket",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
           "All": "A",
+          "2-1": "A",
           "3-2": "A"
         }
       },
@@ -9427,8 +9427,8 @@
         "name": "Prizefighter",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -9446,8 +9446,8 @@
         "name": "Reach for the Stars",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -9455,8 +9455,8 @@
         "name": "Recombobulator",
         "slot": "silver",
         "ratings": {
-          "3-2": "C",
-          "All": "C"
+          "All": "C",
+          "3-2": "C"
         }
       },
       {
@@ -9473,9 +9473,9 @@
         "name": "Replication",
         "slot": "gold",
         "ratings": {
-          "All": "B",
+          "3-2": "B",
           "2-1": "A",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -9483,8 +9483,8 @@
         "name": "Restart Mission",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -9492,8 +9492,8 @@
         "name": "Risky Moves",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -9501,9 +9501,9 @@
         "name": "Rolling For Days I",
         "slot": "silver",
         "ratings": {
-          "3-2": "S",
           "4-2": "S",
-          "All": "S"
+          "All": "S",
+          "3-2": "S"
         }
       },
       {
@@ -9511,8 +9511,8 @@
         "name": "Salvage Bin",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -9520,9 +9520,9 @@
         "name": "Salvage Bin+",
         "slot": "gold",
         "ratings": {
+          "3-2": "A",
           "4-2": "B",
-          "All": "A",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -9530,8 +9530,8 @@
         "name": "Savings Account",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -9539,9 +9539,9 @@
         "name": "Second Wind",
         "slot": "silver",
         "ratings": {
-          "3-2": "S",
           "4-2": "S",
-          "All": "A"
+          "All": "A",
+          "3-2": "S"
         }
       },
       {
@@ -9549,9 +9549,9 @@
         "name": "Second Wind II",
         "slot": "gold",
         "ratings": {
+          "3-2": "A",
           "4-2": "A",
-          "All": "B",
-          "3-2": "A"
+          "All": "B"
         }
       },
       {
@@ -9559,8 +9559,8 @@
         "name": "Self Destruct",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -9568,9 +9568,9 @@
         "name": "Seraphim's Staff",
         "slot": "gold",
         "ratings": {
-          "All": "B",
+          "3-2": "B",
           "2-1": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -9578,8 +9578,8 @@
         "name": "Shieldmaiden",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -9587,8 +9587,8 @@
         "name": "Shimmerscale Essence",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -9596,9 +9596,9 @@
         "name": "Side Effects",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -9606,8 +9606,8 @@
         "name": "Silver Spoon",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -9615,8 +9615,8 @@
         "name": "Size Matters",
         "slot": "silver",
         "ratings": {
-          "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "3-2": "S"
         }
       },
       {
@@ -9624,8 +9624,8 @@
         "name": "Slammin'",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -9633,8 +9633,8 @@
         "name": "Slammin'+",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -9642,8 +9642,8 @@
         "name": "Slice of Life",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -9651,8 +9651,8 @@
         "name": "Slightly Magic Roll",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -9660,9 +9660,9 @@
         "name": "Small Grab Bag",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
           "4-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -9670,8 +9670,8 @@
         "name": "Solo Leveling",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -9679,9 +9679,9 @@
         "name": "Solo Plate",
         "slot": "gold",
         "ratings": {
-          "All": "A",
+          "3-2": "A",
           "2-1": "S",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -9699,8 +9699,8 @@
         "name": "Speedy Double Kill",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -9708,9 +9708,9 @@
         "name": "Spirit of Redemption",
         "slot": "gold",
         "ratings": {
-          "All": "B",
+          "3-2": "B",
           "2-1": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -9718,8 +9718,8 @@
         "name": "Spreading Roots",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -9727,8 +9727,8 @@
         "name": "Spreading Roots+",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -9745,9 +9745,9 @@
         "name": "Stand United",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
           "4-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -9755,8 +9755,8 @@
         "name": "Stellar Combo",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -9764,8 +9764,8 @@
         "name": "Subscription Service",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -9773,9 +9773,9 @@
         "name": "Sunfire Board",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -9783,8 +9783,8 @@
         "name": "Survivor",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -9821,8 +9821,8 @@
         "name": "Tactician's Kitchen",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -9830,9 +9830,9 @@
         "name": "Team Building",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
+          "All": "A",
           "2-1": "A",
-          "All": "A"
+          "3-2": "A"
         }
       },
       {
@@ -9840,9 +9840,9 @@
         "name": "Teaming Up",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
           "4-2": "C",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -9850,8 +9850,8 @@
         "name": "Termeepnal Velocity",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "B"
+          "All": "B",
+          "2-1": "A"
         }
       },
       {
@@ -9859,8 +9859,8 @@
         "name": "The Big Bang",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -9877,10 +9877,10 @@
         "name": "The Tower",
         "slot": "silver",
         "ratings": {
-          "3-2": "A",
           "4-2": "A",
+          "All": "A",
           "2-1": "A",
-          "All": "A"
+          "3-2": "A"
         }
       },
       {
@@ -9888,8 +9888,8 @@
         "name": "The Trait Tree",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -9906,8 +9906,8 @@
         "name": "Timestream",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -9924,8 +9924,8 @@
         "name": "Tiny Titans",
         "slot": "silver",
         "ratings": {
-          "2-1": "C",
-          "All": "B"
+          "All": "B",
+          "2-1": "C"
         }
       },
       {
@@ -9943,9 +9943,9 @@
         "name": "Tons of Stats!",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -9953,8 +9953,8 @@
         "name": "Tour of the Galaxy",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -9962,8 +9962,8 @@
         "name": "Trade Sector",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -9971,8 +9971,8 @@
         "name": "Treasure Hunt",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -9980,9 +9980,9 @@
         "name": "Trifecta I",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -10000,9 +10000,9 @@
         "name": "Twin Guardians",
         "slot": "silver",
         "ratings": {
-          "3-2": "S",
           "4-2": "S",
-          "All": "S"
+          "All": "S",
+          "3-2": "S"
         }
       },
       {
@@ -10010,9 +10010,9 @@
         "name": "Two Tanky",
         "slot": "gold",
         "ratings": {
-          "All": "S",
+          "3-2": "S",
           "2-1": "S",
-          "3-2": "S"
+          "All": "S"
         }
       },
       {
@@ -10020,10 +10020,10 @@
         "name": "U.R.F",
         "slot": "gold",
         "ratings": {
+          "3-2": "B",
           "4-2": "B",
-          "All": "B",
           "2-1": "B",
-          "3-2": "B"
+          "All": "B"
         }
       },
       {
@@ -10031,8 +10031,8 @@
         "name": "Upward Mobility",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -10040,8 +10040,8 @@
         "name": "Urf's Gambit",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -10058,9 +10058,9 @@
         "name": "Vampiric Vitality I",
         "slot": "silver",
         "ratings": {
-          "3-2": "B",
           "4-2": "B",
-          "All": "C"
+          "All": "C",
+          "3-2": "B"
         }
       },
       {
@@ -10078,9 +10078,9 @@
         "name": "Warlord's Honor",
         "slot": "gold",
         "ratings": {
-          "All": "A",
+          "3-2": "A",
           "2-1": "B",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -10088,8 +10088,8 @@
         "name": "Warpath",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -10097,8 +10097,8 @@
         "name": "We Stick Together",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -10115,8 +10115,8 @@
         "name": "Wise Spending",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
           "All": "A",
+          "2-1": "A",
           "3-2": "A"
         }
       },
@@ -10125,8 +10125,8 @@
         "name": "Worth the Wait",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "A"
         }
       },
       {
@@ -10134,8 +10134,8 @@
         "name": "Worth the Wait II",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -10143,8 +10143,8 @@
         "name": "Woven Magic",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -10152,9 +10152,9 @@
         "name": "You Have My Bow",
         "slot": "gold",
         "ratings": {
+          "3-2": "C",
           "4-2": "C",
-          "All": "C",
-          "3-2": "C"
+          "All": "C"
         }
       }
     ]

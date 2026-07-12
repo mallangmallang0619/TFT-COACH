@@ -17,6 +17,8 @@ unit-test without templates, OCR, or a running game.
 
 from __future__ import annotations
 
+from collections import Counter
+
 from game_state import (
     ActiveSynergy,
     CompSuggestion,
@@ -221,6 +223,19 @@ def _augment_names_from_detail(detail: dict) -> list[str]:
     return [a["name"] for a in (detail or {}).get("augments") or [] if a.get("name")]
 
 
+def _carry_items_from_detail(detail: dict) -> set[str]:
+    """The main carry's build items — the strongest itemization signal."""
+    carry = canonical_name(
+        ((detail or {}).get("main_champion") or {}).get("name") or ""
+    )
+    if not carry:
+        return set()
+    for u in (detail or {}).get("units") or []:
+        if canonical_name(u.get("name") or "") == carry:
+            return {canonical_name(i["name"]) for i in (u.get("items") or [])}
+    return set()
+
+
 def build_comps_from_meta() -> list[dict]:
     """
     Convert scraped META_COMPS entries (with `detail.units`) into the same
@@ -270,6 +285,7 @@ def build_comps_from_meta() -> list[dict]:
             "_meta_layout":        layout,
             "_meta_item_names":    item_names,
             "_meta_augments":      augment_names,
+            "_meta_carry_items":   _carry_items_from_detail(detail),
             "_source":             "meta",
         })
     return result
@@ -345,9 +361,46 @@ def _augment_fit(
 
 # Context bonuses — additive on top of the unit/trait base score, so they
 # reorder close calls without letting an empty board "match" a comp.
-_ITEM_FIT_BONUS_MAX  = 0.10   # full bonus when every held component fits
-_AUGMENT_MATCH_BONUS = 0.15   # per taken augment the comp recommends
-_AUGMENT_BONUS_CAP   = 0.30
+#
+# Items outweigh units on purpose: a unit can be sold and replaced in one
+# shop, but a slammed item is permanent — itemization decides the comp.
+# One slammed build-item is worth roughly 2-3 core units of score; carry
+# items count double again.
+_ITEM_FIT_BONUS_MAX   = 0.25   # held components that build into the comp's items
+_SLAMMED_ITEM_BONUS   = 0.12   # each completed item on our units the comp builds
+_SLAMMED_ITEM_CAP     = 0.36
+_CARRY_ITEM_WEIGHT    = 2.0    # slammed items for the comp's CARRY count double
+_AUGMENT_MATCH_BONUS  = 0.15   # per taken augment the comp recommends
+_AUGMENT_BONUS_CAP    = 0.30
+
+
+def _slammed_item_fit(
+    comp_item_names: list[str],
+    carry_items: set[str],
+    board_champions: list[DetectedChampion],
+    bench_champions: list[DetectedChampion] | None,
+) -> tuple[float, list[str]]:
+    """
+    Score the completed items already sitting on the player's units against
+    this comp's build. Returns (bonus, matched item names).
+    """
+    have: Counter[str] = Counter()
+    for champ in list(board_champions) + list(bench_champions or []):
+        for item in champ.items or []:
+            have[item] += 1
+    if not have or not comp_item_names:
+        return 0.0, []
+
+    need = Counter(comp_item_names)
+    bonus = 0.0
+    matched: list[str] = []
+    for name, needed in need.items():
+        count = min(needed, have.get(name, 0))
+        if count:
+            weight = _CARRY_ITEM_WEIGHT if name in carry_items else 1.0
+            bonus += count * _SLAMMED_ITEM_BONUS * weight
+            matched.append(name)
+    return min(_SLAMMED_ITEM_CAP, bonus), matched
 
 
 def detect_comp_direction(
@@ -433,16 +486,29 @@ def detect_comp_direction(
             layout = comp.get("_meta_layout") or []
             comp_item_names = comp.get("_meta_item_names") or []
             comp_augments = comp.get("_meta_augments") or []
+            carry_items = comp.get("_meta_carry_items") or set()
         else:
             meta = _match_meta_comp(comp, board_names, syn_by_name)
             detail = (meta or {}).get("detail") or {}
             layout = _layout_from_detail(detail)
             comp_item_names = _item_names_from_detail(detail)
             comp_augments = _augment_names_from_detail(detail)
+            carry_items = _carry_items_from_detail(detail)
 
-        # Context boosts: held components that feed this comp's builds, and
-        # taken augments the comp recommends.
+        # Context boosts. Itemization comes first and weighs heaviest:
+        # completed items already slammed on our units are commitments the
+        # comp must honor, held components are strong hints, and augments
+        # confirm the direction.
         context_notes: list[str] = []
+        slam_bonus, slammed = _slammed_item_fit(
+            comp_item_names, carry_items, board_champions, bench_champions
+        )
+        if slam_bonus > 0:
+            match_score = min(1.0, match_score + slam_bonus)
+            context_notes.append(
+                f"Your {', '.join(slammed[:3])} "
+                f"{'are' if len(slammed) > 1 else 'is'} in this comp's build."
+            )
         fit, item_note = _item_fit(comp_item_names, component_ids or [])
         if fit > 0:
             match_score = min(1.0, match_score + fit * _ITEM_FIT_BONUS_MAX)
