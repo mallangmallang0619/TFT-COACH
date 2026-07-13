@@ -58,6 +58,8 @@ class TFTCoachServer:
         self._total_detection_ms = 0.0
         # Pending large HP change awaiting a confirming second frame.
         self._hp_candidate: int | None = None
+        # Comp the player locked via the UI (None = follow suggestions).
+        self._pinned_comp: str | None = None
 
     async def start(self):
         """Start the WebSocket server and capture loop."""
@@ -179,6 +181,12 @@ class TFTCoachServer:
 
             elif msg_type == "request_game_data":
                 await websocket.send(self._build_game_data_payload())
+
+            elif msg_type == "pin_comp":
+                # Player clicked a comp to lock it as their direction
+                # (null/empty name unpins).
+                self._pinned_comp = (msg.get("name") or "").strip() or None
+                logger.info(f"Comp pinned: {self._pinned_comp or '(unpinned)'}")
 
             else:
                 logger.debug(f"Unknown message type: {msg_type}")
@@ -316,6 +324,7 @@ class TFTCoachServer:
                     state.bench_champions = self.roster.owned_units()
 
                 # Run coaching logic
+                state.pinned_comp = self._pinned_comp
                 advice = self.coach.analyze(state)
                 state.advice = advice
 

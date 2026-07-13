@@ -437,6 +437,7 @@ class Coach:
             state.bench_champions,
             component_ids=state.component_ids,
             selected_augments=state.selected_augments,
+            pinned_comp=state.pinned_comp,
         )
         if not suggestions:
             return
@@ -485,6 +486,7 @@ class Coach:
     # augments land between B and C — unknown ≠ bad, just unproven.
     _AUGMENT_RATING_SCORE = {"S": 4.0, "A": 3.0, "B": 2.0, "C": 1.0}
     _AUGMENT_COMP_BOOST = 1.5     # comp we're building recommends this augment
+    _AUGMENT_PINNED_BOOST = 1.5   # ...extra when it's the comp the player LOCKED
     _AUGMENT_TRAIT_BOOST = 1.0    # trait-specific augment for an active synergy
 
     def _analyze_augments(self, state: GameState, advice: CoachingAdvice):
@@ -500,14 +502,17 @@ class Coach:
         if not state.augment_options:
             return
 
-        # {normalized augment name → comp that recommends it}, strongest
-        # (higher-scored) comps first so the attribution names the comp
-        # the player is most likely going.
-        rec_by_augment: dict[str, str] = {}
+        # {normalized augment name → (comp label, comp is pinned)}, strongest
+        # (higher-scored) comps last-write so the attribution names the comp
+        # the player is most likely going — the pinned comp always wins.
+        rec_by_augment: dict[str, tuple[str, bool]] = {}
         for sug in reversed(advice.comp_suggestions):
             label = sug.tftacademy_name or sug.name
             for aug_name in sug.recommended_augments:
-                rec_by_augment[_norm_augment(aug_name)] = label
+                key = _norm_augment(aug_name)
+                if key in rec_by_augment and rec_by_augment[key][1]:
+                    continue   # never overwrite a pinned attribution
+                rec_by_augment[key] = (label, sug.is_pinned)
 
         active_traits = [s.name for s in state.active_synergies if s.is_active]
 
@@ -535,10 +540,15 @@ class Coach:
                 score = 1.5
 
             reasons: list[str] = []
-            rec_comp = rec_by_augment.get(_norm_augment(display))
-            if rec_comp:
+            rec = rec_by_augment.get(_norm_augment(display))
+            if rec:
+                rec_comp, rec_pinned = rec
                 score += self._AUGMENT_COMP_BOOST
-                reasons.append(f"Recommended for {rec_comp} — your current direction")
+                if rec_pinned:
+                    score += self._AUGMENT_PINNED_BOOST
+                    reasons.append(f"Core to {rec_comp} — the comp you locked in")
+                else:
+                    reasons.append(f"Recommended for {rec_comp} — your current direction")
             trait_hit = next(
                 (t for t in active_traits if t.lower() in display.lower()), None
             )
