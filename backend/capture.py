@@ -86,35 +86,41 @@ class WindowFinder:
             logger.warning(f"Window detection failed: {e}")
             return None
 
+    # Exact window titles we will capture, most preferred first. The game
+    # renders in "League of Legends (TM) Client"; the launcher/lobby is
+    # titled just "League of Legends". Substring matching is NOT safe here:
+    # it latched onto any window mentioning the game — editors and terminals
+    # with this "TFT-COACH" project open, browser tabs about League — and
+    # the detector then OCR'd garbage out of them.
+    _WINDOW_TITLES = ("league of legends (tm) client", "league of legends")
+
+    @staticmethod
+    def _pick_game_window(windows) -> Optional[object]:
+        """Choose the game window from candidates with (title, isMinimized,
+        width, height) attributes. Exact title match only, game before
+        launcher."""
+        usable = [
+            w for w in windows
+            if not w.isMinimized and w.width > 200 and w.height > 200
+        ]
+        for wanted in WindowFinder._WINDOW_TITLES:
+            for w in usable:
+                if w.title.strip().lower() == wanted:
+                    return w
+        return None
+
     @staticmethod
     def _find_windows() -> Optional[WindowRect]:
-        """Find the game window on Windows using pygetwindow.
-
-        The actual game renders in a window titled "League of Legends (TM)
-        Client"; the launcher/lobby is titled just "League of Legends".
-        pygetwindow does substring matching, so searching for the generic
-        title first would grab the lobby whenever both are open — search
-        most-specific first.
-        """
+        """Find the game window on Windows using pygetwindow."""
         try:
             import pygetwindow as gw
         except ImportError:
             logger.error("pygetwindow not installed — required on Windows")
             return None
 
-        windows = []
-        for title in ("League of Legends (TM) Client", GAME_WINDOW_TITLE, "TFT"):
-            candidates = [
-                w for w in gw.getWindowsWithTitle(title)
-                if not w.isMinimized and w.width > 200 and w.height > 200
-            ]
-            if candidates:
-                windows = candidates
-                break
-        if not windows:
+        win = WindowFinder._pick_game_window(gw.getAllWindows())
+        if win is None:
             return None
-
-        win = windows[0]
         rect = WindowFinder._client_rect_windows(win)
         if rect:
             return rect

@@ -739,6 +739,33 @@ def test_bench_harvester():
             "tracking: interval+cap OK, stop-on-change OK")
 
 
+def test_window_picker():
+    """Capture must only target the game or the League client — exact
+    titles. Substring matching latched onto editors/terminals with this
+    'TFT-COACH' project open and browser tabs mentioning League."""
+    from capture import WindowFinder
+
+    class W:
+        def __init__(self, title, minimized=False, w=2560, h=1440):
+            self.title, self.isMinimized = title, minimized
+            self.width, self.height = w, h
+
+    ide = W("TFT-COACH - Visual Studio Code")
+    term = W("Windows PowerShell - python backend/main.py TFT-COACH")
+    browser = W("best TFT comps - League of Legends guide - Chrome")
+    launcher = W("League of Legends")
+    game = W("League of Legends (TM) Client")
+
+    pick = WindowFinder._pick_game_window
+    assert pick([ide, term, browser, launcher, game]) is game
+    assert pick([ide, browser, launcher]) is launcher, "launcher is the fallback"
+    assert pick([ide, term, browser]) is None, "no game/client → capture nothing"
+    assert pick([W("League of Legends (TM) Client", minimized=True), launcher]) is launcher
+    assert pick([W("  League of Legends (TM) Client ")]) is not None
+    assert pick([]) is None
+    return "game > launcher, exact titles only, IDE/terminal/browser ignored"
+
+
 def test_classifier_data_pipeline():
     """Training-data discovery and stratified split (no torch required)."""
     import tempfile
@@ -1022,6 +1049,7 @@ def main():
     test("Augment pick context", test_augment_pick_context)
     test("Roster tracker", test_roster_tracker)
     test("Bench harvester", test_bench_harvester)
+    test("Window picker", test_window_picker)
     test("Classifier data pipeline", test_classifier_data_pipeline)
     test("Unit classifier fallback", test_unit_classifier_fallback)
     test("Shop OCR (real frame)", test_shop_ocr_real_frame)
