@@ -63,6 +63,7 @@ from config import (
     TraitPanel,
 )
 from game_data import find_champion_name
+from unit_classifier import UnitClassifier
 from game_state import (
     GameState,
     GamePhase,
@@ -229,6 +230,10 @@ class Detector:
         # frames use real portraits and keep it on.
         self.match_board_units = True
 
+        # CNN unit classifier for live 3D models — a no-op until a trained
+        # model exists in assets/models/ (see scripts/train_classifier.py).
+        self.unit_classifier = UnitClassifier()
+
         # (trait names tuple, {trait: count}) + age, for count caching.
         self._trait_cache: Optional[tuple[tuple, dict]] = None
         self._trait_cache_age = 0
@@ -271,6 +276,12 @@ class Detector:
             if self.match_board_units:
                 state.board_champions = self._detect_board_champions(frame)
                 state.bench_champions = self._detect_bench_champions(frame)
+            elif self.unit_classifier.available:
+                # Live mode with a trained model: identify the 3D unit
+                # models directly (one batched ONNX pass for board+bench).
+                state.board_champions, state.bench_champions = (
+                    self._detect_units_cnn(frame)
+                )
             # Live frames render units as 3D models the portrait templates
             # can't identify — hex matching produces misses and false
             # positives. The HUD trait panel is 2D and matches reliably, so
@@ -872,6 +883,61 @@ class Detector:
                 detected.append(DetectedChampion(name=name, confidence=conf))
 
         return detected
+
+    def _detect_units_cnn(
+        self, frame: np.ndarray
+    ) -> tuple[list[DetectedChampion], list[DetectedChampion]]:
+        """
+        Identify live 3D unit models on board hexes and bench slots with
+        the trained classifier — one batched inference pass for all 37
+        positions. Empty positions fall below the confidence threshold
+        (and, once an _empty class is harvested, are classified outright).
+        """
+        h, w = frame.shape[:2]
+        crops: list[Optional[np.ndarray]] = []
+
+        # Board hexes: a unit model stands upward from its hex, so the
+        # crop is a portrait-shaped box anchored at the hex center —
+        # framed like the bench training crops. Geometry is a first
+        # approximation; calibrate against a live frame once a model
+        # exists (diagnose_capture.py --dump-hexes).
+        bx, by, bw, bh = self.rois.board.to_pixels(w, h)
+        board_region = frame[by:by+bh, bx:bx+bw]
+        brh, brw = board_region.shape[:2]
+        for hex_pos in BOARD_HEX_GRID:
+            cx = int(hex_pos.cx * brw)
+            cy = int(hex_pos.cy * brh)
+            r = int(hex_pos.radius * brw)
+            crop = board_region[
+                max(0, cy - int(2.55 * r)):min(brh, cy + r),
+                max(0, cx - int(1.1 * r)):min(brw, cx + int(1.1 * r)),
+            ]
+            crops.append(crop)
+
+        # Bench slots: identical cropping to the harvester, so inference
+        # sees exactly what training saw.
+        nx, ny, nw, nh = self.rois.champion_bench.to_pixels(w, h)
+        slot_w = max(1, nw // 9)
+        for slot in range(9):
+            crops.append(frame[ny:ny+nh, nx + slot * slot_w: nx + (slot + 1) * slot_w])
+
+        results = self.unit_classifier.classify_batch(crops)
+
+        board: list[DetectedChampion] = []
+        for hex_pos, (name, conf) in zip(BOARD_HEX_GRID, results):
+            if name is not None:
+                board.append(DetectedChampion(
+                    name=name,
+                    board_row=hex_pos.row,
+                    board_col=hex_pos.col,
+                    confidence=conf,
+                ))
+        bench = [
+            DetectedChampion(name=name, confidence=conf)
+            for name, conf in results[len(BOARD_HEX_GRID):]
+            if name is not None
+        ]
+        return board, bench
 
     def _is_hex_empty(self, hex_crop: np.ndarray) -> bool:
         """Check if a hex/slot is empty (no champion placed)."""

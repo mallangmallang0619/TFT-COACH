@@ -44,6 +44,7 @@ def stats() -> int:
         print()
         print("Rule of thumb: ~50+ crops per champion trains a usable classifier;")
         print("more is better. Share with: python scripts/training_data.py --pack crops.zip")
+        print("Check readiness / train:    python scripts/train_classifier.py --check")
     return 0
 
 

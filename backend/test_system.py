@@ -700,7 +700,89 @@ def test_bench_harvester():
         # (a wrong label is worse than a missing sample).
         assert hv.process(frame([0, 1, 2, 3, 4, 5]), ["Zed"]) == 0
 
-    return "baseline, delayed confirm, move-ignore, double buy, ambiguity skip OK"
+        # imwrite failing (returns False, never raises) must not count as
+        # a save — it used to leave empty champion folders behind.
+        import harvest as harvest_mod
+        orig_imwrite = harvest_mod.cv2.imwrite
+        harvest_mod.cv2.imwrite = lambda *a, **k: False
+        try:
+            before = hv.saved_count
+            assert hv._save(np.full((20, 20, 3), 99, dtype=np.uint8), "Ghost", 0) is False
+            assert hv.saved_count == before, "failed imwrite counted as saved"
+        finally:
+            harvest_mod.cv2.imwrite = orig_imwrite
+
+    return "baseline, delayed confirm, move-ignore, double buy, ambiguity skip, imwrite-fail OK"
+
+
+def test_classifier_data_pipeline():
+    """Training-data discovery and stratified split (no torch required)."""
+    import tempfile
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+    from train_classifier import discover_dataset, split_dataset
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        # Gwen and the _empty background class have enough crops; Zed
+        # doesn't; stray files are ignored.
+        for name, n in [("Gwen", 25), ("_empty", 30), ("Zed", 3)]:
+            d = root / name
+            d.mkdir()
+            for i in range(n):
+                (d / f"crop_{i}.png").write_bytes(b"png")
+        (root / "notes.txt").write_text("ignore me")
+
+        usable, skipped = discover_dataset(root, min_crops=20)
+        assert set(usable) == {"Gwen", "_empty"}, usable.keys()
+        assert skipped == {"Zed": 3}, skipped
+
+        train, val, labels = split_dataset(usable, val_fraction=0.15)
+        assert labels == ["Gwen", "_empty"]  # sorted, background kept
+        assert len(train) + len(val) == 55
+        # Every class keeps at least one val sample; splits are disjoint.
+        val_classes = {lbl for _, lbl in val}
+        assert val_classes == {0, 1}, "each class needs a val sample"
+        assert not set(p for p, _ in train) & set(p for p, _ in val)
+
+        # Missing directory → empty, not an error.
+        usable, skipped = discover_dataset(root / "nope", min_crops=20)
+        assert usable == {} and skipped == {}
+
+    return "discovery, min-crop gate, stratified split OK"
+
+
+def test_unit_classifier_fallback():
+    """Without a trained model the classifier is a safe no-op; the
+    preprocessing contract produces correct batches."""
+    import numpy as np
+    from pathlib import Path
+    from unit_classifier import UnitClassifier, preprocess
+
+    clf = UnitClassifier(
+        model_path=Path("_nonexistent.onnx"), meta_path=Path("_nonexistent.json")
+    )
+    assert clf.available is False
+    crops = [np.zeros((30, 20, 3), dtype=np.uint8)] * 3
+    assert clf.classify_batch(crops) == [(None, 0.0)] * 3
+    assert clf.classify_batch([]) == []
+
+    # preprocess: BGR crops of any size → normalized NCHW float32 batch.
+    mean = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(3, 1, 1)
+    std = np.array([0.229, 0.224, 0.225], dtype=np.float32).reshape(3, 1, 1)
+    batch = preprocess(
+        [np.full((260, 160, 3), 128, dtype=np.uint8),
+         np.full((40, 90, 3), 128, dtype=np.uint8)],
+        input_size=128, mean=mean, std=std,
+    )
+    assert batch.shape == (2, 3, 128, 128) and batch.dtype == np.float32
+    # 128/255 normalized: channel means must match the formula exactly.
+    expected = (128 / 255.0 - mean.ravel()) / std.ravel()
+    got = batch.mean(axis=(0, 2, 3))
+    assert np.allclose(got, expected, atol=1e-5), (got, expected)
+
+    return "no-model no-op OK, preprocess contract OK"
 
 
 def test_shop_ocr_real_frame():
@@ -916,6 +998,8 @@ def main():
     test("Augment pick context", test_augment_pick_context)
     test("Roster tracker", test_roster_tracker)
     test("Bench harvester", test_bench_harvester)
+    test("Classifier data pipeline", test_classifier_data_pipeline)
+    test("Unit classifier fallback", test_unit_classifier_fallback)
     test("Shop OCR (real frame)", test_shop_ocr_real_frame)
     test("TFT Academy debounce", test_tftacademy_debounce)
 
