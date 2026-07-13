@@ -725,7 +725,19 @@ def test_roster_tracker():
     r.update(state("1-1", ["Poppy", "Gnar", "Lulu", "Sona", "Shen"], 0))
     assert r.total_purchases == 0, "two consecutive regressions should reset"
 
-    return "pending-confirm buys, hover cancel, occlusion/gold guards, star-up, debounced reset OK"
+    # UNREADABLE gold (-1 sentinel) must not block purchases — the guard
+    # only applies when both frames' gold genuinely read. The server must
+    # feed the roster RAW readings for this to hold: patching failed reads
+    # with the previous frame's gold makes it look readable-but-unchanged
+    # and silently vetoes every buy (which starved the crop harvester).
+    r.reset()
+    r.update(state("2-1", ["Gwen", "Riven", "Poppy", "Lulu", "Gnar"], -1))
+    r.update(state("2-1", ["Gwen", None, "Poppy", "Lulu", "Gnar"], -1))
+    r.update(state("2-1", ["Gwen", None, "Poppy", "Lulu", "Gnar"], -1))
+    assert r.total_purchases == 1, "unreadable gold must not veto a real buy"
+
+    return ("pending-confirm buys, hover cancel, occlusion/gold guards, "
+            "unreadable-gold buy, star-up, debounced reset OK")
 
 
 def test_bench_harvester():
