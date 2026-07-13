@@ -451,6 +451,16 @@ class Detector:
         gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
         gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
 
+        # Geometric pass first — the most reliable AND the cheapest: find
+        # the enlarged row by the height of its white digit-stroke band and
+        # OCR just that band (a few tiny crops, vs. two whole-strip passes).
+        # It also recovers rows the strip passes miss outright: big bold
+        # single digits, glyphs rendered hollow by the global thresholds.
+        found = self._find_enlarged_hp_row(gray, strip)
+        if found is not None:
+            self._last_hp = found[0]
+            return found[0]
+
         # Two binarizations, candidates merged: global Otsu handles typical
         # frames; adaptive rescues our enlarged row when it protrudes onto
         # bright arena scenery that pulls the global threshold too high.
@@ -483,25 +493,40 @@ class Detector:
                 txt = (raw or "").strip()
                 if not txt.isdigit():
                     continue
-                value = int(txt)
-                if not (1 <= value <= 100):
+                L, T = data["left"][i], data["top"][i]
+                W, H = data["width"][i], data["height"][i]
+                if L > strip_w * 0.72:
                     continue
-                if data["left"][i] > strip_w * 0.72:
+                # HP digits also END before the portrait column — boxes
+                # reaching into it are portrait rings / item icons that
+                # happen to start left enough (seen live: an icon smear
+                # read as "44" with the tallest box in the strip, beating
+                # the real value).
+                if L + W > strip_w * 0.80:
+                    continue
+                # ...and a bounded size: the enlarged row's digits measure
+                # at most ~5.6% of the strip height on real frames; bigger
+                # boxes are scenery artifacts.
+                if H > 0.065 * binary.shape[0]:
                     continue
                 # Digit glyphs have a stable shape: width ≈ 0.68-0.79 of
                 # height per character (measured across real frames). UI
                 # edges and combat effects OCR as boxes far outside that
                 # band — vertical lines read as skinny-tall "1"s, smears
                 # as wide blobs.
-                aspect = data["width"][i] / max(1, data["height"][i] * len(txt))
-                if not (0.45 <= aspect <= 0.90):
-                    continue
-                # ...and a bounded size: the enlarged row's digits measure
-                # at most ~5.6% of the strip height on real frames; bigger
-                # boxes are scenery artifacts.
-                if data["height"][i] > 0.065 * binary.shape[0]:
-                    continue
-                candidates.append((data["height"][i], -data["left"][i], value))
+                aspect = W / max(1, H * len(txt))
+                if 0.45 <= aspect <= 0.90:
+                    value = int(txt)
+                    if 1 <= value <= 100:
+                        candidates.append((H, -L, value))
+                elif aspect > 0.90 and 1.2 * H <= W <= 3.2 * H:
+                    # A clearly-wider-than-tall box that read as too few
+                    # digits usually means tesseract merged the enlarged
+                    # row's big bold glyphs into one ("17" read as "7").
+                    # Re-reading just the box reliably separates them.
+                    value = self._reread_hp_box(gray, L, T, W, H)
+                    if value is not None:
+                        candidates.append((H, -L, value))
 
         if candidates:
             # With an anchor from the previous frame, the candidate closest
@@ -518,6 +543,105 @@ class Detector:
             self._last_hp = pick[2]
             return pick[2]
         return self._ocr_number(frame, self.rois.player_hp, "HP")
+
+    @staticmethod
+    def _find_enlarged_hp_row(gray2x: np.ndarray, strip_bgr: np.ndarray) -> Optional[tuple[int, int]]:
+        """
+        Locate OUR row in the player list geometrically and read its HP.
+
+        Our row renders enlarged, so its white digit glyphs form a taller
+        vertical run of white pixels than any other row. White = all
+        channels bright AND near-gray (colored arena art fails the gray
+        test); solid spell-glow rows saturate the zone and are excluded;
+        surviving candidate bands are validated by OCR itself — glow edges
+        read as nothing, the digit row reads as a number.
+
+        Returns (hp value, run height in 2x pixels) or None.
+        """
+        bgr = cv2.resize(
+            strip_bgr, (gray2x.shape[1], gray2x.shape[0]), interpolation=cv2.INTER_CUBIC
+        )
+        sh, sw = gray2x.shape[:2]
+        x0, x1 = int(sw * 0.25), int(sw * 0.72)
+        zone = bgr[:, x0:x1].astype(np.int16)
+        bright = zone.min(axis=2) > 185
+        grayish = (zone.max(axis=2) - zone.min(axis=2)) < 45
+        mask = (bright & grayish).astype(np.uint8)
+        rowsum = mask.sum(axis=1)
+        texty = (rowsum >= 4) & (rowsum <= (x1 - x0) * 0.35)
+
+        runs: list[tuple[int, int, int]] = []   # (height, y_start, y_end)
+        y = 0
+        while y < sh:
+            if texty[y]:
+                y2 = y
+                while y2 + 1 < sh and texty[y2 + 1]:
+                    y2 += 1
+                runs.append((y2 - y + 1, y, y2))
+                y = y2 + 1
+            else:
+                y += 1
+        # Regular rows' glyph runs measure ~22-30px here; the enlarged row
+        # ~40-90. Anything bigger is scenery that survived the masks.
+        runs = [r for r in runs if 34 <= r[0] <= 110]
+
+        for height, ys, ye in sorted(runs, reverse=True)[:3]:
+            pad = 8
+            band = gray2x[max(0, ys - pad):ye + pad, x0:x1]
+            cols = np.where(mask[ys:ye + 1].sum(axis=0) > 0)[0]
+            if cols.size:
+                band = band[:, max(0, cols[0] - pad):min(band.shape[1], cols[-1] + 1 + pad)]
+            _, local = cv2.threshold(band, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            if np.mean(local) > 128:
+                local = cv2.bitwise_not(local)
+            for psm in (8, 7):
+                try:
+                    txt = pytesseract.image_to_string(
+                        local,
+                        config=f"--psm {psm} --oem 3 -c tessedit_char_whitelist=0123456789",
+                    ).strip()
+                except Exception:
+                    return None
+                if txt.isdigit() and 1 <= int(txt) <= 100:
+                    return int(txt), height
+        return None
+
+    @staticmethod
+    def _reread_hp_box(gray: np.ndarray, L: int, T: int, W: int, H: int) -> Optional[int]:
+        """
+        Re-OCR a single suspected-merged digit box from the player list.
+
+        Works from the GRAYSCALE strip with a local Otsu threshold: the
+        whole-strip binarizations render our row's big bold digits as
+        hollow outlines (unreadable), while thresholding just the HP pill
+        separates digits from background cleanly. Accepts only a
+        multi-digit read whose per-character aspect lands back in the
+        digit band — that combination is what a genuinely merged read
+        looks like, while portrait rings and smears fail it.
+        """
+        pad = max(2, H // 4)
+        crop = gray[max(0, T - pad):T + H + pad, max(0, L - pad):L + W + pad]
+        if crop.size == 0:
+            return None
+        _, local = cv2.threshold(crop, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if np.mean(local) > 128:
+            local = cv2.bitwise_not(local)
+        for psm in (8, 7):   # single word first — most reliable on the pill
+            try:
+                txt = pytesseract.image_to_string(
+                    local,
+                    config=f"--psm {psm} --oem 3 -c tessedit_char_whitelist=0123456789",
+                ).strip()
+            except Exception:
+                return None
+            if not (txt.isdigit() and 2 <= len(txt) <= 3):
+                continue
+            if not (0.40 <= W / max(1, H * len(txt)) <= 0.95):
+                continue
+            value = int(txt)
+            if 1 <= value <= 100:
+                return value
+        return None
 
     def _ocr_region(self, region: np.ndarray, whitelist: str = "") -> str:
         """

@@ -913,6 +913,41 @@ def test_unit_classifier_fallback():
     return "no-model no-op OK, preprocess contract OK"
 
 
+def test_hp_real_frames():
+    """Our HP reads correctly from real frames — the enlarged-row finder
+    plus the strip fallbacks. Diagnose frames are local-only; test them
+    when present."""
+    import cv2
+    from pathlib import Path
+    from detector import Detector, TemplateStore
+    try:
+        import pytesseract
+        pytesseract.get_tesseract_version()
+    except Exception:
+        return "tesseract unavailable — skipped"
+
+    cases = [(Path(__file__).parent / "fixtures" / "tft_screenshot.png", 46)]
+    debug_dir = Path(__file__).parent / "_debug"
+    for name, truth in [
+        ("diagnose_20260713_145641.png", 71),   # merged-glyph + icon-junk frame
+        ("diagnose_20260713_151422.png", 17),   # hollow glyphs + spell glow
+        ("diagnose_20260711_023339.png", 5),    # big single digit, near-death
+    ]:
+        if (debug_dir / name).exists():
+            cases.append((debug_dir / name, truth))
+
+    t = TemplateStore(); t.load()
+    checked = []
+    for path, truth in cases:
+        if not path.exists():
+            continue
+        d = Detector(t)   # fresh anchor per frame
+        got = d._ocr_player_hp(cv2.imread(str(path)))
+        assert got == truth, f"{path.name}: HP {got} != {truth}"
+        checked.append(truth)
+    return f"{len(checked)} frames correct: {checked}"
+
+
 def test_shop_ocr_real_frame():
     """Shop card names read correctly from the real fixture screenshot."""
     import cv2
@@ -1178,6 +1213,7 @@ def main():
     test("Window picker", test_window_picker)
     test("Classifier data pipeline", test_classifier_data_pipeline)
     test("Unit classifier fallback", test_unit_classifier_fallback)
+    test("HP OCR (real frames)", test_hp_real_frames)
     test("Shop OCR (real frame)", test_shop_ocr_real_frame)
     test("TFT Academy debounce", test_tftacademy_debounce)
 
