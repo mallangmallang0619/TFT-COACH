@@ -673,7 +673,8 @@ def test_bench_harvester():
         return f
 
     with tempfile.TemporaryDirectory() as tmp:
-        hv = BenchHarvester(out_dir=Path(tmp))
+        # Tracking disabled here — this section tests purchase pairing.
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
 
         # Baseline frame — nothing saved even with a purchase (no previous
         # occupancy to diff against).
@@ -712,7 +713,30 @@ def test_bench_harvester():
         finally:
             harvest_mod.cv2.imwrite = orig_imwrite
 
-    return "baseline, delayed confirm, move-ignore, double buy, ambiguity skip, imwrite-fail OK"
+    # Continuous tracking: a confirmed slot keeps yielding crops while it
+    # stays visually stable, up to the cap; any abrupt change stops it.
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=2, track_max_saves=4)
+        assert hv.process(frame([]), []) == 0           # baseline
+        assert hv.process(frame([0]), []) == 0          # unit lands
+        assert hv.process(frame([0]), ["Gwen"]) == 1    # confirm → crop 1, tracked
+        got = [hv.process(frame([0]), []) for _ in range(6)]
+        assert got == [0, 1, 0, 1, 0, 1], got           # every 2nd frame until cap
+        assert hv.process(frame([0]), []) == 0          # cap (4) reached → untracked
+        assert len(list(Path(tmp).rglob("*.png"))) == 4
+
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=2, track_max_saves=99)
+        hv.process(frame([]), [])
+        hv.process(frame([0]), [])
+        assert hv.process(frame([0]), ["Zed"]) == 1
+        assert hv.process(frame([]), []) == 0           # unit moved away → untrack
+        got = [hv.process(frame([0]), []) for _ in range(4)]
+        assert got == [0, 0, 0, 0], f"untracked slot kept saving: {got}"
+        assert len(list(Path(tmp).rglob("*.png"))) == 1
+
+    return ("pairing guards OK, imwrite-fail OK, "
+            "tracking: interval+cap OK, stop-on-change OK")
 
 
 def test_classifier_data_pipeline():
