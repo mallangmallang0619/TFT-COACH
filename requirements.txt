@@ -19,3 +19,11 @@ pygetwindow>=0.0.9    # Windows
 
 # Utilities
 pydantic>=2.5.0
+
+# Unit classifier inference — needed once a trained model ships in
+# assets/models/ (harmless to install early; without it the classifier
+# is silently disabled and the roster fallback is used):
+# onnxruntime>=1.20
+
+# Training only (developers, never end users) — see scripts/train_classifier.py:
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu

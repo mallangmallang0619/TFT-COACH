@@ -129,7 +129,10 @@ class BenchHarvester:
         out = self.out_dir / safe / f"{ts}_slot{slot}.png"
         try:
             out.parent.mkdir(parents=True, exist_ok=True)
-            cv2.imwrite(str(out), crop)
+            # imwrite reports failure by returning False, not raising.
+            if not cv2.imwrite(str(out), crop):
+                logger.warning(f"Could not save training crop: imwrite failed for {out}")
+                return False
         except OSError as e:
             logger.warning(f"Could not save training crop: {e}")
             return False
