@@ -34,6 +34,13 @@ from game_data import (
 )
 from synergy import compute_active_synergies, detect_comp_direction
 
+
+def _norm_item_name(name: str) -> str:
+    """Item names differ in punctuation/case between TFT Academy and our
+    recipe table ("Jak'Sho, The Protean" vs "Jaksho the Protean") — compare
+    alphanumerics only."""
+    return "".join(ch for ch in name.lower() if ch.isalnum())
+
 logger = logging.getLogger(__name__)
 
 # Quick name → recipe dict for O(1) lookups
@@ -84,14 +91,16 @@ class Coach:
         advice.board_power = round(power, 1)
         advice.board_power_breakdown = breakdown
 
+        # ── Comp Direction ────────────────────────────────────────────────────
+        # Before item analysis: slam advice ranks items by whether the comp
+        # the player is building actually wants them.
+        self._analyze_comp_direction(state, advice)
+
         # ── Item Slam Analysis ────────────────────────────────────────────────
         self._analyze_items(state, advice)
 
         # ── Positioning Analysis ──────────────────────────────────────────────
         self._analyze_positioning(state, advice)
-
-        # ── Comp Direction ────────────────────────────────────────────────────
-        self._analyze_comp_direction(state, advice)
 
         # ── Augment Analysis ──────────────────────────────────────────────────
         if state.phase == GamePhase.AUGMENT_SELECT:
@@ -226,6 +235,10 @@ class Coach:
         synergy_carry_names = self._synergy_active_carries(state)
         synergy_tank_names  = self._synergy_active_tanks(state)
 
+        # Items the comp the player is building actually wants, mapped to
+        # the unit that builds them — these outrank every generic pick.
+        comp_items = self._comp_item_context(advice)
+
         # ── Generate recommendations ──────────────────────────────────────────
         for i, comp1 in enumerate(components):
             for j in range(i + 1, len(components)):
@@ -239,9 +252,25 @@ class Coach:
                     is_shred = item.get("shred", False)
                     is_burn  = item.get("burn", False)
                     parts: list[str] = []
+                    comp_hit = comp_items.get(_norm_item_name(item["name"]))
+                    for_unit = for_comp = None
 
                     # ── Determine slam urgency ────────────────────────────────
-                    if item["slam"] or item["tier"] == "S":
+                    if comp_hit:
+                        # The comp you're going builds this — that beats any
+                        # generic tier rating.
+                        for_unit, for_comp, pinned = comp_hit
+                        slam_rec = "slam_now" if urgency >= 2 else "consider"
+                        parts.append(
+                            f"{item['name']} is {for_unit}'s build item in "
+                            f"{for_comp}"
+                            + (" — the comp you locked in." if pinned
+                               else ", your current direction.")
+                        )
+                        if slam_rec == "consider":
+                            parts.append("Early — slam it when you need the tempo.")
+
+                    elif item["slam"] or item["tier"] == "S":
                         slam_rec = "slam_now"
                         parts.append(f"{item['name']} is universally strong — always worth slamming.")
 
@@ -286,7 +315,10 @@ class Coach:
                         )
 
                     # ── Synergy-aware placement advice ────────────────────────
-                    if item["type"] in ("carry", "utility"):
+                    # (the comp-fit reason already names the unit to hold it)
+                    if comp_hit:
+                        pass
+                    elif item["type"] in ("carry", "utility"):
                         if synergy_carry_names:
                             parts.append(
                                 f"Place on a synergy-active carry "
@@ -319,18 +351,51 @@ class Coach:
                         tier=item["tier"],
                         slam_urgency=slam_rec,
                         reason=" ".join(parts),
+                        for_unit=for_unit,
+                        for_comp=for_comp,
                     ))
 
-        # ── Sort: urgency → shred/burn priority → tier ────────────────────────
+        # ── Sort: comp fit → urgency → shred/burn priority → tier ─────────────
         tier_order    = {"S": 0, "A": 1, "B": 2, "C": 3}
         urgency_order = {"slam_now": 0, "consider": 1, "hold": 2}
 
         advice.slam_recommendations.sort(key=lambda r: (
+            0 if r.for_comp else 1,
             urgency_order.get(r.slam_urgency, 3),
             0 if (_ITEM_BY_NAME.get(r.item_name, {}).get("shred") or
                   _ITEM_BY_NAME.get(r.item_name, {}).get("burn")) else 1,
             tier_order.get(r.tier, 4),
         ))
+
+    def _comp_item_context(
+        self, advice: CoachingAdvice
+    ) -> dict[str, tuple[str, str, bool]]:
+        """
+        {normalized item name → (unit, comp label, is_pinned)} for the comp
+        the player is going: the pinned comp if any, else the primary
+        suggestion once its score clears the direction-tip bar. Units with
+        more build items (the carries) claim contested items first.
+        """
+        target = next((s for s in advice.comp_suggestions if s.is_pinned), None)
+        if target is None and advice.comp_suggestions:
+            primary = advice.comp_suggestions[0]
+            if primary.match_score >= 0.25:
+                target = primary
+        if target is None or not target.board_layout:
+            return {}
+
+        label = target.tftacademy_name or target.name
+        ctx: dict[str, tuple[str, str, bool]] = {}
+        by_items = sorted(
+            target.board_layout, key=lambda u: -len(u.get("items") or [])
+        )
+        for unit in by_items:
+            for item_name in unit.get("items") or []:
+                ctx.setdefault(
+                    _norm_item_name(item_name),
+                    (unit["name"], label, target.is_pinned),
+                )
+        return ctx
 
     def _synergy_active_carries(self, state: GameState) -> list[str]:
         """Board carry/DPS champions that contribute to at least one active synergy."""

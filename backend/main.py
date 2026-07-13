@@ -70,6 +70,17 @@ def main():
     logger.info("  TFT COACH — Desktop Overlay Backend")
     logger.info("=" * 60)
 
+    # Keep the overlay's item/component art in sync with the local template
+    # library on every start — a pure local copy, so pulling the repo without
+    # re-running fetch_templates.py no longer leaves the frontend on emoji.
+    try:
+        from fetch_templates import sync_frontend_icons
+        copied = sync_frontend_icons()
+        if copied:
+            logger.info(f"Synced {copied} item/component icons to the frontend")
+    except Exception as e:
+        logger.debug(f"Frontend icon sync skipped: {e}")
+
     if args.sim:
         logger.info("Running in SIM MODE (synthesized frames → real detector+coach)")
         from sim_server import SimulationServer

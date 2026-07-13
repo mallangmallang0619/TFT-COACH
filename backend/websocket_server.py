@@ -285,6 +285,15 @@ class TFTCoachServer:
                     None, self.detector.detect, frame
                 )
 
+                # Track purchases BEFORE the last-good patching below: the
+                # roster's gold-drop guard must see the RAW reading. Patching
+                # a failed gold read with the previous frame's value makes
+                # gold look readable-but-unchanged, which vetoed every
+                # purchase on frames where gold OCR failed — and with it all
+                # harvester training crops.
+                purchases = self.roster.update(state)
+                self.harvester.process(frame, purchases)
+
                 # A single frame's OCR can fail while the region is obscured
                 # (combat effects, transitions) — hold the last good reading
                 # instead of flashing zeros at the user.
@@ -312,14 +321,10 @@ class TFTCoachServer:
                     else:
                         self._hp_candidate = None
 
-                # Track shop purchases → owned units. Board/bench unit ID
-                # isn't viable on live frames (3D models), so the roster is
-                # the source for "what units the player holds" — feed it in
-                # as bench champions for comp direction. Each purchase also
-                # auto-labels the bench crop it lands in (classifier
-                # training data).
-                purchases = self.roster.update(state)
-                self.harvester.process(frame, purchases)
+                # Board/bench unit ID isn't viable on live frames without a
+                # trained model, so the roster is the source for "what units
+                # the player holds" — feed it in as bench champions for comp
+                # direction.
                 if not state.bench_champions:
                     state.bench_champions = self.roster.owned_units()
 

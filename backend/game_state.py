@@ -80,6 +80,9 @@ class SlamRecommendation(BaseModel):
     tier: str                                  # S / A / B / C
     slam_urgency: str                          # "slam_now" / "consider" / "hold"
     reason: str                                # Human-readable explanation
+    # Set when the item is in the build of the comp the player is going:
+    for_unit: Optional[str] = None             # unit that builds it
+    for_comp: Optional[str] = None             # comp label
 
 
 class PositioningSuggestion(BaseModel):

@@ -566,6 +566,47 @@ def test_context_comp_scoring():
         f"(+{slam_gain:.3f} vs +{unit_gain:.3f})"
     )
 
+
+def test_comp_aware_item_advice():
+    """Slam advice puts the comp's own build items first and names the
+    unit that holds them — not just generic tier ratings."""
+    from game_state import GameState, GamePhase
+    from coach import Coach, _norm_item_name
+    from synergy import compute_active_synergies, detect_comp_direction, _RECIPE_BY_NAME
+
+    board = _dark_star_board()
+    primary = detect_comp_direction(compute_active_synergies(board), board)[0]
+    assert primary.board_layout, "primary comp should carry a board layout"
+
+    # A craftable build item from the comp, and the unit that wants it
+    # (carries — most build items — checked first, mirroring the coach).
+    unit_name = item_name = recipe = None
+    for unit in sorted(primary.board_layout, key=lambda u: -len(u.get("items") or [])):
+        for iname in unit.get("items") or []:
+            if _RECIPE_BY_NAME.get(iname):
+                unit_name, item_name, recipe = unit["name"], iname, _RECIPE_BY_NAME[iname]
+                break
+        if item_name:
+            break
+    assert item_name, "comp should have at least one craftable build item"
+
+    state = GameState(
+        phase=GamePhase.PLANNING, stage="3-2", player_hp=80, gold=30,
+        board_champions=board, component_ids=list(recipe),
+    )
+    advice = Coach().analyze(state)
+    assert advice.slam_recommendations, "components should produce a recommendation"
+
+    top = advice.slam_recommendations[0]
+    assert top.for_comp, (
+        f"comp build item should rank first, got {top.item_name}: {top.reason}"
+    )
+    assert _norm_item_name(top.item_name) == _norm_item_name(item_name)
+    assert top.for_unit == unit_name and unit_name in top.reason, (
+        f"reason should name the holder ({unit_name}): {top.reason}"
+    )
+    return f"top slam = {top.item_name} for {top.for_unit} in {top.for_comp}"
+
     return (
         f"layout={len(primary.board_layout)} units, "
         f"augment +{boosted_primary.match_score - primary.match_score:.3f}, "
@@ -684,7 +725,19 @@ def test_roster_tracker():
     r.update(state("1-1", ["Poppy", "Gnar", "Lulu", "Sona", "Shen"], 0))
     assert r.total_purchases == 0, "two consecutive regressions should reset"
 
-    return "pending-confirm buys, hover cancel, occlusion/gold guards, star-up, debounced reset OK"
+    # UNREADABLE gold (-1 sentinel) must not block purchases — the guard
+    # only applies when both frames' gold genuinely read. The server must
+    # feed the roster RAW readings for this to hold: patching failed reads
+    # with the previous frame's gold makes it look readable-but-unchanged
+    # and silently vetoes every buy (which starved the crop harvester).
+    r.reset()
+    r.update(state("2-1", ["Gwen", "Riven", "Poppy", "Lulu", "Gnar"], -1))
+    r.update(state("2-1", ["Gwen", None, "Poppy", "Lulu", "Gnar"], -1))
+    r.update(state("2-1", ["Gwen", None, "Poppy", "Lulu", "Gnar"], -1))
+    assert r.total_purchases == 1, "unreadable gold must not veto a real buy"
+
+    return ("pending-confirm buys, hover cancel, occlusion/gold guards, "
+            "unreadable-gold buy, star-up, debounced reset OK")
 
 
 def test_bench_harvester():
@@ -775,6 +828,33 @@ def test_bench_harvester():
             "tracking: interval+cap OK, stop-on-change OK")
 
 
+def test_window_picker():
+    """Capture must only target the game or the League client — exact
+    titles. Substring matching latched onto editors/terminals with this
+    'TFT-COACH' project open and browser tabs mentioning League."""
+    from capture import WindowFinder
+
+    class W:
+        def __init__(self, title, minimized=False, w=2560, h=1440):
+            self.title, self.isMinimized = title, minimized
+            self.width, self.height = w, h
+
+    ide = W("TFT-COACH - Visual Studio Code")
+    term = W("Windows PowerShell - python backend/main.py TFT-COACH")
+    browser = W("best TFT comps - League of Legends guide - Chrome")
+    launcher = W("League of Legends")
+    game = W("League of Legends (TM) Client")
+
+    pick = WindowFinder._pick_game_window
+    assert pick([ide, term, browser, launcher, game]) is game
+    assert pick([ide, browser, launcher]) is launcher, "launcher is the fallback"
+    assert pick([ide, term, browser]) is None, "no game/client → capture nothing"
+    assert pick([W("League of Legends (TM) Client", minimized=True), launcher]) is launcher
+    assert pick([W("  League of Legends (TM) Client ")]) is not None
+    assert pick([]) is None
+    return "game > launcher, exact titles only, IDE/terminal/browser ignored"
+
+
 def test_classifier_data_pipeline():
     """Training-data discovery and stratified split (no torch required)."""
     import tempfile
@@ -843,6 +923,41 @@ def test_unit_classifier_fallback():
     assert np.allclose(got, expected, atol=1e-5), (got, expected)
 
     return "no-model no-op OK, preprocess contract OK"
+
+
+def test_hp_real_frames():
+    """Our HP reads correctly from real frames — the enlarged-row finder
+    plus the strip fallbacks. Diagnose frames are local-only; test them
+    when present."""
+    import cv2
+    from pathlib import Path
+    from detector import Detector, TemplateStore
+    try:
+        import pytesseract
+        pytesseract.get_tesseract_version()
+    except Exception:
+        return "tesseract unavailable — skipped"
+
+    cases = [(Path(__file__).parent / "fixtures" / "tft_screenshot.png", 46)]
+    debug_dir = Path(__file__).parent / "_debug"
+    for name, truth in [
+        ("diagnose_20260713_145641.png", 71),   # merged-glyph + icon-junk frame
+        ("diagnose_20260713_151422.png", 17),   # hollow glyphs + spell glow
+        ("diagnose_20260711_023339.png", 5),    # big single digit, near-death
+    ]:
+        if (debug_dir / name).exists():
+            cases.append((debug_dir / name, truth))
+
+    t = TemplateStore(); t.load()
+    checked = []
+    for path, truth in cases:
+        if not path.exists():
+            continue
+        d = Detector(t)   # fresh anchor per frame
+        got = d._ocr_player_hp(cv2.imread(str(path)))
+        assert got == truth, f"{path.name}: HP {got} != {truth}"
+        checked.append(truth)
+    return f"{len(checked)} frames correct: {checked}"
 
 
 def test_shop_ocr_real_frame():
@@ -1102,12 +1217,15 @@ def main():
     test("Augments apply + fuzzy lookup", test_augments_apply_and_fuzzy)
     test("Set auto-detection", test_set_autodetect)
     test("Context comp scoring", test_context_comp_scoring)
+    test("Comp-aware item advice", test_comp_aware_item_advice)
     test("Augment pick context", test_augment_pick_context)
     test("Pinned comp", test_pinned_comp)
     test("Roster tracker", test_roster_tracker)
     test("Bench harvester", test_bench_harvester)
+    test("Window picker", test_window_picker)
     test("Classifier data pipeline", test_classifier_data_pipeline)
     test("Unit classifier fallback", test_unit_classifier_fallback)
+    test("HP OCR (real frames)", test_hp_real_frames)
     test("Shop OCR (real frame)", test_shop_ocr_real_frame)
     test("TFT Academy debounce", test_tftacademy_debounce)
 
