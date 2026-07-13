@@ -566,6 +566,47 @@ def test_context_comp_scoring():
         f"(+{slam_gain:.3f} vs +{unit_gain:.3f})"
     )
 
+
+def test_comp_aware_item_advice():
+    """Slam advice puts the comp's own build items first and names the
+    unit that holds them — not just generic tier ratings."""
+    from game_state import GameState, GamePhase
+    from coach import Coach, _norm_item_name
+    from synergy import compute_active_synergies, detect_comp_direction, _RECIPE_BY_NAME
+
+    board = _dark_star_board()
+    primary = detect_comp_direction(compute_active_synergies(board), board)[0]
+    assert primary.board_layout, "primary comp should carry a board layout"
+
+    # A craftable build item from the comp, and the unit that wants it
+    # (carries — most build items — checked first, mirroring the coach).
+    unit_name = item_name = recipe = None
+    for unit in sorted(primary.board_layout, key=lambda u: -len(u.get("items") or [])):
+        for iname in unit.get("items") or []:
+            if _RECIPE_BY_NAME.get(iname):
+                unit_name, item_name, recipe = unit["name"], iname, _RECIPE_BY_NAME[iname]
+                break
+        if item_name:
+            break
+    assert item_name, "comp should have at least one craftable build item"
+
+    state = GameState(
+        phase=GamePhase.PLANNING, stage="3-2", player_hp=80, gold=30,
+        board_champions=board, component_ids=list(recipe),
+    )
+    advice = Coach().analyze(state)
+    assert advice.slam_recommendations, "components should produce a recommendation"
+
+    top = advice.slam_recommendations[0]
+    assert top.for_comp, (
+        f"comp build item should rank first, got {top.item_name}: {top.reason}"
+    )
+    assert _norm_item_name(top.item_name) == _norm_item_name(item_name)
+    assert top.for_unit == unit_name and unit_name in top.reason, (
+        f"reason should name the holder ({unit_name}): {top.reason}"
+    )
+    return f"top slam = {top.item_name} for {top.for_unit} in {top.for_comp}"
+
     return (
         f"layout={len(primary.board_layout)} units, "
         f"augment +{boosted_primary.match_score - primary.match_score:.3f}, "
@@ -1129,6 +1170,7 @@ def main():
     test("Augments apply + fuzzy lookup", test_augments_apply_and_fuzzy)
     test("Set auto-detection", test_set_autodetect)
     test("Context comp scoring", test_context_comp_scoring)
+    test("Comp-aware item advice", test_comp_aware_item_advice)
     test("Augment pick context", test_augment_pick_context)
     test("Pinned comp", test_pinned_comp)
     test("Roster tracker", test_roster_tracker)
