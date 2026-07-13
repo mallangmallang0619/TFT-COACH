@@ -12,6 +12,11 @@ player plays:
      bench slot that flips empty → occupied between the frames around a
      purchase is a picture OF that champion.
   3. Save the crop to _training/<champion>/<timestamp>.png.
+  4. While that slot stays visually stable (the unit is still standing
+     there), keep saving crops of it every few frames — idle-animation
+     poses multiply one purchase into a dozen labeled samples. Any abrupt
+     slot change (moved, sold, combined, item flash) stops the tracking
+     immediately, so labels stay pure.
 
 A few games of normal play yields hundreds of labeled samples per set —
 no manual labeling. The directory is gitignored; it feeds model training
@@ -43,18 +48,33 @@ _THUMB_SIZE = (24, 32)          # (w, h) of the comparison thumbnail
 _CHANGE_FLOOR = 9.0             # minimum mean-abs-diff to count as a change
 _CHANGE_OUTLIER_FACTOR = 2.5    # ...and it must stand out vs the other slots
 
+# Continuous tracking of confirmed slots: save every Nth frame while the
+# slot's thumbnail stays within _CHANGE_FLOOR of the last saved one
+# (idle animation drifts a little; moves/sells/combines jump far past it).
+_TRACK_SAVE_INTERVAL = 3        # ≈ every 2s at the live frame cadence
+_TRACK_MAX_SAVES = 12           # crops per purchase, landing crop included
+
 
 class BenchHarvester:
     """Feed each captured frame + that frame's purchases."""
 
-    def __init__(self, out_dir: Path = TRAINING_DIR):
+    def __init__(
+        self,
+        out_dir: Path = TRAINING_DIR,
+        track_interval: int = _TRACK_SAVE_INTERVAL,
+        track_max_saves: int = _TRACK_MAX_SAVES,
+    ):
         self.out_dir = out_dir
         self.rois = GameROIs()
+        self.track_interval = track_interval
+        self.track_max_saves = track_max_saves
         # Thumbnails of each slot from the last two frames — purchases are
         # confirmed one frame after the unit lands, so "just changed" must
         # look two frames back.
         self._thumbs_prev: Optional[list[np.ndarray]] = None
         self._thumbs_prev2: Optional[list[np.ndarray]] = None
+        # slot -> [label, ref thumbnail, frames since last save, saves so far]
+        self._tracked: dict[int, list] = {}
         self.saved_count = 0
 
     def process(self, frame: np.ndarray, purchases: list[str]) -> int:
@@ -63,6 +83,7 @@ class BenchHarvester:
         thumbs = [self._thumb(c) for c in crops]
 
         saved = 0
+        just_confirmed: set[int] = set()
         if purchases and self._thumbs_prev is not None:
             baseline = self._thumbs_prev2 or self._thumbs_prev
             diffs = [
@@ -89,11 +110,18 @@ class BenchHarvester:
                 for name, slot in zip(purchases, newly):
                     if self._save(crops[slot], name, slot):
                         saved += 1
+                        # Keep harvesting this slot while the unit stands
+                        # there — many poses per purchase.
+                        if thumbs[slot] is not None:
+                            self._tracked[slot] = [name, thumbs[slot], 0, 1]
+                            just_confirmed.add(slot)
             else:
                 logger.debug(
                     f"Skipping harvest: {len(purchases)} purchases vs "
                     f"{len(newly)} changed bench slots (ambiguous pairing)"
                 )
+
+        saved += self._harvest_tracked(crops, thumbs, just_confirmed)
 
         self._thumbs_prev2 = self._thumbs_prev
         self._thumbs_prev = thumbs
@@ -102,8 +130,48 @@ class BenchHarvester:
     def reset(self) -> None:
         self._thumbs_prev = None
         self._thumbs_prev2 = None
+        self._tracked.clear()
 
     # ── Internals ─────────────────────────────────────────────────────────────
+
+    def _harvest_tracked(
+        self,
+        crops: list[np.ndarray],
+        thumbs: list[Optional[np.ndarray]],
+        just_confirmed: set[int],
+    ) -> int:
+        """
+        Save extra crops of slots whose occupant was confirmed by a
+        purchase, for as long as the slot looks like the same unit. The
+        reference thumbnail advances on each save so slow idle-animation
+        drift is tolerated, while any abrupt change (move, sell, combine,
+        star-up flash) exceeds _CHANGE_FLOOR and stops the tracking.
+        """
+        saved = 0
+        for slot in list(self._tracked):
+            if slot in just_confirmed:
+                continue    # landing crop already saved this frame
+            label, ref, frames_since, saves = self._tracked[slot]
+            if thumbs[slot] is None:
+                del self._tracked[slot]
+                continue
+            drift = float(np.mean(cv2.absdiff(thumbs[slot], ref)))
+            if drift >= _CHANGE_FLOOR:
+                logger.debug(f"Slot {slot} changed (drift {drift:.0f}) — stop tracking {label}")
+                del self._tracked[slot]
+                continue
+            frames_since += 1
+            if frames_since >= self.track_interval:
+                if self._save(crops[slot], label, slot):
+                    saved += 1
+                saves += 1
+                frames_since = 0
+                ref = thumbs[slot]
+                if saves >= self.track_max_saves:
+                    del self._tracked[slot]
+                    continue
+            self._tracked[slot] = [label, ref, frames_since, saves]
+        return saved
 
     def _bench_slot_crops(self, frame: np.ndarray) -> list[np.ndarray]:
         h, w = frame.shape[:2]
