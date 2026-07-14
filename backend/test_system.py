@@ -925,6 +925,61 @@ def test_unit_classifier_fallback():
     return "no-model no-op OK, preprocess contract OK"
 
 
+def test_shop_buy_calls():
+    """The coach flags shop cards worth buying: 2-star completions first,
+    then comp units we're missing."""
+    from game_state import GameState, GamePhase, DetectedChampion
+    from coach import Coach
+
+    board = _dark_star_board()
+    pre = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="3-5", player_hp=80, gold=30,
+        board_champions=board,
+    ))
+    assert pre.comp_suggestions, "board should produce a comp direction"
+    missing = pre.comp_suggestions[0].missing_units
+    assert missing, "primary comp should have missing units"
+
+    bench = [DetectedChampion(name="Poppy"), DetectedChampion(name="Poppy")]
+    advice = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="3-5", player_hp=80, gold=30,
+        board_champions=board, bench_champions=bench,
+        shop_units=[missing[0], "Poppy", None, None, None],
+    ))
+    names = [a["name"] for a in advice.shop_actions]
+    assert "Poppy" in names and missing[0] in names, f"buy calls missing: {names}"
+    top = advice.shop_actions[0]
+    assert top["name"] == "Poppy" and "2-star" in top["reason"], \
+        f"pair completion should rank first: {top}"
+    assert any(t.startswith("Shop: buy") for t in advice.tips)
+    return f"calls: {[(a['name'], a['priority']) for a in advice.shop_actions]}"
+
+
+def test_tempo_tips():
+    """Level-tempo and rolldown tips fire in the right spots."""
+    from game_state import GameState, GamePhase
+    from coach import Coach
+
+    # Level 5 at stage 4 with gold = behind the curve.
+    advice = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="4-1", player_hp=80, gold=30, level=5,
+    ))
+    assert any("behind tempo" in t for t in advice.tips), advice.tips
+
+    # Bleeding, rich, no committed comp = roll down.
+    advice = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="4-1", player_hp=35, gold=30, level=7,
+    ))
+    assert any("roll this round" in t.lower() for t in advice.tips), advice.tips
+
+    # Healthy and on-curve: neither tip.
+    advice = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="4-1", player_hp=80, gold=30, level=8,
+    ))
+    assert not any("behind tempo" in t or "roll this round" in t for t in advice.tips)
+    return "behind-tempo, rolldown, quiet-when-fine OK"
+
+
 def test_hp_real_frames():
     """Our HP reads correctly from real frames — the enlarged-row finder
     plus the strip fallbacks. Diagnose frames are local-only; test them
@@ -1218,6 +1273,8 @@ def main():
     test("Set auto-detection", test_set_autodetect)
     test("Context comp scoring", test_context_comp_scoring)
     test("Comp-aware item advice", test_comp_aware_item_advice)
+    test("Shop buy calls", test_shop_buy_calls)
+    test("Tempo tips", test_tempo_tips)
     test("Augment pick context", test_augment_pick_context)
     test("Pinned comp", test_pinned_comp)
     test("Roster tracker", test_roster_tracker)
