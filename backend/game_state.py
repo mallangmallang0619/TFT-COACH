@@ -161,6 +161,10 @@ class CoachingAdvice(BaseModel):
     # Comp direction (populated from board champions + active synergies)
     comp_suggestions: list[CompSuggestion] = Field(default_factory=list)
 
+    # Shop buy calls: cards in the current shop worth buying, strongest
+    # first. Each: {"name", "slot", "reason", "priority" (1 = strongest)}.
+    shop_actions: list[dict] = Field(default_factory=list)
+
     # General tips
     tips: list[str] = Field(default_factory=list)
 

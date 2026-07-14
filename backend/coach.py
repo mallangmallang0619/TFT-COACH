@@ -12,6 +12,7 @@ Analyzes the detected game state and generates actionable advice:
 
 from __future__ import annotations
 import logging
+from collections import Counter
 from typing import Optional
 
 from game_state import (
@@ -98,6 +99,9 @@ class Coach:
 
         # ── Item Slam Analysis ────────────────────────────────────────────────
         self._analyze_items(state, advice)
+
+        # ── Shop Buy Calls ────────────────────────────────────────────────────
+        self._analyze_shop(state, advice)
 
         # ── Positioning Analysis ──────────────────────────────────────────────
         self._analyze_positioning(state, advice)
@@ -397,6 +401,63 @@ class Coach:
                 )
         return ctx
 
+    # ── Shop Buy Calls ──────────────────────────────────────────────────────────
+
+    def _analyze_shop(self, state: GameState, advice: CoachingAdvice):
+        """
+        Flag shop cards worth buying RIGHT NOW — the most actionable call a
+        coach can make. Priorities: a card that completes a 2-star of a comp
+        unit, then any 2-star completion, then a comp unit we're missing,
+        then pairing a comp unit we own one copy of.
+        """
+        shop = state.shop_units or []
+        if not any(shop):
+            return
+
+        ones: Counter[str] = Counter()
+        upgraded: set[str] = set()
+        for c in list(state.board_champions) + list(state.bench_champions):
+            if c.star_level >= 2:
+                upgraded.add(c.name)
+            else:
+                ones[c.name] += 1
+
+        target = next((s for s in advice.comp_suggestions if s.is_pinned), None)
+        if target is None and advice.comp_suggestions:
+            primary = advice.comp_suggestions[0]
+            if primary.match_score >= 0.25:
+                target = primary
+        comp_units: set[str] = set()
+        comp_label = ""
+        if target is not None:
+            comp_label = target.tftacademy_name or target.name
+            comp_units = {u["name"] for u in target.board_layout} | set(target.missing_units)
+
+        actions: list[tuple[int, int, str, str]] = []   # (priority, slot, name, reason)
+        for slot, name in enumerate(shop):
+            if not name:
+                continue
+            in_comp = name in comp_units
+            if ones.get(name, 0) >= 2 and name not in upgraded:
+                reason = f"third copy — completes your 2-star {name}"
+                if in_comp:
+                    reason += f" ({comp_label} unit)"
+                actions.append((1 if in_comp else 2, slot, name, reason))
+            elif in_comp and name not in upgraded and ones.get(name, 0) == 0:
+                actions.append((3, slot, name, f"{comp_label} unit you're missing"))
+            elif in_comp and ones.get(name, 0) == 1:
+                actions.append((4, slot, name, f"pairs your {name} toward 2-star ({comp_label})"))
+
+        if not actions:
+            return
+        actions.sort()
+        advice.shop_actions = [
+            {"name": name, "slot": slot, "reason": reason, "priority": prio}
+            for prio, slot, name, reason in actions
+        ]
+        for prio, slot, name, reason in actions[:2]:
+            advice.tips.append(f"Shop: buy {name} — {reason}.")
+
     def _synergy_active_carries(self, state: GameState) -> list[str]:
         """Board carry/DPS champions that contribute to at least one active synergy."""
         active = {s.name for s in state.active_synergies if s.is_active}
@@ -641,8 +702,42 @@ class Coach:
 
     # ── General Tips ──────────────────────────────────────────────────────────
 
+    # Standard level-tempo curve: the level you want to be AT by each
+    # stage's PvP rounds. Falling behind it means weaker boards and lost HP.
+    _LEVEL_TEMPO = {2: 4, 3: 6, 4: 7, 5: 8}
+
     def _generate_tips(self, state: GameState, advice: CoachingAdvice):
         """Generate situational tips based on game state and history."""
+
+        # Level tempo — behind the curve costs HP every round.
+        try:
+            stage_num = int((state.stage or "").split("-")[0])
+        except ValueError:
+            stage_num = 0
+        expected = self._LEVEL_TEMPO.get(stage_num)
+        if expected and 0 < state.level < expected and state.gold >= 4:
+            advice.tips.append(
+                f"Level {state.level} at stage {state.stage} — behind tempo "
+                f"(standard is {expected}). Buy XP: higher level means "
+                "stronger shop odds and one more unit fielded."
+            )
+
+        # Rolldown call: bleeding out with no committed comp = the classic
+        # spot to stop greeding interest and roll for upgrades.
+        primary_score = (
+            advice.comp_suggestions[0].match_score if advice.comp_suggestions else 0.0
+        )
+        if (
+            0 < state.player_hp <= 40
+            and state.gold >= 20
+            and primary_score < 0.45
+            and stage_num >= 3
+        ):
+            advice.tips.append(
+                f"{state.player_hp} HP with {state.gold} gold and no committed "
+                "comp — roll this round for 2-star upgrades. Interest means "
+                "nothing if you're eliminated."
+            )
 
         # Low HP warning
         if state.player_hp <= 30:
