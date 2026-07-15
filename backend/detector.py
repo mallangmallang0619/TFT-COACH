@@ -62,7 +62,7 @@ from config import (
     ShopGeometry,
     TraitPanel,
 )
-from game_data import find_champion_name
+from game_data import find_champion_name, find_augment_rating
 from unit_classifier import UnitClassifier
 from game_state import (
     GameState,
@@ -1101,65 +1101,90 @@ class Detector:
         """
         Read the three augment titles during the selection screen.
 
-        The titles all sit on one horizontal band mid-card, so a single
-        tesseract pass covers them; words are assigned to cards by x
-        position. Names come back raw — the coach fuzzy-resolves them
-        against the augment database, which also supplies the slot tier.
+        Each card's title band is OCR'd separately: the earlier single
+        wide-band pass dragged inter-card art in as junk words, and one
+        card's noise could poison its neighbors' word assignment. Two
+        binarizations per card (the purple card gradient defeats global
+        Otsu on some frames) and the more letter-rich read wins. Names
+        come back raw — the coach fuzzy-resolves them against the augment
+        database, which also supplies the slot tier.
         """
         if pytesseract is None:
             return []
         h, w = frame.shape[:2]
-        x0 = int((self._AUG_CARD_CX[0] - 0.11) * w)
-        x1 = int((self._AUG_CARD_CX[2] + 0.11) * w)
-        band = frame[int(self._AUG_NAME_Y0 * h):int(self._AUG_NAME_Y1 * h), x0:x1]
-        if band.size == 0:
-            return []
-
-        scale = 2
-        gray = cv2.cvtColor(band, cv2.COLOR_BGR2GRAY)
-        gray = cv2.resize(gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
-        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-        if np.mean(binary) > 128:
-            binary = cv2.bitwise_not(binary)
-
-        try:
-            data = pytesseract.image_to_data(
-                binary,
-                config="--psm 11 --oem 3",
-                output_type=pytesseract.Output.DICT,
-            )
-        except Exception as e:
-            logger.debug(f"augment OCR failed: {e}")
-            return []
-
-        card_words: list[list[tuple[int, str]]] = [[], [], []]
-        for i, raw in enumerate(data.get("text") or []):
-            txt = (raw or "").strip()
-            if len(txt) < 2 or not any(c.isalpha() for c in txt):
-                continue
-            # Titles are words and roman numerals — a token with digits or
-            # symbols mixed in is OCR debris, not part of the name.
-            if not all(c.isalpha() or c in "'’-." for c in txt):
-                continue
-            # Assign the word to the nearest card center.
-            word_cx = (x0 + (data["left"][i] + data["width"][i] / 2) / scale) / w
-            slot = min(
-                range(3), key=lambda s: abs(self._AUG_CARD_CX[s] - word_cx)
-            )
-            card_words[slot].append((data["left"][i], txt))
+        y0, y1 = int(self._AUG_NAME_Y0 * h), int(self._AUG_NAME_Y1 * h)
 
         augments: list[DetectedAugment] = []
-        for i, words in enumerate(card_words):
-            name = " ".join(t for _, t in sorted(words)).strip()
-            if len(name) < 3:
+        for i, cx in enumerate(self._AUG_CARD_CX):
+            band = frame[y0:y1, int((cx - 0.11) * w):int((cx + 0.11) * w)]
+            if band.size == 0:
                 continue
-            augments.append(DetectedAugment(
-                name=name,
-                tier="?",   # the coach fills this from the augment database
-                slot_index=i,
-                confidence=0.6,
-            ))
+            name = self._ocr_augment_title(band)
+            if len(name) >= 3:
+                augments.append(DetectedAugment(
+                    name=name,
+                    tier="?",   # the coach fills this from the augment database
+                    slot_index=i,
+                    confidence=0.6,
+                ))
         return augments
+
+    @staticmethod
+    def _ocr_augment_title(band: np.ndarray) -> str:
+        """OCR one card's title band; returns the cleaned best read."""
+        gray = cv2.cvtColor(band, cv2.COLOR_BGR2GRAY)
+        gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if np.mean(otsu) > 128:
+            otsu = cv2.bitwise_not(otsu)
+        adaptive = cv2.adaptiveThreshold(
+            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY_INV, 41, 12,
+        )
+        # Titles are white glyphs on the purple card gradient — a color
+        # mask (bright AND near-gray) isolates them where the grayscale
+        # thresholds smear into the art. Same trick as the HP row finder.
+        bgr = cv2.resize(band, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC).astype(np.int16)
+        white = ((bgr.min(axis=2) > 165) & (bgr.max(axis=2) - bgr.min(axis=2) < 60))
+        white_bin = (white.astype(np.uint8)) * 255
+
+        # A read that fuzzy-resolves in the augment database beats any
+        # unresolvable one regardless of length — raw letter count rewards
+        # exactly the debris we're trying to avoid. White mask first so it
+        # wins ties among unresolvable reads.
+        best, best_score = "", (0, 0)
+        for binary in (white_bin, otsu, adaptive):
+            try:
+                txt = pytesseract.image_to_string(
+                    binary, config="--psm 7 --oem 3"
+                ).strip()
+            except Exception:
+                continue
+            # Strip OCR debris characters from tokens rather than dropping
+            # whole tokens ("Preser:t" → "Presert") — the augment database
+            # lookup is fuzzy and absorbs single-character damage.
+            tokens = []
+            for t in txt.split():
+                t2 = "".join(c for c in t if c.isalpha() or c in "'’-+!")
+                if t2 and any(c.isalpha() for c in t2):
+                    tokens.append(t2)
+            # Card art at the band's edges reads as short lowercase
+            # fragments ("yi", "wf", "he") — real titles begin and end on
+            # capitalized words or roman numerals.
+            while tokens and tokens[0].islower() and len(tokens[0]) <= 2:
+                tokens.pop(0)
+            while tokens and tokens[-1].islower() and len(tokens[-1]) <= 2:
+                tokens.pop()
+            cand = " ".join(tokens)
+            if not cand:
+                continue
+            matched, _ = find_augment_rating(cand)
+            score = (1 if matched else 0, sum(c.isalpha() for c in cand))
+            if score > best_score:
+                # Return the canonical database name when it resolves —
+                # the overlay then displays the real title, not the read.
+                best, best_score = (matched or cand), score
+        return best
 
     # ── Template Matching Utilities ───────────────────────────────────────────
 

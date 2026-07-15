@@ -980,6 +980,31 @@ def test_tempo_tips():
     return "behind-tempo, rolldown, quiet-when-fine OK"
 
 
+def test_augment_ocr_real_frame():
+    """Augment titles read exactly from a real selection screen (local-only
+    diagnose frame; skipped when absent)."""
+    import cv2
+    from pathlib import Path
+    frame_path = Path(__file__).parent / "_debug" / "diagnose_20260714_185217.png"
+    if not frame_path.exists():
+        return "diagnose frame not present — skipped"
+    try:
+        import pytesseract
+        pytesseract.get_tesseract_version()
+    except Exception:
+        return "tesseract unavailable — skipped"
+
+    import tftacademy_live
+    tftacademy_live.init_from_cache()   # OCR reads resolve via the augment DB
+    from detector import Detector, TemplateStore
+    t = TemplateStore(); t.load()
+    d = Detector(t)
+    got = [a.name for a in d._detect_augments(cv2.imread(str(frame_path)))]
+    expected = ["Birthday Present", "Heart of the Swarm", "Band of Thieves II"]
+    assert got == expected, f"augment OCR mismatch: {got} != {expected}"
+    return f"3 titles exact: {got}"
+
+
 def test_hp_real_frames():
     """Our HP reads correctly from real frames — the enlarged-row finder
     plus the strip fallbacks. Diagnose frames are local-only; test them
@@ -1282,6 +1307,7 @@ def main():
     test("Window picker", test_window_picker)
     test("Classifier data pipeline", test_classifier_data_pipeline)
     test("Unit classifier fallback", test_unit_classifier_fallback)
+    test("Augment OCR (real frame)", test_augment_ocr_real_frame)
     test("HP OCR (real frames)", test_hp_real_frames)
     test("Shop OCR (real frame)", test_shop_ocr_real_frame)
     test("TFT Academy debounce", test_tftacademy_debounce)
