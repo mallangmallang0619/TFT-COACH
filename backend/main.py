@@ -35,6 +35,24 @@ def setup_logging(debug: bool = False):
     logging.getLogger("websockets").setLevel(logging.WARNING)
     logging.getLogger("PIL").setLevel(logging.WARNING)
 
+    class _ClientVanishedFilter(logging.Filter):
+        """websockets logs a full ERROR traceback when a client drops the
+        socket mid-handshake — which is routine here: the overlay reloading,
+        vite HMR remounting the socket hook, React dev-mode double-mount
+        aborting its first connection. The frontend auto-reconnects, so
+        drop that specific noise while keeping real handshake failures."""
+
+        _BENIGN = ("ConnectionClosedError", "ConnectionClosedOK",
+                   "EOFError", "ConnectionResetError")
+
+        def filter(self, record: logging.LogRecord) -> bool:
+            if not record.getMessage().startswith("opening handshake failed"):
+                return True
+            exc = record.exc_info[1] if record.exc_info else None
+            return exc is None or type(exc).__name__ not in self._BENIGN
+
+    logging.getLogger("websockets.server").addFilter(_ClientVanishedFilter())
+
 
 def main():
     parser = argparse.ArgumentParser(description="TFT Coach Backend")
