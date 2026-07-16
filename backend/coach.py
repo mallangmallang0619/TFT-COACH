@@ -739,6 +739,29 @@ class Coach:
                 "nothing if you're eliminated."
             )
 
+        # Lobby standings context — who's alive, who's dying, where we sit.
+        alive = [hp for hp in state.lobby_hp if hp > 0]
+        if len(alive) >= 3 and state.player_hp > 0:
+            rank = 1 + sum(1 for hp in alive if hp > state.player_hp)
+            dying = sum(1 for hp in alive if 0 < hp <= 15)
+            if state.player_hp <= min(alive):
+                advice.tips.append(
+                    f"You are the LOWEST HP player alive ({state.player_hp} HP, "
+                    f"{len(alive)} left) — the next loss can be your last. "
+                    "Strongest board now: roll, slam, field everything."
+                )
+            elif dying >= 2 and state.player_hp >= 40:
+                advice.tips.append(
+                    f"{dying} players are under 15 HP — placements are about "
+                    "to climb for free. Don't panic-roll; hold your econ and "
+                    "let them bleed out."
+                )
+            elif len(alive) == 5 and rank <= 3:
+                advice.tips.append(
+                    f"5 players left and you're #{rank} — one more elimination "
+                    "secures top 4. Play for board strength, not greed."
+                )
+
         # Low HP warning
         if state.player_hp <= 30:
             advice.tips.append(

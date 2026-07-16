@@ -209,6 +209,11 @@ class GameState(BaseModel):
     augment_options: list[DetectedAugment] = Field(default_factory=list)
     selected_augments: list[str] = Field(default_factory=list)  # Already chosen augments
 
+    # Every player's HP from the right-side list, in standings order
+    # (non-increasing; 0 = eliminated). Includes our own HP. May be
+    # partial when some rows fail to read.
+    lobby_hp: list[int] = Field(default_factory=list)
+
     # The five shop card names (None = empty/unreadable slot). Read via
     # name-banner OCR; feeds the purchase-tracking roster.
     shop_units: list[Optional[str]] = Field(default_factory=list)

@@ -980,6 +980,68 @@ def test_tempo_tips():
     return "behind-tempo, rolldown, quiet-when-fine OK"
 
 
+def test_lobby_hp_real_frames():
+    """All players' HP read in standings order from real frames (local
+    diagnose captures; skipped when absent)."""
+    import cv2
+    from pathlib import Path
+    from detector import Detector, TemplateStore
+    try:
+        import pytesseract
+        pytesseract.get_tesseract_version()
+    except Exception:
+        return "tesseract unavailable — skipped"
+
+    debug_dir = Path(__file__).parent / "_debug"
+    # Third frame's top row is the scouted player, whose HP pill shifts
+    # right out of the digit zone — its read is dropped by the
+    # monotonicity cleanup, so the expected list is one short.
+    cases = [
+        ("diagnose_20260713_151422.png", [44, 30, 17, 16, 12, 0, 0, 0]),
+        ("diagnose_20260711_023339.png", [62, 60, 39, 20, 5, 4, 0, 0]),
+        ("diagnose_20260713_145641.png", [94, 88, 87, 86, 71, 69, 62]),
+    ]
+    t = TemplateStore(); t.load()
+    checked = 0
+    for name, truth in cases:
+        path = debug_dir / name
+        if not path.exists():
+            continue
+        d = Detector(t)
+        got = d._read_lobby_hp(cv2.imread(str(path)))
+        assert got == truth, f"{name}: lobby {got} != {truth}"
+        checked += 1
+    if not checked:
+        return "no diagnose frames present — skipped"
+    return f"{checked} frames read in standings order"
+
+
+def test_standings_tips():
+    """Lobby-aware coaching: lowest-alive alarm, bleed-out patience,
+    top-4 push — and silence without lobby data."""
+    from game_state import GameState, GamePhase
+    from coach import Coach
+
+    def tips_for(hp, lobby):
+        return Coach().analyze(GameState(
+            phase=GamePhase.PLANNING, stage="4-5", player_hp=hp, gold=50,
+            level=8, lobby_hp=lobby,
+        )).tips
+
+    tips = tips_for(12, [80, 55, 40, 33, 12, 0, 0, 0])
+    assert any("LOWEST HP" in t for t in tips), tips
+
+    tips = tips_for(80, [80, 55, 40, 12, 9, 0, 0, 0])
+    assert any("bleed out" in t for t in tips), tips
+
+    tips = tips_for(55, [80, 55, 40, 33, 20, 0, 0, 0])
+    assert any("top 4" in t for t in tips), tips
+
+    tips = tips_for(55, [])
+    assert not any("LOWEST HP" in t or "bleed out" in t or "top 4" in t for t in tips)
+    return "lowest-alive, bleed-out, top-4 push, no-data silence OK"
+
+
 def test_augment_ocr_real_frame():
     """Augment titles read exactly from a real selection screen (local-only
     diagnose frame; skipped when absent)."""
@@ -1309,6 +1371,8 @@ def main():
     test("Unit classifier fallback", test_unit_classifier_fallback)
     test("Augment OCR (real frame)", test_augment_ocr_real_frame)
     test("HP OCR (real frames)", test_hp_real_frames)
+    test("Lobby HP (real frames)", test_lobby_hp_real_frames)
+    test("Standings tips", test_standings_tips)
     test("Shop OCR (real frame)", test_shop_ocr_real_frame)
     test("TFT Academy debounce", test_tftacademy_debounce)
 
