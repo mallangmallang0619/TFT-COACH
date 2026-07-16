@@ -94,6 +94,25 @@ TRAIT_SEARCH = 52
 TRAIT_SIZES = (26, 30, 34, 38)
 
 
+def _longest_nonincreasing(vals: list[int]) -> list[int]:
+    """Longest non-increasing subsequence — the standings list is sorted
+    by HP, so reads breaking monotonicity are OCR junk to discard."""
+    n = len(vals)
+    if n <= 1:
+        return list(vals)
+    dp, prev = [1] * n, [-1] * n
+    for i in range(n):
+        for j in range(i):
+            if vals[j] >= vals[i] and dp[j] + 1 > dp[i]:
+                dp[i], prev[i] = dp[j] + 1, j
+    k = max(range(n), key=lambda i: dp[i])
+    out: list[int] = []
+    while k != -1:
+        out.append(vals[k])
+        k = prev[k]
+    return out[::-1]
+
+
 def _circular_mask(size: int) -> np.ndarray:
     """A filled white circle on black, cached per size — masks out hex corners."""
     mask = _MASK_CACHE.get(size)
@@ -234,6 +253,11 @@ class Detector:
         # model exists in assets/models/ (see scripts/train_classifier.py).
         self.unit_classifier = UnitClassifier()
 
+        # Lobby HP standings — refreshed every N frames (they only change
+        # after combats) and served from cache in between.
+        self._lobby_cache: list[int] = []
+        self._lobby_age = 10**6
+
         # (trait names tuple, {trait: count}) + age, for count caching.
         self._trait_cache: Optional[tuple[tuple, dict]] = None
         self._trait_cache_age = 0
@@ -270,6 +294,16 @@ class Detector:
         # 2. Core stats (always detect these during a game)
         state.stage, state.stage_confidence = self._ocr_stage(frame)
         state.player_hp = self._ocr_player_hp(frame)
+
+        # Lobby standings (all players' HP, sorted by standing) — context
+        # for the coach. A full read costs ~0.7-1.1s, but standings shift
+        # only after combats, so a cached read every ~15 frames is plenty.
+        self._lobby_age += 1
+        if self._lobby_age >= 15:
+            lobby = self._read_lobby_hp(frame)
+            if lobby:
+                self._lobby_cache, self._lobby_age = lobby, 0
+        state.lobby_hp = self._lobby_cache
         state.gold = self._ocr_number(frame, self.rois.gold, "Gold")
         state.level = self._ocr_number(frame, self.rois.level, "Level")
 
@@ -558,32 +592,10 @@ class Detector:
 
         Returns (hp value, run height in 2x pixels) or None.
         """
-        bgr = cv2.resize(
-            strip_bgr, (gray2x.shape[1], gray2x.shape[0]), interpolation=cv2.INTER_CUBIC
-        )
-        sh, sw = gray2x.shape[:2]
-        x0, x1 = int(sw * 0.25), int(sw * 0.72)
-        zone = bgr[:, x0:x1].astype(np.int16)
-        bright = zone.min(axis=2) > 185
-        grayish = (zone.max(axis=2) - zone.min(axis=2)) < 45
-        mask = (bright & grayish).astype(np.uint8)
-        rowsum = mask.sum(axis=1)
-        texty = (rowsum >= 4) & (rowsum <= (x1 - x0) * 0.35)
-
-        runs: list[tuple[int, int, int]] = []   # (height, y_start, y_end)
-        y = 0
-        while y < sh:
-            if texty[y]:
-                y2 = y
-                while y2 + 1 < sh and texty[y2 + 1]:
-                    y2 += 1
-                runs.append((y2 - y + 1, y, y2))
-                y = y2 + 1
-            else:
-                y += 1
+        mask, x0, x1, all_runs = Detector._hp_strip_runs(gray2x, strip_bgr)
         # Regular rows' glyph runs measure ~22-30px here; the enlarged row
         # ~40-90. Anything bigger is scenery that survived the masks.
-        runs = [r for r in runs if 34 <= r[0] <= 110]
+        runs = [r for r in all_runs if 34 <= r[0] <= 110]
 
         for height, ys, ye in sorted(runs, reverse=True)[:3]:
             pad = 8
@@ -605,6 +617,104 @@ class Detector:
                 if txt.isdigit() and 1 <= int(txt) <= 100:
                     return int(txt), height
         return None
+
+    @staticmethod
+    def _hp_strip_runs(
+        gray2x: np.ndarray, strip_bgr: np.ndarray
+    ) -> tuple[np.ndarray, int, int, list[tuple[int, int, int]]]:
+        """
+        Shared front-end for the player-list readers: white digit-stroke
+        mask over the HP-digit zone plus the vertical runs of texty rows.
+        Returns (mask, x0, x1, runs) with runs as (height, y_start, y_end).
+        """
+        bgr = cv2.resize(
+            strip_bgr, (gray2x.shape[1], gray2x.shape[0]), interpolation=cv2.INTER_CUBIC
+        )
+        sh, sw = gray2x.shape[:2]
+        x0, x1 = int(sw * 0.25), int(sw * 0.72)
+        zone = bgr[:, x0:x1].astype(np.int16)
+        bright = zone.min(axis=2) > 185
+        grayish = (zone.max(axis=2) - zone.min(axis=2)) < 45
+        mask = (bright & grayish).astype(np.uint8)
+        rowsum = mask.sum(axis=1)
+        texty = (rowsum >= 4) & (rowsum <= (x1 - x0) * 0.35)
+
+        runs: list[tuple[int, int, int]] = []
+        y = 0
+        while y < sh:
+            if texty[y]:
+                y2 = y
+                while y2 + 1 < sh and texty[y2 + 1]:
+                    y2 += 1
+                runs.append((y2 - y + 1, y, y2))
+                y = y2 + 1
+            else:
+                y += 1
+        return mask, x0, x1, runs
+
+    def _read_lobby_hp(self, frame: np.ndarray) -> list[int]:
+        """
+        Read EVERY player's HP from the right-side list, top to bottom.
+
+        The list is sorted by standing, so values are non-increasing —
+        after OCR'ing each row's digit band, the longest non-increasing
+        subsequence keeps the consistent reads and drops junk (glow bands
+        that read as a digit, a truncated read on the scouted player's
+        shifted pill). Eliminated players read as 0. Partial lists are
+        fine; the coach only needs the shape of the lobby.
+        """
+        if pytesseract is None:
+            return []
+        h, w = frame.shape[:2]
+        x1r, y1r, x2r, y2r = self._PLAYER_LIST_STRIP
+        strip = frame[int(y1r * h):int(y2r * h), int(x1r * w):int(x2r * w)]
+        if strip.size == 0:
+            return []
+        gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
+        gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+
+        mask, x0, x1, runs = self._hp_strip_runs(gray, strip)
+        values: list[int] = []
+        for height, ys, ye in runs:
+            if not (12 <= height <= 110):
+                continue
+            pad = 8
+            gband = gray[max(0, ys - pad):ye + pad, x0:x1]
+            mband = mask[max(0, ys - pad):ye + pad, :]
+            cols = np.where(mask[ys:ye + 1].sum(axis=0) > 0)[0]
+            if cols.size:
+                if height >= 34:
+                    # Enlarged (our) row: digits dominate the band.
+                    b0, b1 = max(0, cols[0] - pad), min(gband.shape[1], cols[-1] + 1 + pad)
+                else:
+                    # Regular rows: digits are the RIGHTMOST white cluster
+                    # (names sit left of a clear gap); keep through to the
+                    # zone edge so an under-masked digit isn't amputated.
+                    gaps = np.where(np.diff(cols) > 25)[0]
+                    b0 = max(0, (cols[gaps[-1] + 1] if gaps.size else cols[0]) - pad)
+                    b1 = gband.shape[1]
+                gband, mband = gband[:, b0:b1], mband[:, b0:b1]
+            _, local = cv2.threshold(gband, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            if np.mean(local) > 128:
+                local = cv2.bitwise_not(local)
+            value = None
+            for binary in (local, mband * 255):
+                for psm in (8, 7):
+                    try:
+                        txt = pytesseract.image_to_string(
+                            binary,
+                            config=f"--psm {psm} --oem 3 -c tessedit_char_whitelist=0123456789",
+                        ).strip()
+                    except Exception:
+                        return values
+                    if txt.isdigit() and 0 <= int(txt) <= 100:
+                        value = int(txt)
+                        break
+                if value is not None:
+                    break
+            if value is not None:
+                values.append(value)
+        return _longest_nonincreasing(values)
 
     @staticmethod
     def _reread_hp_box(gray: np.ndarray, L: int, T: int, W: int, H: int) -> Optional[int]:
