@@ -218,6 +218,75 @@ function StatBox({ label, value, color }) {
   );
 }
 
+// Lobby standings strip: every player's HP in standings order (from the
+// backend's player-list read), our own chip highlighted, dead players dimmed.
+function StandingsStrip({ lobbyHp, ourHp }) {
+  if (!lobbyHp || lobbyHp.length < 3) return null;
+  const alive = lobbyHp.filter((h) => h > 0);
+  const rank = 1 + alive.filter((h) => h > ourHp).length;
+  // Highlight the first chip matching our HP (ties are rare and harmless).
+  const ourIdx = lobbyHp.indexOf(ourHp);
+  const hpColor = (h) => (h > 50 ? "#2ed573" : h > 25 ? "#ffa502" : "#ff4757");
+  return (
+    <div style={{
+      padding: "6px 16px", display: "flex", gap: "6px", alignItems: "center",
+      borderBottom: "1px solid #1e2028", background: "rgba(16,17,23,0.95)",
+      fontFamily: "var(--mono)",
+    }}>
+      <span style={{ fontSize: "9px", color: "#8b8fa3", letterSpacing: "1px", marginRight: "4px" }}>
+        LOBBY&nbsp;
+        <span style={{ color: "#c8cad0", fontWeight: 700 }}>#{rank}</span>
+        <span style={{ color: "#5a5d6b" }}>/{alive.length}</span>
+      </span>
+      {lobbyHp.map((h, i) => (
+        <span
+          key={i}
+          title={i === ourIdx ? `You — ${h} HP` : h > 0 ? `${h} HP` : "Eliminated"}
+          style={{
+            fontSize: "10px", fontWeight: 700, padding: "2px 6px",
+            borderRadius: "4px", minWidth: "24px", textAlign: "center",
+            color: h > 0 ? hpColor(h) : "#4a4d5a",
+            background: i === ourIdx ? `${ACCENT}18` : "rgba(255,255,255,0.03)",
+            border: `1px solid ${i === ourIdx ? ACCENT : "transparent"}`,
+            opacity: h > 0 ? 1 : 0.55,
+          }}
+        >
+          {h > 0 ? h : "💀"}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// Shop buy calls: cards in the current shop the coach says to buy right
+// now (2-star completions, comp units), strongest first.
+function ShopBuyCalls({ actions }) {
+  if (!actions || actions.length === 0) return null;
+  return (
+    <div className="card" style={{
+      borderColor: "#ffd32a33", marginBottom: "12px",
+      background: "linear-gradient(135deg, #ffd32a08, transparent)",
+    }}>
+      <div style={{
+        fontSize: "10px", fontWeight: 700, letterSpacing: "1px",
+        color: "#ffd32a", fontFamily: "var(--mono)", marginBottom: "8px",
+      }}>
+        🛒 SHOP — BUY NOW
+      </div>
+      {actions.slice(0, 3).map((a, i) => (
+        <div key={i} style={{
+          display: "flex", alignItems: "baseline", gap: "8px",
+          padding: "4px 0", borderTop: i > 0 ? "1px solid #1e2028" : "none",
+        }}>
+          <span style={{ fontSize: "13px" }}>{a.priority <= 2 ? "⭐" : "🎯"}</span>
+          <span style={{ fontSize: "13px", fontWeight: 700, color: "#e4e5ea" }}>{a.name}</span>
+          <span style={{ fontSize: "11px", color: "#8b8fa3", flex: 1 }}>{a.reason}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // Card-style chip showing a single champion with their stars, cost color, and items.
 function UnitChip({ unit, itemIcons = {}, dim = false }) {
   if (!unit) return null;
@@ -1002,6 +1071,8 @@ export default function App() {
   const tips = backendAdvice?.tips || [];
   const augmentRatings = backendAdvice?.augment_ratings || [];
   const compSuggestions = backendAdvice?.comp_suggestions || [];
+  const shopActions = backendAdvice?.shop_actions || [];
+  const lobbyHp = isLive ? (gameState?.lobby_hp || []) : [];
   const activeSynergies = isLive ? (gameState?.active_synergies || []) : [];
 
   // Champion data for the Comp/Position tabs
@@ -1184,6 +1255,9 @@ export default function App() {
             <StatBox label="STAGE" value={stage} color={ACCENT} />
           </div>
 
+          {/* ── LOBBY STANDINGS ── */}
+          <StandingsStrip lobbyHp={lobbyHp} ourHp={hp} />
+
           {/* ── MODE INDICATOR ── */}
           {!isLive && (
             <div style={{
@@ -1216,6 +1290,9 @@ export default function App() {
             {/* ═══ ITEMS TAB ═══ */}
             {tab === "items" && (
               <div style={{ animation: "slideIn 0.25s ease" }}>
+
+                {/* Shop Buy Calls */}
+                <ShopBuyCalls actions={shopActions} />
 
                 {/* Slam Urgency Banner */}
                 <div className="card" style={{
