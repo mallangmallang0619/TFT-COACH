@@ -381,16 +381,28 @@ def fetch_traits(
 def fetch_items(
     cdragon: dict, *, force: bool = False, dry_run: bool = False
 ) -> tuple[int, list[str]]:
-    """Download item icons for the completed items in game_data.ITEM_RECIPES."""
-    from game_data import ITEM_RECIPES
+    """Download item icons: the craftables in game_data.ITEM_RECIPES plus
+    every radiant item, artifact, and emblem the live tier list knows."""
+    from game_data import ITEM_RECIPES, LIVE_ITEM_TIERS
+    try:
+        # Importing tftacademy_live fills LIVE_ITEM_TIERS from the cache.
+        import tftacademy_live  # noqa: F401
+    except Exception as e:
+        logger.debug(f"tier cache unavailable ({e}); fetching craftables only")
 
     items = cdragon.get("items", [])
     by_norm = {normalize(it["name"]): it for it in items if it.get("name")}
 
+    wanted = list(dict.fromkeys(
+        [r["name"] for r in ITEM_RECIPES]
+        + [e["name"] for e in LIVE_ITEM_TIERS.values()
+           if e["kind"] in ("radiant", "artifact", "emblem")]
+    ))
+
     ok = 0
     missing: list[str] = []
-    for recipe in ITEM_RECIPES:
-        name = recipe["name"].strip()
+    for name in wanted:
+        name = name.strip()
         safe = name.replace("/", "_")
         out_path = ITEM_TEMPLATE_DIR / f"{safe}.png"
         if out_path.exists() and not force:
@@ -550,8 +562,7 @@ def main() -> int:
         if trait_missing_list:
             logger.info(f"    missing: {', '.join(trait_missing_list)}")
     if do_items:
-        from game_data import ITEM_RECIPES
-        logger.info(f"  Items:      {item_ok}/{len(ITEM_RECIPES)} ok")
+        logger.info(f"  Items:      {item_ok} ok")
         if item_missing_list:
             logger.info(f"    missing: {', '.join(item_missing_list)}")
 

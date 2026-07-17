@@ -279,6 +279,15 @@ function ShopBuyCalls({ actions }) {
           padding: "4px 0", borderTop: i > 0 ? "1px solid #1e2028" : "none",
         }}>
           <span style={{ fontSize: "13px" }}>{a.priority <= 2 ? "⭐" : "🎯"}</span>
+          {Number.isInteger(a.slot) && (
+            <span style={{
+              fontFamily: "var(--mono)", fontSize: "9px", fontWeight: 700,
+              color: "#ffd32a", border: "1px solid #ffd32a44", borderRadius: "4px",
+              padding: "1px 5px", letterSpacing: "0.5px",
+            }}>
+              SLOT {a.slot + 1}
+            </span>
+          )}
           <span style={{ fontSize: "13px", fontWeight: 700, color: "#e4e5ea" }}>{a.name}</span>
           <span style={{ fontSize: "11px", color: "#8b8fa3", flex: 1 }}>{a.reason}</span>
         </div>

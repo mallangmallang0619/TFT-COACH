@@ -664,6 +664,14 @@ class Coach:
             if rating_data:
                 rating = rating_data["rating"]
                 tip = rating_data["tip"]
+                # TFT Academy rates augments per PICK STAGE (an econ augment
+                # can be S at 2-1 and C at 4-2) — score with the current
+                # stage's bucket when it exists, not the overall rating.
+                stage_rating = (rating_data.get("stage_ratings") or {}).get(
+                    self._augment_stage_bucket(state.stage)
+                )
+                if stage_rating:
+                    rating = stage_rating
                 score = self._AUGMENT_RATING_SCORE.get(rating, 1.5)
             else:
                 rating = "?"
@@ -708,6 +716,12 @@ class Coach:
         why = f" — {best['reasons'][0].lower()}" if best["reasons"] else ""
         advice.tips.append(f"Augment pick: {best['name']}{why}")
 
+    @staticmethod
+    def _augment_stage_bucket(stage: str) -> str:
+        """Map the current stage to TFT Academy's pick-stage buckets."""
+        first = (stage or "").split("-")[0]
+        return {"1": "2-1", "2": "2-1", "3": "3-2"}.get(first, "4-2")
+
     # ── General Tips ──────────────────────────────────────────────────────────
 
     # Standard level-tempo curve: the level you want to be AT by each
@@ -745,6 +759,28 @@ class Coach:
                 f"{state.player_hp} HP with {state.gold} gold and no committed "
                 "comp — roll this round for 2-star upgrades. Interest means "
                 "nothing if you're eliminated."
+            )
+
+        # Interest breakpoint — a couple of gold short of the next 10 is
+        # the one moment holding actually pays.
+        if 17 <= state.gold < 50 and state.player_hp > 30:
+            to_next = (10 - state.gold % 10) % 10
+            if 1 <= to_next <= 3:
+                next_bp = state.gold + to_next
+                advice.tips.append(
+                    f"{to_next} gold from the {next_bp} interest breakpoint — "
+                    "hold before buying if you can; that's +1 gold every round."
+                )
+
+        # Loss-damage forecast — how many losses the player can actually
+        # afford at this stage's damage. Rough per-loss cost by stage.
+        loss_cost = {2: 6, 3: 9, 4: 13, 5: 17, 6: 21}.get(stage_num)
+        if loss_cost and 0 < state.player_hp <= loss_cost * 2:
+            losses_left = max(1, state.player_hp // loss_cost)
+            advice.tips.append(
+                f"Stage-{stage_num} losses cost ~{loss_cost} HP — you can "
+                f"survive about {losses_left} more. Every fight is "
+                "must-win territory; field your strongest board."
             )
 
         # Lobby standings context — who's alive, who's dying, where we sit.

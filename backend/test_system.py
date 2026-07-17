@@ -1039,6 +1039,67 @@ def test_tempo_tips():
     return "behind-tempo, rolldown, quiet-when-fine OK"
 
 
+def test_stage_aware_augment_pick():
+    """Augment offers are scored with the CURRENT stage's rating bucket,
+    not the overall one — an econ augment is S at 2-1 and C at 4-2."""
+    import game_data
+    from game_state import GameState, GamePhase, DetectedAugment
+    from coach import Coach
+
+    seed = dict(game_data.AUGMENT_RATINGS)
+    try:
+        game_data.AUGMENT_RATINGS.clear()
+        game_data.AUGMENT_RATINGS.update({
+            "Early Bloomer": {"rating": "C", "tip": "t", "slot": "gold",
+                              "stage_ratings": {"All": "C", "2-1": "S", "4-2": "C"}},
+            "Late Bloomer": {"rating": "S", "tip": "t", "slot": "gold",
+                             "stage_ratings": {"All": "S", "2-1": "C", "4-2": "S"}},
+        })
+
+        def pick_at(stage):
+            advice = Coach().analyze(GameState(
+                phase=GamePhase.AUGMENT_SELECT, stage=stage, player_hp=90, gold=10,
+                augment_options=[
+                    DetectedAugment(name="Early Bloomer", tier="?", slot_index=0),
+                    DetectedAugment(name="Late Bloomer", tier="?", slot_index=1),
+                ],
+            ))
+            best = next(r for r in advice.augment_ratings if r["pick"])
+            return best["name"], {r["name"]: r["rating"] for r in advice.augment_ratings}
+
+        name21, ratings21 = pick_at("2-1")
+        assert name21 == "Early Bloomer", (name21, ratings21)
+        assert ratings21["Early Bloomer"] == "S", "displayed rating should be the stage bucket"
+        name42, _ = pick_at("4-2")
+        assert name42 == "Late Bloomer", name42
+    finally:
+        game_data.AUGMENT_RATINGS.clear()
+        game_data.AUGMENT_RATINGS.update(seed)
+    return "2-1 picks the early augment, 4-2 the late one"
+
+
+def test_econ_and_damage_tips():
+    """Interest-breakpoint nudge and loss-damage forecast."""
+    from game_state import GameState, GamePhase
+    from coach import Coach
+
+    tips = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="3-2", player_hp=80, gold=48, level=6,
+    )).tips
+    assert any("interest breakpoint" in t for t in tips), tips
+
+    tips = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="3-2", player_hp=80, gold=44, level=6,
+    )).tips
+    assert not any("interest breakpoint" in t for t in tips), "6 gold away — quiet"
+
+    tips = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="4-3", player_hp=20, gold=10, level=8,
+    )).tips
+    assert any("must-win" in t for t in tips), tips
+    return "breakpoint nudge, quiet-when-far, loss forecast OK"
+
+
 def test_lobby_hp_real_frames():
     """All players' HP read in standings order from real frames (local
     diagnose captures; skipped when absent)."""
@@ -1433,6 +1494,8 @@ def main():
     test("HP OCR (real frames)", test_hp_real_frames)
     test("Lobby HP (real frames)", test_lobby_hp_real_frames)
     test("Standings tips", test_standings_tips)
+    test("Stage-aware augment pick", test_stage_aware_augment_pick)
+    test("Econ + damage tips", test_econ_and_damage_tips)
     test("Shop OCR (real frame)", test_shop_ocr_real_frame)
     test("TFT Academy debounce", test_tftacademy_debounce)
 
