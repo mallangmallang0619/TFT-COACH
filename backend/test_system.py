@@ -567,6 +567,65 @@ def test_context_comp_scoring():
     )
 
 
+def test_items_tierlist():
+    """Items tier-list parsing + apply: freshest list per kind wins, live
+    tiers reach both LIVE_ITEM_TIERS and ITEM_RECIPES, radiants/artifacts
+    resolve, and the shred/burn flag audit holds."""
+    import game_data
+    from tftacademy_live import parse_items_payload, apply_items_to_game_data
+
+    payload = {"items_tierlists": [
+        {"type": "craftables", "updated": "2026-01-01",
+         "tier": {"S": ["TFT_Item_FrozenHeart"], "A": [], "B": [], "C": []}},
+        {"type": "craftables", "updated": "2026-07-01",
+         "tier": {"S": ["TFT_Item_Deathblade"], "B": ["TFT_Item_GuinsoosRageblade"]}},
+        {"type": "ornns", "updated": "2026-07-01",
+         "tier": {"S": ["TFT_Item_Artifact_Dawncore"]}},
+        {"type": "radiants", "updated": "2026-07-01",
+         "tier": {"A": ["TFT5_Item_ThiefsGlovesRadiant"]}},
+        {"type": "emblems", "updated": "2026-07-01", "tier": {"S": []}},
+    ]}
+    names = {
+        "TFT_Item_Deathblade": "Deathblade",
+        "TFT_Item_GuinsoosRageblade": "Guinsoo's Rageblade",
+        "TFT_Item_Artifact_Dawncore": "Dawncore",
+        "TFT5_Item_ThiefsGlovesRadiant": "Rascal's Gloves",
+    }
+    entries = parse_items_payload(payload, names)
+    by_name = {e["name"]: e for e in entries}
+    assert "Deathblade" in by_name and "Frozen Heart" not in " ".join(by_name), \
+        "freshest craftables list should win over the stale one"
+    assert by_name["Dawncore"]["kind"] == "artifact"
+    assert by_name["Rascal's Gloves"]["kind"] == "radiant"
+    assert by_name["Guinsoo's Rageblade"]["tier"] == "B"
+
+    # Apply (snapshot + restore so later tests see pristine data).
+    live_before = dict(game_data.LIVE_ITEM_TIERS)
+    tiers_before = {r["name"]: r["tier"] for r in game_data.ITEM_RECIPES}
+    try:
+        apply_items_to_game_data(entries)
+        assert game_data.find_item_tier("Deathblade") == ("S", "craftable")
+        assert game_data.find_item_tier("Dawncore") == ("S", "artifact")
+        assert game_data.find_item_tier("Rascal's Gloves") == ("A", "radiant")
+        assert game_data.find_item_tier("NotAnItem") == (None, None)
+        guinsoo = next(r for r in game_data.ITEM_RECIPES
+                       if r["name"] == "Guinsoo's Rageblade")
+        assert guinsoo["tier"] == "B", "live tier should reach ITEM_RECIPES"
+    finally:
+        game_data.LIVE_ITEM_TIERS.clear()
+        game_data.LIVE_ITEM_TIERS.update(live_before)
+        for r in game_data.ITEM_RECIPES:
+            r["tier"] = tiers_before[r["name"]]
+
+    # Flag audit: shred = resist reduction, burn = Grievous/DoT — these are
+    # mechanical facts, so lock them (Striker's Flail was wrongly burn).
+    assert game_data.SHRED_ITEMS == {"Evenshroud", "Ionic Spark",
+                                     "Last Whisper", "Void Staff"}, game_data.SHRED_ITEMS
+    assert game_data.BURN_ITEMS == {"Morellonomicon", "Red Buff",
+                                    "Sunfire Cape"}, game_data.BURN_ITEMS
+    return f"{len(entries)} entries: freshest-wins, kinds, apply+restore, flag audit OK"
+
+
 def test_comp_aware_item_advice():
     """Slam advice puts the comp's own build items first and names the
     unit that holds them — not just generic tier ratings."""
@@ -1359,6 +1418,7 @@ def main():
     test("Augments apply + fuzzy lookup", test_augments_apply_and_fuzzy)
     test("Set auto-detection", test_set_autodetect)
     test("Context comp scoring", test_context_comp_scoring)
+    test("Items tier list", test_items_tierlist)
     test("Comp-aware item advice", test_comp_aware_item_advice)
     test("Shop buy calls", test_shop_buy_calls)
     test("Tempo tips", test_tempo_tips)

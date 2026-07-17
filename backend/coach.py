@@ -31,9 +31,16 @@ from game_data import (
     SHRED_ITEMS,
     BURN_ITEMS,
     find_augment_rating,
+    find_item_tier,
     _normalize_augment_name as _norm_augment,
 )
 from synergy import compute_active_synergies, detect_comp_direction
+
+# Item-name lists for tip texts — derived from the flag sets so they can
+# never drift from the data (they used to hand-name items that no longer
+# exist, like Frozen Heart and Statikk Shiv).
+_SHRED_NAMES = ", ".join(sorted(SHRED_ITEMS))
+_BURN_NAMES = ", ".join(sorted(BURN_ITEMS))
 
 
 def _norm_item_name(name: str) -> str:
@@ -146,9 +153,10 @@ class Coach:
             # Each completed item on this champion multiplies their effectiveness
             item_mult = 1.0
             for item_name in champ.items:
-                item_data = _ITEM_BY_NAME.get(item_name)
-                tier = item_data["tier"] if item_data else "B"
-                item_power += _ITEM_TIER_POWER.get(tier, 20)
+                # find_item_tier also rates radiant items, artifacts, and
+                # emblems (live TFT Academy tiers) — not just craftables.
+                tier, _kind = find_item_tier(item_name)
+                item_power += _ITEM_TIER_POWER.get(tier or "B", 20)
                 item_mult += 0.3
 
             champion_power += base * item_mult
@@ -210,8 +218,8 @@ class Coach:
             advice.slam_urgency_level = "high"
             advice.slam_urgency_message = (
                 "Slam NOW. Every round without completed items is lost HP. "
-                "Slam shred (Ionic Spark, Last Whisper) and burn (Morellonomicon, "
-                "Sunfire Cape, Redemption) first — they win fights regardless of comp."
+                f"Slam shred ({_SHRED_NAMES}) and burn ({_BURN_NAMES}) "
+                "first — they win fights regardless of comp."
             )
         else:
             advice.slam_urgency_level = "critical"
@@ -813,9 +821,8 @@ class Coach:
         if len(state.component_ids) >= 6:
             advice.tips.append(
                 f"Holding {len(state.component_ids)} components — too many! "
-                "Slam immediately. Prioritize shred (Ionic Spark, Last Whisper, "
-                "Frozen Heart) and burn (Morellonomicon, Sunfire Cape, Redemption) "
-                "on synergy-active champions first."
+                f"Slam immediately. Prioritize shred ({_SHRED_NAMES}) and "
+                f"burn ({_BURN_NAMES}) on synergy-active champions first."
             )
 
         # Shred / burn gap detection
@@ -832,16 +839,15 @@ class Coach:
 
         if not has_shred:
             advice.tips.append(
-                "No shred items on your board (Ionic Spark, Last Whisper, "
-                "Frozen Heart, Giant Slayer, Statikk Shiv). "
+                f"No shred items on your board ({_SHRED_NAMES}). "
                 "Shred cuts enemy Armor/MR and dramatically increases your "
                 "whole board's effective damage — build one when possible."
             )
 
         if not has_burn:
             advice.tips.append(
-                "No burn items on your board (Morellonomicon, Sunfire Cape, "
-                "Redemption). Burn applies Grievous Wounds and counters "
-                "healing champions and shields — essential in most lobbies. "
+                f"No burn items on your board ({_BURN_NAMES}). "
+                "Burn applies Grievous Wounds and counters healing champions "
+                "and shields — essential in most lobbies. "
                 "Morellonomicon (Rod + Belt) on a mage carry is particularly effective."
             )

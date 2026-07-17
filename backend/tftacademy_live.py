@@ -772,6 +772,190 @@ async def refresh_augments_async(
         }
 
 
+#  Item tier list (craftables + radiant items + artifacts + emblems)
+#
+# Same hidden API family as the augments: /api/tierlist/items?set=N returns
+# several tier lists per item kind ("craftables", "ornns" = artifacts,
+# "radiants", "emblems"), sometimes with stale duplicates — the freshest
+# non-empty list per kind wins. apiNames resolve via Data Dragon's
+# tft-item.json (its radiant keys are path-prefixed, e.g.
+# "Set5_RadiantItems/TFT5_Item_...", so names are keyed on the last path
+# segment).
+
+ITEMS_API_URL_TEMPLATE = "https://tftacademy.com/api/tierlist/items?set={set_number}"
+DDRAGON_ITEMS_URL_TEMPLATE = (
+    "https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/tft-item.json"
+)
+
+_ITEM_KIND_BY_TYPE = {
+    "craftables": "craftable",
+    "ornns": "artifact",
+    "radiants": "radiant",
+    "emblems": "emblem",
+}
+
+_items_refresh_lock = asyncio.Lock()
+_last_items_refresh_at: float = 0.0
+
+
+def _fetch_items_blocking(set_number: int = CURRENT_SET_NUMBER) -> dict:
+    raw = _fetch_html_blocking(ITEMS_API_URL_TEMPLATE.format(set_number=set_number))
+    return json.loads(raw)
+
+
+def _fetch_ddragon_item_names_blocking() -> dict[str, str]:
+    """{apiName (last path segment): display name} from tft-item.json."""
+    versions = json.loads(_fetch_html_blocking(DDRAGON_VERSIONS_URL))
+    payload = json.loads(_fetch_html_blocking(
+        DDRAGON_ITEMS_URL_TEMPLATE.format(version=versions[0])
+    ))
+    return {
+        api_name.split("/")[-1]: entry["name"]
+        for api_name, entry in (payload.get("data") or {}).items()
+        if entry.get("name")
+    }
+
+
+def parse_items_payload(payload: dict, name_by_api: dict[str, str]) -> list[dict]:
+    """
+    Flatten the items API payload into one entry per item:
+
+        {"api_name": "TFT_Item_Artifact_Dawncore",
+         "name": "Dawncore", "kind": "artifact", "tier": "S"}
+
+    The payload repeats each kind (stale rebuild leftovers) — the most
+    recently updated list that actually has items wins per kind.
+    """
+    best_by_kind: dict[str, dict] = {}
+    for block in payload.get("items_tierlists") or []:
+        kind = _ITEM_KIND_BY_TYPE.get(block.get("type"))
+        if kind is None:
+            continue
+        count = sum(len(v or []) for v in (block.get("tier") or {}).values())
+        if count == 0:
+            continue
+        cur = best_by_kind.get(kind)
+        if cur is None or (block.get("updated") or "") > (cur.get("updated") or ""):
+            best_by_kind[kind] = block
+
+    entries: list[dict] = []
+    for kind, block in best_by_kind.items():
+        for tier, api_names in (block.get("tier") or {}).items():
+            if tier not in _VALID_TIERS:
+                continue
+            for api_name in api_names or []:
+                entries.append({
+                    "api_name": api_name,
+                    "name": name_by_api.get(api_name) or _human_name(api_name),
+                    "kind": kind,
+                    "tier": tier,
+                })
+    return sorted(entries, key=lambda e: (e["kind"], e["name"]))
+
+
+def apply_items_to_game_data(entries: list[dict]) -> None:
+    """
+    Push live item tiers into game_data: LIVE_ITEM_TIERS (in place, covers
+    radiants/artifacts/emblems that have no recipe) and the tier field of
+    matching ITEM_RECIPES rows, so every consumer of static tiers follows
+    the live list. Mechanical flags (shred/burn/type/recipe) stay static —
+    they're facts about the items, not opinions that move with patches.
+    """
+    if not entries:
+        return
+    import game_data
+
+    game_data.LIVE_ITEM_TIERS.clear()
+    for e in entries:
+        if e.get("name") and e.get("tier"):
+            game_data.LIVE_ITEM_TIERS[game_data.norm_item_key(e["name"])] = {
+                "name": e["name"], "tier": e["tier"], "kind": e["kind"],
+            }
+
+    for recipe in game_data.ITEM_RECIPES:
+        live = game_data.LIVE_ITEM_TIERS.get(game_data.norm_item_key(recipe["name"]))
+        if live and live["kind"] == "craftable":
+            recipe["tier"] = live["tier"]
+
+
+async def refresh_items_async(
+    *,
+    force: bool = False,
+    debounce_seconds: int = DEFAULT_DEBOUNCE_SECONDS,
+) -> dict:
+    """
+    Refresh the item tier list from TFT Academy's API and update the
+    cache + in-memory tiers. Debounced and lock-serialized like the
+    augments refresh.
+    """
+    global _last_items_refresh_at
+
+    now = time.monotonic()
+    if not force and (now - _last_items_refresh_at) < debounce_seconds:
+        return {"checked": False, "refreshed": False, "count": 0, "error": None}
+
+    async with _items_refresh_lock:
+        now = time.monotonic()
+        if not force and (now - _last_items_refresh_at) < debounce_seconds:
+            return {"checked": False, "refreshed": False, "count": 0, "error": None}
+        _last_items_refresh_at = now
+
+        cache = load_cache() or {}
+        set_number = current_set_number(cache)
+        try:
+            payload = await asyncio.to_thread(_fetch_items_blocking, set_number)
+        except Exception as e:
+            logger.warning(f"TFT Academy items fetch failed: {e}")
+            return {"checked": True, "refreshed": False, "count": 0, "error": str(e)}
+
+        name_by_api = {
+            e["api_name"]: e["name"]
+            for e in (cache.get("items") or {}).get("entries") or []
+            if e.get("api_name") and e.get("name")
+        }
+        wanted = {
+            api_name
+            for block in payload.get("items_tierlists") or []
+            for api_names in (block.get("tier") or {}).values()
+            for api_name in api_names or []
+        }
+        if wanted - set(name_by_api):
+            try:
+                name_by_api.update(
+                    await asyncio.to_thread(_fetch_ddragon_item_names_blocking)
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Data Dragon item-name fetch failed ({e}); "
+                    f"deriving names from apiNames"
+                )
+
+        entries = parse_items_payload(payload, name_by_api)
+        if not entries:
+            logger.warning(
+                "TFT Academy items API returned 0 items — payload shape "
+                "may have changed. Keeping existing data."
+            )
+            return {
+                "checked": True, "refreshed": False, "count": 0,
+                "error": "no items parsed",
+            }
+
+        apply_items_to_game_data(entries)
+        cache["items"] = {
+            "set": set_number,
+            "synced_at": datetime.datetime.utcnow().isoformat() + "Z",
+            "source_url": ITEMS_API_URL_TEMPLATE.format(set_number=set_number),
+            "entries": entries,
+        }
+        save_cache(cache)
+        logger.info(f"TFT Academy item tier list refreshed: {len(entries)} items")
+        return {
+            "checked": True, "refreshed": True,
+            "count": len(entries), "error": None,
+        }
+
+
 #  Public API
 
 def init_from_cache() -> Optional[str]:
@@ -786,10 +970,12 @@ def init_from_cache() -> Optional[str]:
     apply_to_game_data(comps)
     augment_entries = (cache.get("augments") or {}).get("entries") or []
     apply_augments_to_game_data(augment_entries)
+    item_entries = (cache.get("items") or {}).get("entries") or []
+    apply_items_to_game_data(item_entries)
     patch = cache.get("patch")
     logger.info(
         f"Loaded TFT Academy cache: patch={patch}, {len(comps)} comps, "
-        f"{len(augment_entries)} augments "
+        f"{len(augment_entries)} augments, {len(item_entries)} items "
         f"(synced {cache.get('synced_at', 'unknown')})"
     )
     return patch
@@ -1049,9 +1235,10 @@ def schedule_background_refresh(
             await asyncio.sleep(initial_delay_seconds)
         try:
             await refresh_async(debounce_seconds=debounce_seconds)
-            # One cheap JSON call — refresh augment tiers alongside the
-            # listing (its own debounce keeps repeat calls free).
+            # Two cheap JSON calls — refresh augment and item tiers
+            # alongside the listing (their own debounce keeps repeats free).
             await refresh_augments_async(debounce_seconds=debounce_seconds)
+            await refresh_items_async(debounce_seconds=debounce_seconds)
             if include_details:
                 await refresh_details_async(debounce_seconds=debounce_seconds)
         except Exception:
