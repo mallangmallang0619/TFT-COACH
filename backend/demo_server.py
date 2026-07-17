@@ -159,6 +159,8 @@ class SimulatedGame:
         self.ticks_per_round = 6
         self.is_over = False
         self.placement = 0
+        # Seven simulated opponents for the lobby standings strip.
+        self.opponent_hp = [100] * 7
 
         logger.info(f"Scenario: {self.scenario['name']} — {self.scenario['desc']}")
 
@@ -242,6 +244,15 @@ class SimulatedGame:
             stage_num = float(self.stage.replace("-", "."))
             dmg = max(2, int(stage_num * 2)) + random.randint(0, int(stage_num * 1.5))
             self.hp = max(0, self.hp - dmg)
+
+        # Opponents fight each other too — bleed them at varied rates so
+        # the standings strip shows a realistic spread and eliminations.
+        stage_num = float(self.stage.replace("-", "."))
+        self.opponent_hp = [
+            max(0, o - random.randint(0, int(stage_num * 3)))
+            if o > 0 else 0
+            for o in self.opponent_hp
+        ]
 
         interest = min(self.gold // 10, 5)
         streak_gold = min(max(self.win_streak, self.loss_streak), 3)
@@ -372,6 +383,15 @@ class SimulatedGame:
             bench_champions=bench_champs,
             augment_options=augment_options,
             selected_augments=list(self.chosen_augments),
+            lobby_hp=sorted([self.hp] + self.opponent_hp, reverse=True),
+            # A shop echoing units we hold — exercises the coach's buy calls.
+            shop_units=[
+                self.bench[0]["name"] if self.bench else None,
+                self.board[0]["name"] if self.board else None,
+                random.choice(CHAMPION_POOL)[0],
+                None,
+                None,
+            ],
             overall_confidence=DetectionConfidence.HIGH,
         )
 
