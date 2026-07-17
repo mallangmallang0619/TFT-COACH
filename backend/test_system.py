@@ -1079,25 +1079,38 @@ def test_stage_aware_augment_pick():
 
 
 def test_econ_and_damage_tips():
-    """Interest-breakpoint nudge and loss-damage forecast."""
-    from game_state import GameState, GamePhase
+    """Interest-breakpoint nudge (which upgrades always beat) and
+    loss-damage forecast."""
+    from game_state import GameState, GamePhase, DetectedChampion
     from coach import Coach
 
     tips = Coach().analyze(GameState(
         phase=GamePhase.PLANNING, stage="3-2", player_hp=80, gold=48, level=6,
     )).tips
-    assert any("interest breakpoint" in t for t in tips), tips
+    assert any("hold" in t and "interest breakpoint" in t for t in tips), tips
 
     tips = Coach().analyze(GameState(
         phase=GamePhase.PLANNING, stage="3-2", player_hp=80, gold=44, level=6,
     )).tips
     assert not any("interest breakpoint" in t for t in tips), "6 gold away — quiet"
 
+    # A pair copy in the shop beats the breakpoint: the tip must say BUY,
+    # never advise holding past an upgrade.
+    board = _dark_star_board()
+    bench = [DetectedChampion(name="Poppy"), DetectedChampion(name="Poppy")]
+    tips = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="3-2", player_hp=80, gold=48, level=6,
+        board_champions=board, bench_champions=bench,
+        shop_units=["Poppy", None, None, None, None],
+    )).tips
+    buy_tip = next((t for t in tips if "interest breakpoint" in t), "")
+    assert buy_tip.startswith("Buy Poppy"), f"upgrade should beat interest: {tips}"
+
     tips = Coach().analyze(GameState(
         phase=GamePhase.PLANNING, stage="4-3", player_hp=20, gold=10, level=8,
     )).tips
     assert any("must-win" in t for t in tips), tips
-    return "breakpoint nudge, quiet-when-far, loss forecast OK"
+    return "hold nudge, quiet-when-far, pair-beats-interest, loss forecast OK"
 
 
 def test_lobby_hp_real_frames():

@@ -762,15 +762,28 @@ class Coach:
             )
 
         # Interest breakpoint — a couple of gold short of the next 10 is
-        # the one moment holding actually pays.
+        # the one moment holding actually pays. BUT board upgrades beat
+        # interest: a pair copy or comp unit in the shop is a permanent
+        # strength gain, interest is one gold a round — never talk the
+        # player out of buying one to preserve a breakpoint.
         if 17 <= state.gold < 50 and state.player_hp > 30:
             to_next = (10 - state.gold % 10) % 10
             if 1 <= to_next <= 3:
                 next_bp = state.gold + to_next
-                advice.tips.append(
-                    f"{to_next} gold from the {next_bp} interest breakpoint — "
-                    "hold before buying if you can; that's +1 gold every round."
-                )
+                if advice.shop_actions:
+                    top = advice.shop_actions[0]
+                    advice.tips.append(
+                        f"Buy {top['name']} even though you're {to_next} gold "
+                        f"from the {next_bp} interest breakpoint — upgrades "
+                        "make your board permanently stronger; interest is "
+                        "1 gold a round."
+                    )
+                else:
+                    advice.tips.append(
+                        f"{to_next} gold from the {next_bp} interest breakpoint "
+                        "and nothing worth buying — hold; that's +1 gold every "
+                        "round."
+                    )
 
         # Loss-damage forecast — how many losses the player can actually
         # afford at this stage's damage. Rough per-loss cost by stage.
