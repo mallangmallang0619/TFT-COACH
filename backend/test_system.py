@@ -1113,6 +1113,37 @@ def test_econ_and_damage_tips():
     return "hold nudge, quiet-when-far, pair-beats-interest, loss forecast OK"
 
 
+def test_component_detection_real_frames():
+    """Basic components detect on real frames (local diagnose captures;
+    requires the fetched component templates — both skipped when absent).
+    Set 17's stylized component art (Chain Vest is a blue spiked pauldron)
+    was mistaken for non-components once; the scores say otherwise."""
+    import cv2
+    from pathlib import Path
+    from detector import Detector, TemplateStore
+
+    t = TemplateStore(); t.load()
+    if not t.component_templates:
+        return "no component templates on disk — skipped"
+    debug_dir = Path(__file__).parent / "_debug"
+    cases = [
+        ("diagnose_20260717_183943.png", {"chain_vest", "recurve_bow"}),
+        ("diagnose_20260717_184036.png", {"chain_vest", "bf_sword", "recurve_bow"}),
+    ]
+    checked = 0
+    for name, expected in cases:
+        path = debug_dir / name
+        if not path.exists():
+            continue
+        d = Detector(t)
+        got = {c.component_id for c in d._detect_components(cv2.imread(str(path)))}
+        assert expected <= got, f"{name}: {got} missing {expected - got}"
+        checked += 1
+    if not checked:
+        return "no diagnose frames present — skipped"
+    return f"{checked} frames detect their components"
+
+
 def test_held_item_detection():
     """Completed items on the item bench are template-matched (change-gated
     scan); unknown icons are rejected rather than guessed."""
@@ -1537,6 +1568,7 @@ def main():
     test("Unit classifier fallback", test_unit_classifier_fallback)
     test("Augment OCR (real frame)", test_augment_ocr_real_frame)
     test("HP OCR (real frames)", test_hp_real_frames)
+    test("Component detection (real frames)", test_component_detection_real_frames)
     test("Held item detection", test_held_item_detection)
     test("Lobby HP (real frames)", test_lobby_hp_real_frames)
     test("Standings tips", test_standings_tips)
