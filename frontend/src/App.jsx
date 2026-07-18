@@ -1082,6 +1082,7 @@ export default function App() {
   const compSuggestions = backendAdvice?.comp_suggestions || [];
   const shopActions = backendAdvice?.shop_actions || [];
   const lobbyHp = isLive ? (gameState?.lobby_hp || []) : [];
+  const heldItems = isLive ? (gameState?.held_items || []) : [];
   const activeSynergies = isLive ? (gameState?.active_synergies || []) : [];
 
   // Champion data for the Comp/Position tabs
@@ -1402,6 +1403,27 @@ export default function App() {
                           </div>
                         ) : null;
                       })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Held completed items (artifacts, radiants, specials) */}
+                {isLive && heldItems.length > 0 && (
+                  <div className="card" style={{ marginBottom: "12px" }}>
+                    <div style={{ fontSize: "9px", color: "#8b8fa3", marginBottom: "8px", fontFamily: "var(--mono)", letterSpacing: "2px" }}>
+                      HELD ITEMS ({heldItems.length})
+                    </div>
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                      {heldItems.map((name, idx) => (
+                        <div key={idx} style={{
+                          padding: "6px 10px", borderRadius: "6px",
+                          background: "#ffd32a10", border: "1px solid #ffd32a33",
+                          display: "flex", alignItems: "center", gap: "4px",
+                        }}>
+                          <GameIcon kind="items" name={name} emoji="🗡️" size={16} />
+                          <span style={{ fontSize: "10px", color: "#ffd32a", fontFamily: "var(--mono)" }}>{name}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

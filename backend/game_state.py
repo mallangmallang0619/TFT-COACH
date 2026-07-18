@@ -209,6 +209,11 @@ class GameState(BaseModel):
     augment_options: list[DetectedAugment] = Field(default_factory=list)
     selected_augments: list[str] = Field(default_factory=list)  # Already chosen augments
 
+    # Completed items sitting on the item bench (craftables, artifacts,
+    # radiants, emblems — anything that isn't a basic component), top to
+    # bottom. Display names.
+    held_items: list[str] = Field(default_factory=list)
+
     # Every player's HP from the right-side list, in standings order
     # (non-increasing; 0 = eliminated). Includes our own HP. May be
     # partial when some rows fail to read.

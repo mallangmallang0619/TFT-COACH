@@ -48,6 +48,7 @@ from config import (
     TEMPLATE_DIR,
     COMPONENT_TEMPLATE_DIR,
     CHAMPION_TEMPLATE_DIR,
+    ITEM_TEMPLATE_DIR,
     TRAIT_TEMPLATE_DIR,
     CONFIDENCE_THRESHOLD,
     COMPONENT_MATCH_THRESHOLD,
@@ -153,6 +154,7 @@ class TemplateStore:
 
     def __init__(self):
         self.component_templates: dict[str, np.ndarray] = {}
+        self.item_templates: dict[str, np.ndarray] = {}
         self.champion_templates: dict[str, np.ndarray] = {}
         # Per-scale canonical grayscale champion patches, keyed by name then
         # pixel size — precomputed so matching doesn't re-grayscale/resize per hex.
@@ -165,6 +167,7 @@ class TemplateStore:
     def load(self):
         """Load all template images from disk."""
         self.component_templates = self._load_dir(COMPONENT_TEMPLATE_DIR)
+        self.item_templates = self._load_dir(ITEM_TEMPLATE_DIR)
         self.champion_templates = self._load_dir(CHAMPION_TEMPLATE_DIR)
         self.ui_templates = self._load_dir(TEMPLATE_DIR / "ui")
         self._build_champion_gray()
@@ -258,6 +261,12 @@ class Detector:
         self._lobby_cache: list[int] = []
         self._lobby_age = 10**6
 
+        # Held completed-item scan cache (change-gated — see
+        # _detect_held_items).
+        self._held_items_thumb: Optional[np.ndarray] = None
+        self._held_items_age = 10**6
+        self._held_items_cache: list[str] = []
+
         # (trait names tuple, {trait: count}) + age, for count caching.
         self._trait_cache: Optional[tuple[tuple, dict]] = None
         self._trait_cache_age = 0
@@ -307,9 +316,11 @@ class Detector:
         state.gold = self._ocr_number(frame, self.rois.gold, "Gold")
         state.level = self._ocr_number(frame, self.rois.level, "Level")
 
-        # 3. Item components on bench
+        # 3. Item components on bench, plus completed/artifact/radiant
+        # items the game hands out that aren't components at all.
         state.held_components = self._detect_components(frame)
         state.component_ids = [c.component_id for c in state.held_components]
+        state.held_items = self._detect_held_items(frame)
 
         # 4. Board champions (only during planning/combat)
         if state.phase in (GamePhase.PLANNING, GamePhase.COMBAT):
@@ -415,19 +426,42 @@ class Detector:
     # ── OCR Detection ─────────────────────────────────────────────────────────
 
     def _ocr_stage(self, frame: np.ndarray) -> tuple[str, float]:
-        """OCR the stage indicator (e.g., '3-2')."""
+        """
+        OCR the stage indicator (e.g., '3-2').
+
+        The text's x position shifts with the top bar's round-icon count
+        (stage 1-2 bars have fewer icons, pushing it right), so the ROI is
+        a wide band and the value is regex-extracted. The glyphs are small
+        — 2x upscale before thresholding is what makes them readable.
+        """
+        if pytesseract is None:
+            return "?", 0.0
         h, w = frame.shape[:2]
         x, y, rw, rh = self.rois.stage.to_pixels(w, h)
         region = frame[y:y+rh, x:x+rw]
+        if region.size == 0:
+            return "?", 0.0
 
-        text = self._ocr_region(region, whitelist="0123456789-Stage ")
+        gray = cv2.cvtColor(region, cv2.COLOR_BGR2GRAY)
+        gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if np.mean(binary) > 128:
+            binary = cv2.bitwise_not(binary)
+        try:
+            text = pytesseract.image_to_string(
+                binary, config="--psm 7 --oem 3 -c tessedit_char_whitelist=0123456789-"
+            ).strip()
+        except Exception:
+            return "?", 0.0
 
-        # Try to extract a stage pattern like "3-2" or "Stage 3-2"
-        import re
-        match = re.search(r"(\d)-(\d)", text)
+        match = re.search(r"([1-7])-([1-7])", text)
         if match:
-            stage_str = f"{match.group(1)}-{match.group(2)}"
-            return stage_str, 0.85
+            return f"{match.group(1)}-{match.group(2)}", 0.85
+        # OCR sometimes drops the dash ("1-4" reads "14") — accept exactly
+        # two plausible stage digits.
+        digits = re.sub(r"\D", "", text)
+        if len(digits) == 2 and "1" <= digits[0] <= "7" and "1" <= digits[1] <= "7":
+            return f"{digits[0]}-{digits[1]}", 0.6
 
         return "?", 0.0
 
@@ -599,10 +633,15 @@ class Detector:
 
         for height, ys, ye in sorted(runs, reverse=True)[:3]:
             pad = 8
-            band = gray2x[max(0, ys - pad):ye + pad, x0:x1]
+            # Extend past the zone edge when the digits reach it — a
+            # 3-digit "100" at game start pokes past and read as "10".
+            x_ext = int(gray2x.shape[1] * 0.80)
+            band = gray2x[max(0, ys - pad):ye + pad, x0:x_ext]
             cols = np.where(mask[ys:ye + 1].sum(axis=0) > 0)[0]
             if cols.size:
-                band = band[:, max(0, cols[0] - pad):min(band.shape[1], cols[-1] + 1 + pad)]
+                b1 = (band.shape[1] if cols[-1] >= (x1 - x0) - 4
+                      else min(band.shape[1], cols[-1] + 1 + pad))
+                band = band[:, max(0, cols[0] - pad):b1]
             _, local = cv2.threshold(band, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
             if np.mean(local) > 128:
                 local = cv2.bitwise_not(local)
@@ -679,13 +718,23 @@ class Detector:
             if not (12 <= height <= 110):
                 continue
             pad = 8
-            gband = gray[max(0, ys - pad):ye + pad, x0:x1]
-            mband = mask[max(0, ys - pad):ye + pad, :]
+            # The OCR band extends past the run-detection zone (x1 = 0.72)
+            # toward the portraits (~0.80): three-digit values ("100") poke
+            # past the zone edge and were reading as "10" with the trailing
+            # digit amputated — game start showed the whole lobby at 10.
+            x_ext = int(gray.shape[1] * 0.80)
+            gband = gray[max(0, ys - pad):ye + pad, x0:x_ext]
+            mrows = mask[max(0, ys - pad):ye + pad, :]
+            mband = np.zeros(gband.shape[:2], dtype=np.uint8)
+            mband[:mrows.shape[0], :mrows.shape[1]] = mrows
             cols = np.where(mask[ys:ye + 1].sum(axis=0) > 0)[0]
             if cols.size:
                 if height >= 34:
-                    # Enlarged (our) row: digits dominate the band.
-                    b0, b1 = max(0, cols[0] - pad), min(gband.shape[1], cols[-1] + 1 + pad)
+                    # Enlarged (our) row: digits dominate the band; extend
+                    # past the zone edge when they reach it.
+                    b0 = max(0, cols[0] - pad)
+                    b1 = (gband.shape[1] if cols[-1] >= (x1 - x0) - 4
+                          else min(gband.shape[1], cols[-1] + 1 + pad))
                 else:
                     # Regular rows: digits are the RIGHTMOST white cluster
                     # (names sit left of a clear gap); keep through to the
@@ -698,7 +747,12 @@ class Detector:
             if np.mean(local) > 128:
                 local = cv2.bitwise_not(local)
             value = None
-            for binary in (local, mband * 255):
+            # The mask-image fallback exists for the enlarged row's hollow
+            # glyphs. On regular rows it hallucinated digits out of the
+            # white "fought recently" sword markers (read as 7s), so
+            # regular rows use the grayscale read only.
+            binaries = (local, mband * 255) if height >= 34 else (local,)
+            for binary in binaries:
                 for psm in (8, 7):
                     try:
                         txt = pytesseract.image_to_string(
@@ -891,6 +945,77 @@ class Detector:
 
         logger.debug(f"Detected {len(detected)} components: {[d.component_id for d in detected]}")
         return detected
+
+    # How often (in frames) the held-item scan may rerun, and how much the
+    # column thumbnail must change to trigger one.
+    _HELD_ITEMS_MIN_AGE = 5
+    _HELD_ITEMS_CHANGE = 4.0
+
+    def _detect_held_items(self, frame: np.ndarray) -> list[str]:
+        """
+        Detect COMPLETED items (craftables, artifacts, radiants, emblems)
+        sitting on the item bench — the column also holds non-component
+        items the game hands out, which the component matcher can't see
+        and users read as "detection is broken".
+
+        Matching a few hundred item templates is too slow per frame, so
+        the scan is change-gated: a grayscale thumbnail of the column is
+        compared each frame, and the full match only reruns when the
+        column's contents actually changed.
+        """
+        if not self.templates.item_templates:
+            return []
+        h, w = frame.shape[:2]
+        x, y, rw, rh = self.rois.item_bench.to_pixels(w, h)
+        region = frame[y:y+rh, x:x+rw]
+        if region.size == 0:
+            return []
+
+        thumb = cv2.resize(
+            cv2.cvtColor(region, cv2.COLOR_BGR2GRAY), (16, 96),
+            interpolation=cv2.INTER_AREA,
+        )
+        self._held_items_age += 1
+        if self._held_items_thumb is not None:
+            drift = float(np.mean(cv2.absdiff(thumb, self._held_items_thumb)))
+            if drift < self._HELD_ITEMS_CHANGE:
+                return self._held_items_cache          # column unchanged
+            if self._held_items_age < self._HELD_ITEMS_MIN_AGE:
+                return self._held_items_cache          # debounce drag churn
+
+        scales = sorted({max(12, int(w * s)) for s in (0.0135, 0.0165, 0.0195)})
+        found: list[tuple[float, str, float]] = []   # (y, name, conf)
+        for name, template in self.templates.item_templates.items():
+            best = None
+            for size in scales:
+                scaled = cv2.resize(template, (size, size), interpolation=cv2.INTER_AREA)
+                for mx, my, conf in self._multi_template_match(
+                    region, scaled, COMPONENT_MATCH_THRESHOLD
+                ):
+                    if best is None or conf > best[2]:
+                        best = (my, name, conf)
+            if best:
+                found.append(best)
+
+        # One item per slot: group matches that landed within half a slot
+        # height of each other and keep each group's most confident.
+        found.sort()
+        names: list[str] = []
+        slot_h = rh / 10
+        i = 0
+        while i < len(found):
+            j = i + 1
+            while j < len(found) and found[j][0] - found[i][0] < slot_h * 0.5:
+                j += 1
+            names.append(max(found[i:j], key=lambda g: g[2])[1])
+            i = j
+
+        self._held_items_thumb = thumb
+        self._held_items_age = 0
+        self._held_items_cache = names
+        if names:
+            logger.debug(f"Held items: {names}")
+        return names
 
     # ── Champion Detection ────────────────────────────────────────────────────
 

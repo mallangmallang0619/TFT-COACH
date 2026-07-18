@@ -196,9 +196,12 @@ class GameROIs:
     """All regions of interest in the TFT game UI."""
 
     # Stage indicator — top center, right of the stage icon (e.g. "3-5").
-    # Calibrated against fixtures/tft_screenshot.png (3600×2026, 16:9).
+    # A WIDE band: the text's x position shifts with the number of round
+    # icons in the top bar (early-game bars are narrower, pushing the text
+    # right), so the band covers every observed position and the detector
+    # regex-extracts the value.
     stage: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.398, 0.010, 0.036, 0.034)
+        default_factory=lambda: RegionOfInterest(0.393, 0.012, 0.059, 0.032)
     )
 
     # Player HP — our value in the right-side player list (between the two

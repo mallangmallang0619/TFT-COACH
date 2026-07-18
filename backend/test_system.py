@@ -1113,6 +1113,38 @@ def test_econ_and_damage_tips():
     return "hold nudge, quiet-when-far, pair-beats-interest, loss forecast OK"
 
 
+def test_held_item_detection():
+    """Completed items on the item bench are template-matched (change-gated
+    scan); unknown icons are rejected rather than guessed."""
+    import cv2
+    import numpy as np
+    from detector import Detector, TemplateStore
+    from config import GameROIs
+
+    t = TemplateStore(); t.load()
+    if not t.item_templates:
+        return "no item templates on disk — skipped"
+    d = Detector(t)
+
+    frame = np.full((1440, 2560, 3), 25, dtype=np.uint8)
+    x, y, rw, rh = GameROIs().item_bench.to_pixels(2560, 1440)
+    size = int(2560 * 0.0165)
+    names = [n for n in ("Deathblade", "Sunfire Cape") if n in t.item_templates]
+    assert names, "expected craftable templates on disk"
+    for i, nm in enumerate(names):
+        icon = cv2.resize(t.item_templates[nm], (size, size), interpolation=cv2.INTER_AREA)
+        sy = y + 20 + i * int(rh / 10)
+        frame[sy:sy + size, x + 8:x + 8 + size] = icon
+
+    got = d._detect_held_items(frame)
+    assert got == names, f"held items {got} != {names}"
+    assert d._detect_held_items(frame) == names, "cached path should agree"
+
+    empty = Detector(t)
+    assert empty._detect_held_items(np.full((1440, 2560, 3), 25, dtype=np.uint8)) == []
+    return f"detected {got}, cache + empty OK"
+
+
 def test_lobby_hp_real_frames():
     """All players' HP read in standings order from real frames (local
     diagnose captures; skipped when absent)."""
@@ -1505,6 +1537,7 @@ def main():
     test("Unit classifier fallback", test_unit_classifier_fallback)
     test("Augment OCR (real frame)", test_augment_ocr_real_frame)
     test("HP OCR (real frames)", test_hp_real_frames)
+    test("Held item detection", test_held_item_detection)
     test("Lobby HP (real frames)", test_lobby_hp_real_frames)
     test("Standings tips", test_standings_tips)
     test("Stage-aware augment pick", test_stage_aware_augment_pick)
