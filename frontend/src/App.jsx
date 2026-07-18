@@ -137,6 +137,11 @@ const TIER_COLORS = { S: "#ff4757", A: "#ffa502", B: "#2ed573", C: "#747d8c", X:
 const ACCENT = "#00d2ff";
 const ACCENT2 = "#7c5cfc";
 
+// Backend payload schema version this overlay is built for. Must match
+// backend config.PROTOCOL_VERSION — a red header badge appears when the
+// running backend disagrees (stale process or unmerged code).
+const BACKEND_PROTOCOL_EXPECTED = 2;
+
 // TFT cost-tier colors used to outline unit chips and cells
 const COST_COLORS = {
   1: "#9ca3af", 2: "#1f9d55", 3: "#2563eb", 4: "#9333ea", 5: "#d97706",
@@ -1028,7 +1033,7 @@ function devBtnStyle(color) {
 // ─── MAIN APP ────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const { gameState, gameData, isConnected, isDemo, demoInfo, serverStats, sendCommand } = useCoachSocket();
+  const { gameState, gameData, backendProtocol, isConnected, isDemo, demoInfo, serverStats, sendCommand } = useCoachSocket();
   const [devOpen, setDevOpen] = useState(false);
 
   // Electron overlay: hover-to-interact. The window is click-through by
@@ -1189,6 +1194,19 @@ export default function App() {
           }}>
             TFT COACH
           </div>
+          {isConnected && backendProtocol !== null && backendProtocol !== BACKEND_PROTOCOL_EXPECTED && (
+            <span
+              title={`The running backend speaks payload v${backendProtocol}, this overlay expects v${BACKEND_PROTOCOL_EXPECTED}. Pull the latest code and restart the backend (and this overlay) — data fields will be missing or wrong until then.`}
+              style={{
+                fontFamily: "var(--mono)", fontSize: "9px", fontWeight: 700,
+                letterSpacing: "1px", padding: "3px 8px", borderRadius: "5px",
+                color: "#ff4757", border: "1px solid #ff475766",
+                background: "#ff475712", animation: "blink 1.6s infinite",
+              }}
+            >
+              ⚠ BACKEND OUTDATED (v{backendProtocol}≠v{BACKEND_PROTOCOL_EXPECTED})
+            </span>
+          )}
           <ConnectionBadge isConnected={isConnected} isDemo={isDemo} />
           {inElectron && (
             <span

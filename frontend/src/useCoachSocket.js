@@ -36,6 +36,10 @@ export function useCoachSocket() {
     } catch { return null; }
   });
   const [isConnected, setIsConnected] = useState(false);
+  // Payload schema version of the LIVE backend (not persisted — a stale
+  // localStorage copy must not mask a stale running process). 0 = backend
+  // predates the stamp.
+  const [backendProtocol, setBackendProtocol] = useState(null);
   const [serverStats, setServerStats] = useState(null);
   const [isDemo, setIsDemo] = useState(false);
   const [demoInfo, setDemoInfo] = useState(null);  // { scenarios, current_scenario, paused, tick_ms, tick_bounds }
@@ -74,6 +78,7 @@ export function useCoachSocket() {
           } else if (msg.type === "game_data") {
             // Item recipes, component list, shred/burn sets from game_data.py
             setGameData(msg);
+            setBackendProtocol(msg.protocol ?? 0);
             try { localStorage.setItem("tft_coach_game_data", JSON.stringify(msg)); } catch {}
           } else if (msg.type === "demo_info") {
             setDemoInfo(msg);
@@ -155,6 +160,7 @@ export function useCoachSocket() {
   return {
     gameState,
     gameData,
+    backendProtocol,
     isConnected,
     isDemo,
     demoInfo,
