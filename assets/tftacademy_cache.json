@@ -10158,5 +10158,780 @@
         }
       }
     ]
+  },
+  "items": {
+    "set": 17,
+    "synced_at": "2026-07-17T23:17:33.703776Z",
+    "source_url": "https://tftacademy.com/api/tierlist/items?set=17",
+    "entries": [
+      {
+        "api_name": "TFT_Item_Artifact_AegisOfDawn",
+        "name": "Aegis of Dawn",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_AegisOfDusk",
+        "name": "Aegis of Dusk",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT17_Item_Artifact_AhriArtifact",
+        "name": "Ahri's Aura",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_BlightingJewel",
+        "name": "Blighting Jewel",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_CappaJuice",
+        "name": "Cappa Juice",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_Dawncore",
+        "name": "Dawncore",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT4_Item_OrnnDeathsDefiance",
+        "name": "Death's Defiance",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_EternalPact",
+        "name": "Eternal Pact",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT17_Item_Artifact_EvelynnArtifact",
+        "name": "Evelynn's Instinct",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_Fishbones",
+        "name": "Fishbones",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_NavoriFlickerblades",
+        "name": "Flickerblades",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT7_Item_ShimmerscaleGamblersBlade",
+        "name": "Gambler's Blade",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT4_Item_OrnnTheCollector",
+        "name": "Gold Collector",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_HellfireHatchet",
+        "name": "Hellfire Hatchet",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT9_Item_OrnnHullbreaker",
+        "name": "Hullcrusher",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT4_Item_OrnnInfinityForce",
+        "name": "Infinity Force",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_LichBane",
+        "name": "Lich Bane",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_LightshieldCrest",
+        "name": "Lightshield Crest",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_LudensTempest",
+        "name": "Luden's Tempest",
+        "kind": "artifact",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_Mittens",
+        "name": "Mittens",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT7_Item_ShimmerscaleMogulsMail",
+        "name": "Mogul's Mail",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_ProwlersClaw",
+        "name": "Prowler's Claw",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_RapidFirecannon",
+        "name": "Rapid Firecannon",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_SeekersArmguard",
+        "name": "Seeker's Armguard",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_SilvermereDawn",
+        "name": "Silvermere Dawn",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT9_Item_OrnnHorizonFocus",
+        "name": "Sniper's Focus",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT17_Item_Artifact_SorakaArtifact",
+        "name": "Soraka's Miracle",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_StatikkShiv",
+        "name": "Statikk Shiv",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_TalismanOfAscension",
+        "name": "Talisman Of Ascension",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_TheIndomitable",
+        "name": "The Indomitable",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT17_Item_Artifact_ThreshLantern",
+        "name": "Thresh's Lantern",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_TitanicHydra",
+        "name": "Titanic Hydra",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT17_Item_Artifact_VarusArtifact",
+        "name": "Varus's Obsession",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_VoidGauntlet",
+        "name": "Void Gauntlet",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_Artifact_WitsEnd",
+        "name": "Wit's End",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT17_Item_Artifact_YasuoArtifact",
+        "name": "Yasuo's Bladework",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT4_Item_OrnnZhonyasParadox",
+        "name": "Zhonya's Paradox",
+        "kind": "artifact",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT_Item_AdaptiveHelm",
+        "name": "Adaptive Helm",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_ArchangelsStaff",
+        "name": "Archangel's Staff",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_Bloodthirster",
+        "name": "Bloodthirster",
+        "kind": "craftable",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT_Item_BlueBuff",
+        "name": "Blue Buff",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_BrambleVest",
+        "name": "Bramble Vest",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_Crownguard",
+        "name": "Crownguard",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_Deathblade",
+        "name": "Deathblade",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT_Item_DragonsClaw",
+        "name": "Dragon's Claw",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_GuardianAngel",
+        "name": "Edge of Night",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_SpectralGauntlet",
+        "name": "Evenshroud",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_GargoyleStoneplate",
+        "name": "Gargoyle Stoneplate",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT_Item_MadredsBloodrazor",
+        "name": "Giant Slayer",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT_Item_GuinsoosRageblade",
+        "name": "Guinsoo's Rageblade",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_UnstableConcoction",
+        "name": "Hand Of Justice",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_HextechGunblade",
+        "name": "Hextech Gunblade",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_InfinityEdge",
+        "name": "Infinity Edge",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_IonicSpark",
+        "name": "Ionic Spark",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_JeweledGauntlet",
+        "name": "Jeweled Gauntlet",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_RunaansHurricane",
+        "name": "Kraken's Fury",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_LastWhisper",
+        "name": "Last Whisper",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_Morellonomicon",
+        "name": "Morellonomicon",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_Leviathan",
+        "name": "Nashor's Tooth",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_FrozenHeart",
+        "name": "Protector's Vow",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT_Item_Quicksilver",
+        "name": "Quicksilver",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_RabadonsDeathcap",
+        "name": "Rabadon's Deathcap",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT_Item_RapidFireCannon",
+        "name": "Red Buff",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_SpearOfShojin",
+        "name": "Spear of Shojin",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_Redemption",
+        "name": "Spirit Visage",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_NightHarvester",
+        "name": "Steadfast Heart",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_SteraksGage",
+        "name": "Sterak's Gage",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_PowerGauntlet",
+        "name": "Striker's Flail",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT_Item_RedBuff",
+        "name": "Sunfire Cape",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT_Item_ThiefsGloves",
+        "name": "Thief's Gloves",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT_Item_TitansResolve",
+        "name": "Titan's Resolve",
+        "kind": "craftable",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT_Item_StatikkShiv",
+        "name": "Void Staff",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT_Item_WarmogsArmor",
+        "name": "Warmog's Armor",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT17_Item_AnimaSquadEmblemItem",
+        "name": "Anima Emblem",
+        "kind": "emblem",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT17_Item_FavoredEmblemItem",
+        "name": "Arbiter Emblem",
+        "kind": "emblem",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT17_Item_ResistTankEmblemItem",
+        "name": "Bastion Emblem",
+        "kind": "emblem",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT17_Item_HPTankEmblemItem",
+        "name": "Brawler Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT17_Item_ASTraitEmblemItem",
+        "name": "Challenger Emblem",
+        "kind": "emblem",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT17_Item_DarkStarEmblemItem",
+        "name": "Dark Star Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT17_Item_MeleeTraitEmblemItem",
+        "name": "Marauder Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT17_Item_AstronautEmblemItem",
+        "name": "Meeple Emblem",
+        "kind": "emblem",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT17_Item_DRXEmblemItem",
+        "name": "N.O.V.A. Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT17_Item_PrimordianEmblemItem",
+        "name": "Primordian Emblem",
+        "kind": "emblem",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT17_Item_PsyOpsEmblemItem",
+        "name": "Psionic Emblem",
+        "kind": "emblem",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT17_Item_AssassinTraitEmblemItem",
+        "name": "Rogue Emblem",
+        "kind": "emblem",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT17_Item_SummonTraitEmblemItem",
+        "name": "Shepherd Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT17_Item_RangedTraitEmblemItem",
+        "name": "Sniper Emblem",
+        "kind": "emblem",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT17_Item_SpaceGrooveEmblemItem",
+        "name": "Space Groove Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT17_Item_StargazerEmblemItem",
+        "name": "Stargazer Emblem",
+        "kind": "emblem",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT17_Item_PulsefireEmblemItem",
+        "name": "Timebreaker Emblem",
+        "kind": "emblem",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT17_Item_ShieldTankEmblemItem",
+        "name": "Vanguard Emblem",
+        "kind": "emblem",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT17_Item_FlexTraitEmblemItem",
+        "name": "Voyager Emblem",
+        "kind": "emblem",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT5_Item_AdaptiveHelmRadiant",
+        "name": "Radiant Adaptive Helm",
+        "kind": "radiant",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT5_Item_ArchangelsStaffRadiant",
+        "name": "Radiant Archangel's Staff",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT5_Item_BloodthirsterRadiant",
+        "name": "Radiant Bloodthirster",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT5_Item_BlueBuffRadiant",
+        "name": "Radiant Blue Buff",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT5_Item_BrambleVestRadiant",
+        "name": "Radiant Bramble Vest",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT5_Item_CrownguardRadiant",
+        "name": "Radiant Crownguard",
+        "kind": "radiant",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT5_Item_DeathbladeRadiant",
+        "name": "Radiant Deathblade",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT5_Item_DragonsClawRadiant",
+        "name": "Radiant Dragon's Claw",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT5_Item_GuardianAngelRadiant",
+        "name": "Radiant Edge of Night",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT5_Item_SpectralGauntletRadiant",
+        "name": "Radiant Evenshroud",
+        "kind": "radiant",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT5_Item_GargoyleStoneplateRadiant",
+        "name": "Radiant Gargoyle Stoneplate",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT5_Item_GiantSlayerRadiant",
+        "name": "Radiant Giant Slayer",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT5_Item_GuinsoosRagebladeRadiant",
+        "name": "Radiant Guinsoo's Rageblade",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT5_Item_HandOfJusticeRadiant",
+        "name": "Radiant Hand of Justice",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT5_Item_HextechGunbladeRadiant",
+        "name": "Radiant Hextech Gunblade",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT5_Item_InfinityEdgeRadiant",
+        "name": "Radiant Infinity Edge",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT5_Item_IonicSparkRadiant",
+        "name": "Radiant Ionic Spark",
+        "kind": "radiant",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT5_Item_JeweledGauntletRadiant",
+        "name": "Radiant Jeweled Gauntlet",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT5_Item_RunaansHurricaneRadiant",
+        "name": "Radiant Kraken's Fury",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT5_Item_LastWhisperRadiant",
+        "name": "Radiant Last Whisper",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT5_Item_MorellonomiconRadiant",
+        "name": "Radiant Morellonomicon",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT5_Item_LeviathanRadiant",
+        "name": "Radiant Nashor's Tooth",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT5_Item_FrozenHeartRadiant",
+        "name": "Radiant Protector's Vow",
+        "kind": "radiant",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT5_Item_QuicksilverRadiant",
+        "name": "Radiant Quicksilver",
+        "kind": "radiant",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT5_Item_RabadonsDeathcapRadiant",
+        "name": "Radiant Rabadon's Deathcap",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT5_Item_RapidFirecannonRadiant",
+        "name": "Radiant Red Buff",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT5_Item_SpearOfShojinRadiant",
+        "name": "Radiant Spear of Shojin",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT5_Item_RedemptionRadiant",
+        "name": "Radiant Spirit Visage",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT5_Item_NightHarvesterRadiant",
+        "name": "Radiant Steadfast Heart",
+        "kind": "radiant",
+        "tier": "C"
+      },
+      {
+        "api_name": "TFT5_Item_SteraksGageRadiant",
+        "name": "Radiant Sterak's Gage",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT5_Item_TrapClawRadiant",
+        "name": "Radiant Striker's Flail",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT5_Item_SunfireCapeRadiant",
+        "name": "Radiant Sunfire Cape",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT5_Item_ThiefsGlovesRadiant",
+        "name": "Radiant Thief's Gloves",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "TFT5_Item_TitansResolveRadiant",
+        "name": "Radiant Titan's Resolve",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "TFT5_Item_StatikkShivRadiant",
+        "name": "Radiant Void Staff",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "TFT5_Item_WarmogsArmorRadiant",
+        "name": "Radiant Warmog's Armor",
+        "kind": "radiant",
+        "tier": "S"
+      }
+    ]
   }
 }

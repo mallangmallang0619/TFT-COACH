@@ -567,6 +567,65 @@ def test_context_comp_scoring():
     )
 
 
+def test_items_tierlist():
+    """Items tier-list parsing + apply: freshest list per kind wins, live
+    tiers reach both LIVE_ITEM_TIERS and ITEM_RECIPES, radiants/artifacts
+    resolve, and the shred/burn flag audit holds."""
+    import game_data
+    from tftacademy_live import parse_items_payload, apply_items_to_game_data
+
+    payload = {"items_tierlists": [
+        {"type": "craftables", "updated": "2026-01-01",
+         "tier": {"S": ["TFT_Item_FrozenHeart"], "A": [], "B": [], "C": []}},
+        {"type": "craftables", "updated": "2026-07-01",
+         "tier": {"S": ["TFT_Item_Deathblade"], "B": ["TFT_Item_GuinsoosRageblade"]}},
+        {"type": "ornns", "updated": "2026-07-01",
+         "tier": {"S": ["TFT_Item_Artifact_Dawncore"]}},
+        {"type": "radiants", "updated": "2026-07-01",
+         "tier": {"A": ["TFT5_Item_ThiefsGlovesRadiant"]}},
+        {"type": "emblems", "updated": "2026-07-01", "tier": {"S": []}},
+    ]}
+    names = {
+        "TFT_Item_Deathblade": "Deathblade",
+        "TFT_Item_GuinsoosRageblade": "Guinsoo's Rageblade",
+        "TFT_Item_Artifact_Dawncore": "Dawncore",
+        "TFT5_Item_ThiefsGlovesRadiant": "Rascal's Gloves",
+    }
+    entries = parse_items_payload(payload, names)
+    by_name = {e["name"]: e for e in entries}
+    assert "Deathblade" in by_name and "Frozen Heart" not in " ".join(by_name), \
+        "freshest craftables list should win over the stale one"
+    assert by_name["Dawncore"]["kind"] == "artifact"
+    assert by_name["Rascal's Gloves"]["kind"] == "radiant"
+    assert by_name["Guinsoo's Rageblade"]["tier"] == "B"
+
+    # Apply (snapshot + restore so later tests see pristine data).
+    live_before = dict(game_data.LIVE_ITEM_TIERS)
+    tiers_before = {r["name"]: r["tier"] for r in game_data.ITEM_RECIPES}
+    try:
+        apply_items_to_game_data(entries)
+        assert game_data.find_item_tier("Deathblade") == ("S", "craftable")
+        assert game_data.find_item_tier("Dawncore") == ("S", "artifact")
+        assert game_data.find_item_tier("Rascal's Gloves") == ("A", "radiant")
+        assert game_data.find_item_tier("NotAnItem") == (None, None)
+        guinsoo = next(r for r in game_data.ITEM_RECIPES
+                       if r["name"] == "Guinsoo's Rageblade")
+        assert guinsoo["tier"] == "B", "live tier should reach ITEM_RECIPES"
+    finally:
+        game_data.LIVE_ITEM_TIERS.clear()
+        game_data.LIVE_ITEM_TIERS.update(live_before)
+        for r in game_data.ITEM_RECIPES:
+            r["tier"] = tiers_before[r["name"]]
+
+    # Flag audit: shred = resist reduction, burn = Grievous/DoT — these are
+    # mechanical facts, so lock them (Striker's Flail was wrongly burn).
+    assert game_data.SHRED_ITEMS == {"Evenshroud", "Ionic Spark",
+                                     "Last Whisper", "Void Staff"}, game_data.SHRED_ITEMS
+    assert game_data.BURN_ITEMS == {"Morellonomicon", "Red Buff",
+                                    "Sunfire Cape"}, game_data.BURN_ITEMS
+    return f"{len(entries)} entries: freshest-wins, kinds, apply+restore, flag audit OK"
+
+
 def test_comp_aware_item_advice():
     """Slam advice puts the comp's own build items first and names the
     unit that holds them — not just generic tier ratings."""
@@ -980,6 +1039,80 @@ def test_tempo_tips():
     return "behind-tempo, rolldown, quiet-when-fine OK"
 
 
+def test_stage_aware_augment_pick():
+    """Augment offers are scored with the CURRENT stage's rating bucket,
+    not the overall one — an econ augment is S at 2-1 and C at 4-2."""
+    import game_data
+    from game_state import GameState, GamePhase, DetectedAugment
+    from coach import Coach
+
+    seed = dict(game_data.AUGMENT_RATINGS)
+    try:
+        game_data.AUGMENT_RATINGS.clear()
+        game_data.AUGMENT_RATINGS.update({
+            "Early Bloomer": {"rating": "C", "tip": "t", "slot": "gold",
+                              "stage_ratings": {"All": "C", "2-1": "S", "4-2": "C"}},
+            "Late Bloomer": {"rating": "S", "tip": "t", "slot": "gold",
+                             "stage_ratings": {"All": "S", "2-1": "C", "4-2": "S"}},
+        })
+
+        def pick_at(stage):
+            advice = Coach().analyze(GameState(
+                phase=GamePhase.AUGMENT_SELECT, stage=stage, player_hp=90, gold=10,
+                augment_options=[
+                    DetectedAugment(name="Early Bloomer", tier="?", slot_index=0),
+                    DetectedAugment(name="Late Bloomer", tier="?", slot_index=1),
+                ],
+            ))
+            best = next(r for r in advice.augment_ratings if r["pick"])
+            return best["name"], {r["name"]: r["rating"] for r in advice.augment_ratings}
+
+        name21, ratings21 = pick_at("2-1")
+        assert name21 == "Early Bloomer", (name21, ratings21)
+        assert ratings21["Early Bloomer"] == "S", "displayed rating should be the stage bucket"
+        name42, _ = pick_at("4-2")
+        assert name42 == "Late Bloomer", name42
+    finally:
+        game_data.AUGMENT_RATINGS.clear()
+        game_data.AUGMENT_RATINGS.update(seed)
+    return "2-1 picks the early augment, 4-2 the late one"
+
+
+def test_econ_and_damage_tips():
+    """Interest-breakpoint nudge (which upgrades always beat) and
+    loss-damage forecast."""
+    from game_state import GameState, GamePhase, DetectedChampion
+    from coach import Coach
+
+    tips = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="3-2", player_hp=80, gold=48, level=6,
+    )).tips
+    assert any("hold" in t and "interest breakpoint" in t for t in tips), tips
+
+    tips = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="3-2", player_hp=80, gold=44, level=6,
+    )).tips
+    assert not any("interest breakpoint" in t for t in tips), "6 gold away — quiet"
+
+    # A pair copy in the shop beats the breakpoint: the tip must say BUY,
+    # never advise holding past an upgrade.
+    board = _dark_star_board()
+    bench = [DetectedChampion(name="Poppy"), DetectedChampion(name="Poppy")]
+    tips = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="3-2", player_hp=80, gold=48, level=6,
+        board_champions=board, bench_champions=bench,
+        shop_units=["Poppy", None, None, None, None],
+    )).tips
+    buy_tip = next((t for t in tips if "interest breakpoint" in t), "")
+    assert buy_tip.startswith("Buy Poppy"), f"upgrade should beat interest: {tips}"
+
+    tips = Coach().analyze(GameState(
+        phase=GamePhase.PLANNING, stage="4-3", player_hp=20, gold=10, level=8,
+    )).tips
+    assert any("must-win" in t for t in tips), tips
+    return "hold nudge, quiet-when-far, pair-beats-interest, loss forecast OK"
+
+
 def test_lobby_hp_real_frames():
     """All players' HP read in standings order from real frames (local
     diagnose captures; skipped when absent)."""
@@ -1359,6 +1492,7 @@ def main():
     test("Augments apply + fuzzy lookup", test_augments_apply_and_fuzzy)
     test("Set auto-detection", test_set_autodetect)
     test("Context comp scoring", test_context_comp_scoring)
+    test("Items tier list", test_items_tierlist)
     test("Comp-aware item advice", test_comp_aware_item_advice)
     test("Shop buy calls", test_shop_buy_calls)
     test("Tempo tips", test_tempo_tips)
@@ -1373,6 +1507,8 @@ def main():
     test("HP OCR (real frames)", test_hp_real_frames)
     test("Lobby HP (real frames)", test_lobby_hp_real_frames)
     test("Standings tips", test_standings_tips)
+    test("Stage-aware augment pick", test_stage_aware_augment_pick)
+    test("Econ + damage tips", test_econ_and_damage_tips)
     test("Shop OCR (real frame)", test_shop_ocr_real_frame)
     test("TFT Academy debounce", test_tftacademy_debounce)
 

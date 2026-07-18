@@ -61,7 +61,7 @@ ITEM_RECIPES: list[dict] = [
     {"recipe": ("giants_belt", "negatron_cloak"),    "name": "Evenshroud",         "tier": "B", "type": "utility", "slam": False, "shred": True,  "burn": False},
     {"recipe": ("giants_belt", "recurve_bow"),       "name": "Nashor's Tooth",     "tier": "B", "type": "carry",   "slam": False, "shred": False, "burn": False},
     {"recipe": ("giants_belt", "tear"),              "name": "Spirit Visage",      "tier": "B", "type": "tank", "slam": False, "shred": False, "burn": False},
-    {"recipe": ("giants_belt", "sparring_gloves"),   "name": "Striker's Flail",    "tier": "S", "type": "carry",   "slam": True, "shred": False, "burn": True},
+    {"recipe": ("giants_belt", "sparring_gloves"),   "name": "Striker's Flail",    "tier": "S", "type": "carry",   "slam": True, "shred": False, "burn": False},
 
     # ── Chain Vest ────────────────────────────────────────────────────────────
     {"recipe": ("chain_vest", "chain_vest"),         "name": "Bramble Vest",       "tier": "A", "type": "tank",    "slam": True, "shred": False, "burn": False},
@@ -98,6 +98,38 @@ ITEM_RECIPES: list[dict] = [
 # Quick lookup sets — derived automatically from ITEM_RECIPES for easy reference in logic later
 SHRED_ITEMS: set[str] = {r["name"] for r in ITEM_RECIPES if r.get("shred")}
 BURN_ITEMS:  set[str] = {r["name"] for r in ITEM_RECIPES if r.get("burn")}
+
+
+# Live item tiers from TFT Academy (tftacademy_live.apply_items_to_game_data
+# fills this in place). Covers the craftables above PLUS radiant items,
+# artifacts ("ornn" items), and emblems — none of which have a component
+# recipe, so they only exist here. {normalized name: {"name","tier","kind"}}
+LIVE_ITEM_TIERS: dict[str, dict] = {}
+
+
+def norm_item_key(name: str) -> str:
+    """Item names differ in punctuation/case across sources — compare
+    alphanumerics only."""
+    return "".join(c for c in name.lower() if c.isalnum())
+
+
+_RECIPE_BY_KEY = {norm_item_key(r["name"]): r for r in ITEM_RECIPES}
+
+
+def find_item_tier(name: str) -> tuple[str | None, str | None]:
+    """
+    (tier, kind) for ANY item — craftable, radiant, artifact, or emblem.
+    Live TFT Academy tiers win; the static recipe table is the fallback
+    for craftables. (None, None) for unknown names.
+    """
+    key = norm_item_key(name)
+    live = LIVE_ITEM_TIERS.get(key)
+    if live:
+        return live["tier"], live["kind"]
+    static = _RECIPE_BY_KEY.get(key)
+    if static:
+        return static["tier"], "craftable"
+    return None, None
 
 
 # ── Champion Data  (Set 17: Space Gods) ───────────────────────────────────────

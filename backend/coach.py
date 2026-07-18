@@ -31,9 +31,16 @@ from game_data import (
     SHRED_ITEMS,
     BURN_ITEMS,
     find_augment_rating,
+    find_item_tier,
     _normalize_augment_name as _norm_augment,
 )
 from synergy import compute_active_synergies, detect_comp_direction
+
+# Item-name lists for tip texts — derived from the flag sets so they can
+# never drift from the data (they used to hand-name items that no longer
+# exist, like Frozen Heart and Statikk Shiv).
+_SHRED_NAMES = ", ".join(sorted(SHRED_ITEMS))
+_BURN_NAMES = ", ".join(sorted(BURN_ITEMS))
 
 
 def _norm_item_name(name: str) -> str:
@@ -146,9 +153,10 @@ class Coach:
             # Each completed item on this champion multiplies their effectiveness
             item_mult = 1.0
             for item_name in champ.items:
-                item_data = _ITEM_BY_NAME.get(item_name)
-                tier = item_data["tier"] if item_data else "B"
-                item_power += _ITEM_TIER_POWER.get(tier, 20)
+                # find_item_tier also rates radiant items, artifacts, and
+                # emblems (live TFT Academy tiers) — not just craftables.
+                tier, _kind = find_item_tier(item_name)
+                item_power += _ITEM_TIER_POWER.get(tier or "B", 20)
                 item_mult += 0.3
 
             champion_power += base * item_mult
@@ -210,8 +218,8 @@ class Coach:
             advice.slam_urgency_level = "high"
             advice.slam_urgency_message = (
                 "Slam NOW. Every round without completed items is lost HP. "
-                "Slam shred (Ionic Spark, Last Whisper) and burn (Morellonomicon, "
-                "Sunfire Cape, Redemption) first — they win fights regardless of comp."
+                f"Slam shred ({_SHRED_NAMES}) and burn ({_BURN_NAMES}) "
+                "first — they win fights regardless of comp."
             )
         else:
             advice.slam_urgency_level = "critical"
@@ -656,6 +664,14 @@ class Coach:
             if rating_data:
                 rating = rating_data["rating"]
                 tip = rating_data["tip"]
+                # TFT Academy rates augments per PICK STAGE (an econ augment
+                # can be S at 2-1 and C at 4-2) — score with the current
+                # stage's bucket when it exists, not the overall rating.
+                stage_rating = (rating_data.get("stage_ratings") or {}).get(
+                    self._augment_stage_bucket(state.stage)
+                )
+                if stage_rating:
+                    rating = stage_rating
                 score = self._AUGMENT_RATING_SCORE.get(rating, 1.5)
             else:
                 rating = "?"
@@ -700,6 +716,12 @@ class Coach:
         why = f" — {best['reasons'][0].lower()}" if best["reasons"] else ""
         advice.tips.append(f"Augment pick: {best['name']}{why}")
 
+    @staticmethod
+    def _augment_stage_bucket(stage: str) -> str:
+        """Map the current stage to TFT Academy's pick-stage buckets."""
+        first = (stage or "").split("-")[0]
+        return {"1": "2-1", "2": "2-1", "3": "3-2"}.get(first, "4-2")
+
     # ── General Tips ──────────────────────────────────────────────────────────
 
     # Standard level-tempo curve: the level you want to be AT by each
@@ -737,6 +759,41 @@ class Coach:
                 f"{state.player_hp} HP with {state.gold} gold and no committed "
                 "comp — roll this round for 2-star upgrades. Interest means "
                 "nothing if you're eliminated."
+            )
+
+        # Interest breakpoint — a couple of gold short of the next 10 is
+        # the one moment holding actually pays. BUT board upgrades beat
+        # interest: a pair copy or comp unit in the shop is a permanent
+        # strength gain, interest is one gold a round — never talk the
+        # player out of buying one to preserve a breakpoint.
+        if 17 <= state.gold < 50 and state.player_hp > 30:
+            to_next = (10 - state.gold % 10) % 10
+            if 1 <= to_next <= 3:
+                next_bp = state.gold + to_next
+                if advice.shop_actions:
+                    top = advice.shop_actions[0]
+                    advice.tips.append(
+                        f"Buy {top['name']} even though you're {to_next} gold "
+                        f"from the {next_bp} interest breakpoint — upgrades "
+                        "make your board permanently stronger; interest is "
+                        "1 gold a round."
+                    )
+                else:
+                    advice.tips.append(
+                        f"{to_next} gold from the {next_bp} interest breakpoint "
+                        "and nothing worth buying — hold; that's +1 gold every "
+                        "round."
+                    )
+
+        # Loss-damage forecast — how many losses the player can actually
+        # afford at this stage's damage. Rough per-loss cost by stage.
+        loss_cost = {2: 6, 3: 9, 4: 13, 5: 17, 6: 21}.get(stage_num)
+        if loss_cost and 0 < state.player_hp <= loss_cost * 2:
+            losses_left = max(1, state.player_hp // loss_cost)
+            advice.tips.append(
+                f"Stage-{stage_num} losses cost ~{loss_cost} HP — you can "
+                f"survive about {losses_left} more. Every fight is "
+                "must-win territory; field your strongest board."
             )
 
         # Lobby standings context — who's alive, who's dying, where we sit.
@@ -813,9 +870,8 @@ class Coach:
         if len(state.component_ids) >= 6:
             advice.tips.append(
                 f"Holding {len(state.component_ids)} components — too many! "
-                "Slam immediately. Prioritize shred (Ionic Spark, Last Whisper, "
-                "Frozen Heart) and burn (Morellonomicon, Sunfire Cape, Redemption) "
-                "on synergy-active champions first."
+                f"Slam immediately. Prioritize shred ({_SHRED_NAMES}) and "
+                f"burn ({_BURN_NAMES}) on synergy-active champions first."
             )
 
         # Shred / burn gap detection
@@ -832,16 +888,15 @@ class Coach:
 
         if not has_shred:
             advice.tips.append(
-                "No shred items on your board (Ionic Spark, Last Whisper, "
-                "Frozen Heart, Giant Slayer, Statikk Shiv). "
+                f"No shred items on your board ({_SHRED_NAMES}). "
                 "Shred cuts enemy Armor/MR and dramatically increases your "
                 "whole board's effective damage — build one when possible."
             )
 
         if not has_burn:
             advice.tips.append(
-                "No burn items on your board (Morellonomicon, Sunfire Cape, "
-                "Redemption). Burn applies Grievous Wounds and counters "
-                "healing champions and shields — essential in most lobbies. "
+                f"No burn items on your board ({_BURN_NAMES}). "
+                "Burn applies Grievous Wounds and counters healing champions "
+                "and shields — essential in most lobbies. "
                 "Morellonomicon (Rod + Belt) on a mage carry is particularly effective."
             )
