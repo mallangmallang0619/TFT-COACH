@@ -49,10 +49,23 @@ _CHANGE_FLOOR = 9.0             # minimum mean-abs-diff to count as a change
 _CHANGE_OUTLIER_FACTOR = 2.5    # ...and it must stand out vs the other slots
 
 # Continuous tracking of confirmed slots: save every Nth frame while the
-# slot's thumbnail stays within _CHANGE_FLOOR of the last saved one
+# slot's thumbnail stays within _TRACK_CHANGE_LIMIT of the last saved one
 # (idle animation drifts a little; moves/sells/combines jump far past it).
-_TRACK_SAVE_INTERVAL = 3        # ≈ every 2s at the live frame cadence
+_TRACK_SAVE_INTERVAL = 1        # every processed frame while stable
 _TRACK_MAX_SAVES = 12           # crops per purchase, landing crop included
+_TRACK_CHANGE_LIMIT = 18.0      # tolerate idle poses and brief spell glows
+
+
+def training_stats(out_dir: Path = TRAINING_DIR) -> tuple[int, int, int]:
+    """Return ``(total crops, champion folders, classes ready at 20+)``."""
+    if not out_dir.exists():
+        return 0, 0, 0
+    counts = [
+        len(list(folder.glob("*.png")))
+        for folder in out_dir.iterdir()
+        if folder.is_dir()
+    ]
+    return sum(counts), len(counts), sum(count >= 20 for count in counts)
 
 
 class BenchHarvester:
@@ -63,11 +76,13 @@ class BenchHarvester:
         out_dir: Path = TRAINING_DIR,
         track_interval: int = _TRACK_SAVE_INTERVAL,
         track_max_saves: int = _TRACK_MAX_SAVES,
+        track_change_limit: float = _TRACK_CHANGE_LIMIT,
     ):
         self.out_dir = out_dir
         self.rois = GameROIs()
         self.track_interval = track_interval
         self.track_max_saves = track_max_saves
+        self.track_change_limit = track_change_limit
         # Thumbnails of each slot from the last two frames — purchases are
         # confirmed one frame after the unit lands, so "just changed" must
         # look two frames back.
@@ -116,10 +131,12 @@ class BenchHarvester:
                             self._tracked[slot] = [name, thumbs[slot], 0, 1]
                             just_confirmed.add(slot)
             else:
-                logger.debug(
+                logger.info(
                     f"Skipping harvest: {len(purchases)} purchases vs "
                     f"{len(newly)} changed bench slots (ambiguous pairing)"
                 )
+        elif purchases:
+            logger.info("Skipping harvest: purchase arrived before a bench baseline existed")
 
         saved += self._harvest_tracked(crops, thumbs, just_confirmed)
 
@@ -144,8 +161,8 @@ class BenchHarvester:
         Save extra crops of slots whose occupant was confirmed by a
         purchase, for as long as the slot looks like the same unit. The
         reference thumbnail advances on each save so slow idle-animation
-        drift is tolerated, while any abrupt change (move, sell, combine,
-        star-up flash) exceeds _CHANGE_FLOOR and stops the tracking.
+        drift is tolerated, while any abrupt change (move, sell, combine)
+        exceeds the tracking limit and stops the tracking.
         """
         saved = 0
         for slot in list(self._tracked):
@@ -156,7 +173,7 @@ class BenchHarvester:
                 del self._tracked[slot]
                 continue
             drift = float(np.mean(cv2.absdiff(thumbs[slot], ref)))
-            if drift >= _CHANGE_FLOOR:
+            if drift >= self.track_change_limit:
                 logger.debug(f"Slot {slot} changed (drift {drift:.0f}) — stop tracking {label}")
                 del self._tracked[slot]
                 continue

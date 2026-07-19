@@ -1189,16 +1189,14 @@ def test_lobby_hp_real_frames():
         return "tesseract unavailable — skipped"
 
     debug_dir = Path(__file__).parent / "_debug"
-    # Third frame's top row is the scouted player, whose HP pill shifts
-    # right out of the digit zone — its read is dropped by the
-    # monotonicity cleanup, so the expected list is one short.
+    # Unreadable rows remain explicit -1 slots so the frontend always
+    # renders all eight players without calling them eliminated.
     cases = [
         ("diagnose_20260713_151422.png", [44, 30, 17, 16, 12, 0, 0, 0]),
         ("diagnose_20260711_023339.png", [62, 60, 39, 20, 5, 4, 0, 0]),
-        ("diagnose_20260713_145641.png", [94, 88, 87, 86, 71, 69, 62]),
-        # One of the two tied 97s reads noisy and is dropped by the
-        # monotonicity cleanup — 7 of 8 rows, all values correct.
-        ("diagnose_20260718_015501.png", [100, 100, 100, 100, 97, 95, 95]),
+        ("diagnose_20260713_145641.png", [94, 88, 87, 86, 71, 69, 62, -1]),
+        # One tied 97 is unreadable and remains an explicit unknown slot.
+        ("diagnose_20260718_015501.png", [100, 100, 100, 100, 97, 95, 95, -1]),
     ]
     t = TemplateStore(); t.load()
     checked = 0
@@ -1210,6 +1208,19 @@ def test_lobby_hp_real_frames():
         got = d._read_lobby_hp(cv2.imread(str(path)))
         assert got == truth, f"{name}: lobby {got} != {truth}"
         checked += 1
+    anchored_cases = [
+        ("diagnose_20260718_205941.png", 28, [69, 41, 28, -1, -1, -1, -1, -1]),
+        ("diagnose_20260718_210036.png", 28, [69, 43, 28, -1, -1, -1, -1, -1]),
+        ("diagnose_20260718_210237.png", 10, [69, 34, 10, 0, 0, 0, 0, 0]),
+    ]
+    for name, own_hp, truth in anchored_cases:
+        path = debug_dir / name
+        if not path.exists():
+            continue
+        d = Detector(t)
+        d._last_hp = own_hp
+        got = d._read_lobby_hp(cv2.imread(str(path)))
+        assert got == truth, f"{name}: anchored lobby {got} != {truth}"
     if not checked:
         return "no diagnose frames present — skipped"
     return f"{checked} frames read in standings order"
@@ -1286,6 +1297,9 @@ def test_hp_real_frames():
         ("diagnose_20260713_151422.png", 17),   # hollow glyphs + spell glow
         ("diagnose_20260711_023339.png", 5),    # big single digit, near-death
         ("diagnose_20260718_015501.png", 97),   # leading digit over gold frame art
+        ("diagnose_20260718_205941.png", 28),
+        ("diagnose_20260718_210036.png", 28),
+        ("diagnose_20260718_210237.png", 10),
     ]:
         if (debug_dir / name).exists():
             cases.append((debug_dir / name, truth))
@@ -1304,6 +1318,8 @@ def test_hp_real_frames():
 
 def test_shop_ocr_real_frame():
     """Shop card names read correctly from the real fixture screenshot."""
+    from game_data import find_champion_name
+    assert find_champion_name("Nunu & Willump") == "Nunu"
     import cv2
     from pathlib import Path
     fixture = Path(__file__).parent / "fixtures" / "tft_screenshot.png"

@@ -223,7 +223,7 @@ class GameROIs:
 
     # Level indicator — bottom-left "Lvl. N" panel (digit-whitelisted OCR).
     level: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.148, 0.820, 0.060, 0.034)
+        default_factory=lambda: RegionOfInterest(0.169, 0.820, 0.020, 0.034)
     )
 
     # Item bench — the component inventory: a slot column on the far LEFT
@@ -257,7 +257,7 @@ class GameROIs:
 
     # Shop area — the champion shop at the bottom
     shop: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.295, 0.92, 0.41, 0.075)
+        default_factory=lambda: RegionOfInterest(0.249, 0.855, 0.528, 0.143)
     )
 
 
@@ -317,12 +317,12 @@ class HexPosition:
 # in PERSPECTIVE: far rows sit higher with tighter spacing, so the 4x7
 # grid is a trapezoid — a uniform brick layout can't match it. Values are
 # ratios of the board ROI; odd rows shift +half a pitch (stagger).
-_HEX_ROW_CY = (0.141, 0.373, 0.614, 0.864)          # hex-center y per row
+_HEX_ROW_CY = (0.132, 0.365, 0.608, 0.859)          # hex-center y per row
 _HEX_ROW_PITCH = (0.1328, 0.1352, 0.1375, 0.1406)   # column spacing per row
-_HEX_CENTER_CX = 0.459                              # column 3, all rows
+_HEX_CENTER_CX = 0.462                              # column 3, all rows
 
 
-def generate_hex_grid(radius: float = 0.044) -> list[HexPosition]:
+def generate_hex_grid(radius: float = 0.041) -> list[HexPosition]:
     """The 28 hex positions (4 rows × 7 cols) of our board half, as a
     perspective trapezoid — see the calibration tables above."""
     hexes = []

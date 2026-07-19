@@ -226,7 +226,7 @@ function StatBox({ label, value, color }) {
 // Lobby standings strip: every player's HP in standings order (from the
 // backend's player-list read), our own chip highlighted, dead players dimmed.
 function StandingsStrip({ lobbyHp, ourHp }) {
-  if (!lobbyHp || lobbyHp.length < 3) return null;
+  if (!lobbyHp || lobbyHp.length === 0) return null;
   const alive = lobbyHp.filter((h) => h > 0);
   const rank = 1 + alive.filter((h) => h > ourHp).length;
   // Highlight the first chip matching our HP (ties are rare and harmless).
@@ -241,22 +241,22 @@ function StandingsStrip({ lobbyHp, ourHp }) {
       <span style={{ fontSize: "9px", color: "#8b8fa3", letterSpacing: "1px", marginRight: "4px" }}>
         LOBBY&nbsp;
         <span style={{ color: "#c8cad0", fontWeight: 700 }}>#{rank}</span>
-        <span style={{ color: "#5a5d6b" }}>/{alive.length}</span>
+        <span style={{ color: "#5a5d6b" }}>/8</span>
       </span>
       {lobbyHp.map((h, i) => (
         <span
           key={i}
-          title={i === ourIdx ? `You — ${h} HP` : h > 0 ? `${h} HP` : "Eliminated"}
+          title={i === ourIdx ? `You — ${h} HP` : h < 0 ? "Unreadable" : h > 0 ? `${h} HP` : "Eliminated"}
           style={{
             fontSize: "10px", fontWeight: 700, padding: "2px 6px",
             borderRadius: "4px", minWidth: "24px", textAlign: "center",
-            color: h > 0 ? hpColor(h) : "#4a4d5a",
+            color: h > 0 ? hpColor(h) : h < 0 ? "#777b8c" : "#4a4d5a",
             background: i === ourIdx ? `${ACCENT}18` : "rgba(255,255,255,0.03)",
             border: `1px solid ${i === ourIdx ? ACCENT : "transparent"}`,
-            opacity: h > 0 ? 1 : 0.55,
+            opacity: h > 0 ? 1 : h < 0 ? 0.75 : 0.55,
           }}
         >
-          {h > 0 ? h : "💀"}
+          {h > 0 ? h : h < 0 ? "?" : "💀"}
         </span>
       ))}
     </div>

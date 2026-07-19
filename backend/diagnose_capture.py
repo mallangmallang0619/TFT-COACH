@@ -33,7 +33,7 @@ import cv2
 import numpy as np
 
 from capture import ScreenCapture, WindowFinder
-from config import BOARD_HEX_GRID, GameROIs, TraitPanel
+from config import BOARD_HEX_GRID, GameROIs, ShopGeometry, TraitPanel
 from detector import Detector, TemplateStore
 
 logger = logging.getLogger("diagnose")
@@ -103,10 +103,36 @@ def annotate(frame: np.ndarray) -> np.ndarray:
 
     rois = GameROIs()
     for name, color in ROI_COLORS.items():
+        if name == "player_hp":
+            continue
         x, y, rw, rh = getattr(rois, name).to_pixels(w, h)
         cv2.rectangle(out, (x, y), (x + rw, y + rh), color, thickness)
         cv2.putText(out, name, (x, max(15, y - 6)),
                     cv2.FONT_HERSHEY_SIMPLEX, font_scale, color, thickness)
+
+    # HP uses the full moving standings list, not the legacy fixed-row ROI.
+    x0r, y0r, x1r, y1r = Detector._PLAYER_HP_SCAN
+    x0, y0, x1, y1 = int(x0r * w), int(y0r * h), int(x1r * w), int(y1r * h)
+    cv2.rectangle(out, (x0, y0), (x1, y1), ROI_COLORS["player_hp"], thickness)
+    cv2.putText(out, "player_hp_scan", (x0, max(15, y0 - 6)),
+                cv2.FONT_HERSHEY_SIMPLEX, font_scale, ROI_COLORS["player_hp"], thickness)
+    # Show the five exact shop cards/name bands used by batched OCR.
+    shop = ShopGeometry()
+    for slot in range(5):
+        sx0 = int((shop.cards_x0 + slot * shop.card_pitch) * w)
+        sx1 = int((shop.cards_x0 + (slot + 1) * shop.card_pitch) * w)
+        cv2.rectangle(out, (sx0, int(0.855 * h)), (sx1, int(shop.name_y1 * h)),
+                      ROI_COLORS["shop"], 1)
+        cv2.rectangle(out, (sx0, int(shop.name_y0 * h)), (sx1, int(shop.name_y1 * h)),
+                      (255, 255, 255), 1)
+
+    # The harvester compares nine individual crops inside the broad bench ROI.
+    nx, ny, nw, nh = rois.champion_bench.to_pixels(w, h)
+    slot_w = nw // 9
+    for slot in range(9):
+        sx = nx + slot * slot_w
+        cv2.rectangle(out, (sx, ny), (sx + slot_w, ny + nh),
+                      ROI_COLORS["champion_bench"], 1)
 
     # Board hex centers (within the board ROI)
     bx, by, bw, bh = rois.board.to_pixels(w, h)
@@ -161,6 +187,8 @@ def dump_hex_crops(frame: np.ndarray, out_dir: Path) -> int:
 
 
 def main() -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--file", help="Annotate a saved screenshot instead of capturing")
     ap.add_argument("--fullscreen", action="store_true",
@@ -190,6 +218,7 @@ def main() -> int:
     print(f"  phase:      {state.phase.value} (conf {state.phase_confidence:.2f})")
     print(f"  stage:      {state.stage!r} (conf {state.stage_confidence:.2f})")
     print(f"  player_hp:  {state.player_hp}")
+    print(f"  lobby_hp:   {state.lobby_hp}")
     print(f"  gold:       {state.gold}")
     print(f"  level:      {state.level}")
     print(f"  components: {state.component_ids}")
@@ -198,6 +227,7 @@ def main() -> int:
     print(f"  bench:      {[c.name for c in state.bench_champions]}")
     print(f"  synergies:  {[(s.name, s.count) for s in state.active_synergies]}")
     print(f"  detect ms:  {state.detection_ms:.0f}")
+    print(f"  classifier: {'active' if detector.unit_classifier.available else 'inactive (no model)'}")
 
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     DEBUG_DIR.mkdir(parents=True, exist_ok=True)

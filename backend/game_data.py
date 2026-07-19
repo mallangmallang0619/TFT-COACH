@@ -747,6 +747,10 @@ def find_augment_rating(name: str) -> tuple[str | None, dict | None]:
 # the champion roster with the same exact → normalized → fuzzy ladder.
 
 _champion_norm_index: dict[str, str] = {}
+_CHAMPION_OCR_ALIASES = {
+    "nunuandwillump": "Nunu",
+    "nunuwillump": "Nunu",
+}
 
 
 def _champion_index() -> dict[str, str]:
@@ -768,6 +772,9 @@ def find_champion_name(text: str) -> str | None:
     norm = _normalize_augment_name(text)
     if len(norm) < 3:
         return None
+    alias = _CHAMPION_OCR_ALIASES.get(norm)
+    if alias:
+        return alias
     index = _champion_index()
     key = index.get(norm)
     if key:
