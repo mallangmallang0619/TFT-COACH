@@ -119,6 +119,36 @@ def normalize(name: str) -> str:
     return _NON_ALNUM.sub("", name.lower())
 
 
+def select_cdragon_item(
+    entries: list[dict],
+    *,
+    current_set: str,
+    is_craftable: bool,
+) -> Optional[dict]:
+    """Choose the live icon when CDragon repeats an old item display name."""
+    if not entries:
+        return None
+
+    def score(entry: dict) -> int:
+        api_name = (entry.get("apiName") or "").lower()
+        icon = (entry.get("icon") or "").lower()
+        value = 0
+        if api_name.startswith(f"tft{current_set}_") or f"/set{current_set}/" in icon:
+            value += 100
+        if is_craftable and len(entry.get("composition") or []) == 2:
+            value += 60
+        if api_name.startswith("tft_item_"):
+            value += 20
+        for stale in ("corrupted", "tutorial", "encounter", "academycopy", "assist", "free"):
+            if stale in api_name:
+                value -= 50
+        if api_name.endswith("_hr") or api_name.endswith("_revival"):
+            value -= 15
+        return value
+
+    return max(entries, key=score)
+
+
 # ── Index builders ────────────────────────────────────────────────────────────
 
 def build_item_index(version: str) -> dict[str, dict]:
@@ -391,7 +421,12 @@ def fetch_items(
         logger.debug(f"tier cache unavailable ({e}); fetching craftables only")
 
     items = cdragon.get("items", [])
-    by_norm = {normalize(it["name"]): it for it in items if it.get("name")}
+    by_norm: dict[str, list[dict]] = {}
+    for item in items:
+        if item.get("name"):
+            by_norm.setdefault(normalize(item["name"]), []).append(item)
+    current_set = detect_current_set(cdragon)
+    craftable_names = {normalize(recipe["name"]) for recipe in ITEM_RECIPES}
 
     wanted = list(dict.fromkeys(
         [r["name"] for r in ITEM_RECIPES]
@@ -409,7 +444,12 @@ def fetch_items(
             logger.info(f"  ✓ {safe}.png (exists, skipping)")
             ok += 1
             continue
-        entry = by_norm.get(normalize(name))
+        normalized = normalize(name)
+        entry = select_cdragon_item(
+            by_norm.get(normalized, []),
+            current_set=current_set,
+            is_craftable=normalized in craftable_names,
+        )
         icon = entry.get("icon") if entry else None
         if not icon:
             logger.warning(f"  ✗ {name}: no item icon in CDragon items")

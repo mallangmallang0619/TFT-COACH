@@ -125,6 +125,22 @@ def _eight_player_lobby(vals: list[int]) -> list[int]:
     return values + [fill] * (8 - len(values))
 
 
+def _merge_lobby_reads(masked: list[int], raw: list[int], own_hp: Optional[int]) -> list[int]:
+    """Merge complementary standings OCR passes without preserving high junk."""
+    if own_hp is None or own_hp not in raw:
+        return masked
+
+    if own_hp not in masked:
+        # The mask missed our row, so its values above our HP are the same
+        # portrait/frame artifacts that caused the false 98 late-game read.
+        masked = [value for value in masked if value <= own_hp]
+
+    merged: list[int] = []
+    for value in sorted(set(masked + raw), reverse=True):
+        merged.extend([value] * max(masked.count(value), raw.count(value)))
+    return merged[:8]
+
+
 def _circular_mask(size: int) -> np.ndarray:
     """A filled white circle on black, cached per size — masks out hex corners."""
     mask = _MASK_CACHE.get(size)
@@ -269,7 +285,7 @@ class Detector:
 
         # Lobby HP standings — refreshed every N frames (they only change
         # after combats) and served from cache in between.
-        self._lobby_cache: list[int] = []
+        self._lobby_cache: list[int] = [-1] * 8
         self._lobby_age = 10**6
 
         # Held completed-item scan cache (change-gated — see
@@ -308,6 +324,8 @@ class Detector:
 
         if state.phase == GamePhase.NOT_IN_GAME:
             self._last_hp = None   # new game → drop the HP anchor
+            self._lobby_cache = [-1] * 8
+            self._lobby_age = 10**6
             state.detection_ms = (time.time() - t_start) * 1000
             return state
 
@@ -322,7 +340,11 @@ class Detector:
         if self._lobby_age >= 15:
             lobby = self._read_lobby_hp(frame)
             if lobby and any(value >= 0 for value in lobby):
-                self._lobby_cache, self._lobby_age = lobby, 0
+                known = sum(value >= 0 for value in lobby)
+                cached_known = sum(value >= 0 for value in self._lobby_cache)
+                if cached_known == 0 or known >= max(4, cached_known - 2):
+                    self._lobby_cache = lobby
+                self._lobby_age = 0
         state.lobby_hp = self._lobby_cache
         state.gold = self._ocr_number(frame, self.rois.gold, "Gold")
         state.level = self._ocr_number(frame, self.rois.level, "Level")
@@ -666,7 +688,18 @@ class Detector:
 
         if not candidates:
             return None
-        candidates.sort(reverse=True)
+        multi_digit = [candidate for candidate in candidates if candidate[0][0] >= 2]
+        if multi_digit:
+            candidates = multi_digit
+        if len(candidates) > 1:
+            if self._last_hp is not None:
+                exact = [value for _, value in candidates if value == self._last_hp]
+                if exact:
+                    return exact[0]
+            # Multiple large words means a regular standings row also OCR'd
+            # large. The white-stroke geometric fallback identifies which
+            # pill is actually enlarged instead of guessing by digit count.
+            return None
         best_key, best_value = candidates[0]
         if best_key[0] >= 2:
             return best_value
@@ -875,12 +908,7 @@ class Detector:
                 values.append(value)
         values = _longest_nonincreasing(values)
         raw_values = self._read_lobby_hp_raw(frame)
-        if (
-            self._last_hp is not None
-            and self._last_hp in raw_values
-            and self._last_hp not in values
-        ):
-            values = raw_values
+        values = _merge_lobby_reads(values, raw_values, self._last_hp)
         return _eight_player_lobby(values)
 
     def _read_lobby_hp_raw(self, frame: np.ndarray) -> list[int]:
@@ -917,7 +945,7 @@ class Detector:
             value = int(text)
             if not (1 <= value <= 100 and 18 <= height <= 100):
                 continue
-            if left >= strip_w * 0.85 or not (0.30 <= aspect <= 2.20):
+            if left >= strip_w * 0.85 or not (0.30 <= aspect <= 4.50):
                 continue
             rows.append((top, value))
         return _longest_nonincreasing([value for _, value in sorted(rows)])

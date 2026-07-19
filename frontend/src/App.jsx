@@ -140,7 +140,7 @@ const ACCENT2 = "#7c5cfc";
 // Backend payload schema version this overlay is built for. Must match
 // backend config.PROTOCOL_VERSION — a red header badge appears when the
 // running backend disagrees (stale process or unmerged code).
-const BACKEND_PROTOCOL_EXPECTED = 2;
+const BACKEND_PROTOCOL_EXPECTED = 3;
 
 // TFT cost-tier colors used to outline unit chips and cells
 const COST_COLORS = {
@@ -1979,6 +1979,14 @@ export default function App() {
             fontSize: "9px", color: "#2a2d35", fontFamily: "var(--mono)",
           }}>
             <span>v0.1</span>
+            {gameData?.classifier_status && (
+              <span title={gameData.classifier_status.active
+                ? "Unit classifier model is active"
+                : "No model is installed yet; collecting labeled bench crops for later training"}>
+                ML {gameData.classifier_status.active ? "ON" : "COLLECTING"}
+                {` · ${gameData.classifier_status.crops} crops · ${gameData.classifier_status.ready_classes} ready`}
+              </span>
+            )}
             {serverStats && (
               <span>
                 {serverStats.avg_detection_ms?.toFixed(0)}ms · f{serverStats.frames_processed}

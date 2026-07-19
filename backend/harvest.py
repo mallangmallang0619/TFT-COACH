@@ -54,6 +54,8 @@ _CHANGE_OUTLIER_FACTOR = 2.5    # ...and it must stand out vs the other slots
 _TRACK_SAVE_INTERVAL = 1        # every processed frame while stable
 _TRACK_MAX_SAVES = 12           # crops per purchase, landing crop included
 _TRACK_CHANGE_LIMIT = 18.0      # tolerate idle poses and brief spell glows
+_CROP_MIN_STD = 20.0
+_CROP_MIN_LAPLACIAN = 700.0
 
 
 def training_stats(out_dir: Path = TRAINING_DIR) -> tuple[int, int, int]:
@@ -123,6 +125,11 @@ class BenchHarvester:
             # name — skip those frames; more games bring more clean ones.
             if len(newly) == len(purchases):
                 for name, slot in zip(purchases, newly):
+                    if not self._became_occupied(thumbs[slot], baseline[slot]):
+                        logger.info(
+                            f"Skipping harvest: slot {slot} changed but did not become occupied"
+                        )
+                        continue
                     if self._save(crops[slot], name, slot):
                         saved += 1
                         # Keep harvesting this slot while the unit stands
@@ -206,8 +213,40 @@ class BenchHarvester:
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
         return cv2.resize(gray, _THUMB_SIZE, interpolation=cv2.INTER_AREA)
 
+    @staticmethod
+    def _crop_metrics(thumb: np.ndarray) -> tuple[float, float]:
+        return (
+            float(np.std(thumb)),
+            float(cv2.Laplacian(thumb, cv2.CV_64F).var()),
+        )
+
+    @classmethod
+    def _is_viable_crop(cls, thumb: Optional[np.ndarray]) -> bool:
+        if thumb is None:
+            return False
+        std, laplacian = cls._crop_metrics(thumb)
+        return std >= _CROP_MIN_STD or laplacian >= _CROP_MIN_LAPLACIAN
+
+    @classmethod
+    def _became_occupied(
+        cls,
+        current: Optional[np.ndarray],
+        baseline: Optional[np.ndarray],
+    ) -> bool:
+        if not cls._is_viable_crop(current) or baseline is None:
+            return False
+        current_std, current_laplacian = cls._crop_metrics(current)
+        baseline_std, baseline_laplacian = cls._crop_metrics(baseline)
+        return (
+            current_std >= baseline_std + 2.0
+            or current_laplacian >= baseline_laplacian * 1.15
+        )
+
     def _save(self, crop: np.ndarray, name: str, slot: int) -> bool:
         if crop.size == 0:
+            return False
+        if not self._is_viable_crop(self._thumb(crop)):
+            logger.info(f"Skipping low-detail training crop: {name} (bench slot {slot})")
             return False
         safe = name.replace("'", "").replace(" ", "_").replace(".", "")
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
