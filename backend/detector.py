@@ -638,24 +638,84 @@ class Detector:
             x_ext = int(gray2x.shape[1] * 0.80)
             band = gray2x[max(0, ys - pad):ye + pad, x0:x_ext]
             cols = np.where(mask[ys:ye + 1].sum(axis=0) > 0)[0]
+            b0, b1 = 0, band.shape[1]
             if cols.size:
+                b0 = max(0, cols[0] - pad)
                 b1 = (band.shape[1] if cols[-1] >= (x1 - x0) - 4
                       else min(band.shape[1], cols[-1] + 1 + pad))
-                band = band[:, max(0, cols[0] - pad):b1]
-            _, local = cv2.threshold(band, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            if np.mean(local) > 128:
-                local = cv2.bitwise_not(local)
-            for psm in (8, 7):
-                try:
-                    txt = pytesseract.image_to_string(
-                        local,
-                        config=f"--psm {psm} --oem 3 -c tessedit_char_whitelist=0123456789",
-                    ).strip()
-                except Exception:
-                    return None
-                if txt.isdigit() and 1 <= int(txt) <= 100:
-                    return int(txt), height
+            value = Detector._read_hp_band(band, b0, b1, height)
+            if value is not None and value >= 1:
+                return value, height
         return None
+
+    @staticmethod
+    def _read_hp_digits(band: np.ndarray) -> Optional[int]:
+        """Local-Otsu OCR of a digit band; None when nothing plausible."""
+        if band.size == 0:
+            return None
+        _, local = cv2.threshold(band, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if np.mean(local) > 128:
+            local = cv2.bitwise_not(local)
+        for psm in (8, 7):
+            try:
+                txt = pytesseract.image_to_string(
+                    local,
+                    config=f"--psm {psm} --oem 3 -c tessedit_char_whitelist=0123456789",
+                ).strip()
+            except Exception:
+                return None
+            if txt.isdigit() and 0 <= int(txt) <= 100:
+                return int(txt)
+        return None
+
+    @staticmethod
+    def _read_hp_band(band: np.ndarray, b0: int, b1: int, glyph_h: int) -> Optional[int]:
+        """
+        Read the HP number from a row band. The white mask can miss the
+        LEADING digit when it sits over bright frame ornaments ("97"
+        masking down to "7"), so the crop starts 1.8 glyph-heights left of
+        the masked cluster and the value is taken from tesseract's WORD
+        BOXES: the rightmost digit-word whose box height matches the glyph
+        height. Digits right-align; ornament fragments read at the wrong
+        size or position and are ignored.
+        """
+        # Margin on BOTH sides: a crop ending right at the glyphs makes
+        # tesseract merge them into one read ("97" as a single "7" box).
+        ext0 = max(0, b0 - int(1.8 * glyph_h))
+        ext1 = min(band.shape[1], b1 + glyph_h)
+        crop = band[:, ext0:ext1]
+        if crop.size == 0:
+            return None
+        _, local = cv2.threshold(crop, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if np.mean(local) > 128:
+            local = cv2.bitwise_not(local)
+        try:
+            data = pytesseract.image_to_data(
+                local,
+                config="--psm 7 --oem 3 -c tessedit_char_whitelist=0123456789",
+                output_type=pytesseract.Output.DICT,
+            )
+        except Exception:
+            return None
+        best = None   # ((digit_count, box_height, right_edge), value)
+        for i, raw in enumerate(data.get("text") or []):
+            txt = (raw or "").strip()
+            if not (txt.isdigit() and 0 <= int(txt) <= 100):
+                continue
+            bh = data["height"][i]
+            if not (0.45 * glyph_h <= bh <= 1.35 * glyph_h):
+                continue
+            # Most digits, then tallest, then rightmost: portrait art at
+            # the band's right edge can OCR as a lone digit, and it must
+            # not outrank the actual multi-digit HP number.
+            key = (len(txt), bh, data["left"][i] + data["width"][i])
+            if best is None or key > best[0]:
+                best = (key, int(txt))
+        if best is not None:
+            return best[1]
+        # Word segmentation can fail on single big digits — fall back to a
+        # plain read of the tightly-masked crop.
+        return Detector._read_hp_digits(band[:, b0:b1])
 
     @staticmethod
     def _hp_strip_runs(
@@ -728,6 +788,7 @@ class Detector:
             mband = np.zeros(gband.shape[:2], dtype=np.uint8)
             mband[:mrows.shape[0], :mrows.shape[1]] = mrows
             cols = np.where(mask[ys:ye + 1].sum(axis=0) > 0)[0]
+            b0, b1 = 0, gband.shape[1]
             if cols.size:
                 if height >= 34:
                     # Enlarged (our) row: digits dominate the band; extend
@@ -742,30 +803,12 @@ class Detector:
                     gaps = np.where(np.diff(cols) > 25)[0]
                     b0 = max(0, (cols[gaps[-1] + 1] if gaps.size else cols[0]) - pad)
                     b1 = gband.shape[1]
-                gband, mband = gband[:, b0:b1], mband[:, b0:b1]
-            _, local = cv2.threshold(gband, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            if np.mean(local) > 128:
-                local = cv2.bitwise_not(local)
-            value = None
-            # The mask-image fallback exists for the enlarged row's hollow
-            # glyphs. On regular rows it hallucinated digits out of the
-            # white "fought recently" sword markers (read as 7s), so
-            # regular rows use the grayscale read only.
-            binaries = (local, mband * 255) if height >= 34 else (local,)
-            for binary in binaries:
-                for psm in (8, 7):
-                    try:
-                        txt = pytesseract.image_to_string(
-                            binary,
-                            config=f"--psm {psm} --oem 3 -c tessedit_char_whitelist=0123456789",
-                        ).strip()
-                    except Exception:
-                        return values
-                    if txt.isdigit() and 0 <= int(txt) <= 100:
-                        value = int(txt)
-                        break
-                if value is not None:
-                    break
+            value = self._read_hp_band(gband, b0, b1, height)
+            if value is None and height >= 34:
+                # Mask-image fallback for the enlarged row's hollow glyphs
+                # only — on regular rows it hallucinated digits out of the
+                # white "fought recently" sword markers (read as 7s).
+                value = self._read_hp_digits(mband[:, b0:b1] * 255)
             if value is not None:
                 values.append(value)
         return _longest_nonincreasing(values)

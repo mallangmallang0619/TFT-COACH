@@ -1196,6 +1196,9 @@ def test_lobby_hp_real_frames():
         ("diagnose_20260713_151422.png", [44, 30, 17, 16, 12, 0, 0, 0]),
         ("diagnose_20260711_023339.png", [62, 60, 39, 20, 5, 4, 0, 0]),
         ("diagnose_20260713_145641.png", [94, 88, 87, 86, 71, 69, 62]),
+        # One of the two tied 97s reads noisy and is dropped by the
+        # monotonicity cleanup — 7 of 8 rows, all values correct.
+        ("diagnose_20260718_015501.png", [100, 100, 100, 100, 97, 95, 95]),
     ]
     t = TemplateStore(); t.load()
     checked = 0
@@ -1282,6 +1285,7 @@ def test_hp_real_frames():
         ("diagnose_20260713_145641.png", 71),   # merged-glyph + icon-junk frame
         ("diagnose_20260713_151422.png", 17),   # hollow glyphs + spell glow
         ("diagnose_20260711_023339.png", 5),    # big single digit, near-death
+        ("diagnose_20260718_015501.png", 97),   # leading digit over gold frame art
     ]:
         if (debug_dir / name).exists():
             cases.append((debug_dir / name, truth))
