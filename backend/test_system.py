@@ -856,10 +856,19 @@ def test_bench_harvester():
         harvest_mod.cv2.imwrite = lambda *a, **k: False
         try:
             before = hv.saved_count
-            assert hv._save(np.full((20, 20, 3), 99, dtype=np.uint8), "Ghost", 0) is False
+            noisy = np.random.default_rng(3).integers(0, 255, (20, 20, 3), dtype=np.uint8)
+            assert hv._save(noisy, "Ghost", 0) is False
             assert hv.saved_count == before, "failed imwrite counted as saved"
         finally:
             harvest_mod.cv2.imwrite = orig_imwrite
+
+    # A vacated slot is a large visual change too, but must never be
+    # labeled as the purchased champion (the corrupt empty Aatrox batch).
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp))
+        assert hv.process(frame([0]), []) == 0
+        assert hv.process(frame([]), ["Aatrox"]) == 0
+        assert not list(Path(tmp).rglob("*.png"))
 
     # Continuous tracking: a confirmed slot keeps yielding crops while it
     # stays visually stable, up to the cap; any abrupt change stops it.
@@ -1181,12 +1190,19 @@ def test_lobby_hp_real_frames():
     diagnose captures; skipped when absent)."""
     import cv2
     from pathlib import Path
-    from detector import Detector, TemplateStore
+    from detector import Detector, TemplateStore, _merge_lobby_reads
     try:
         import pytesseract
         pytesseract.get_tesseract_version()
     except Exception:
         return "tesseract unavailable — skipped"
+
+    assert _merge_lobby_reads(
+        [96, 95, 93, 93, 81, 78], [100, 96, 95, 81, 78], 95
+    ) == [100, 96, 95, 93, 93, 81, 78]
+    assert _merge_lobby_reads(
+        [98, 18, 17, 0, 0, 0], [69, 41, 28], 28
+    ) == [69, 41, 28, 18, 17, 0, 0, 0]
 
     debug_dir = Path(__file__).parent / "_debug"
     # Unreadable rows remain explicit -1 slots so the frontend always
@@ -1407,7 +1423,7 @@ def test_set_autodetect():
 
     # From CDragon sets (fetch_templates needs cv2-free import? it imports
     # config + game_data only, safe here)
-    from fetch_templates import detect_current_set, CURRENT_SET
+    from fetch_templates import detect_current_set, select_cdragon_item, CURRENT_SET
     cdragon = {"sets": {
         "16": {"traits": [{"name": "Old"}]},
         "17": {"traits": [{"name": "New"}]},
@@ -1416,6 +1432,17 @@ def test_set_autodetect():
     }}
     assert detect_current_set(cdragon) == "17"
     assert detect_current_set({"sets": {}}) == CURRENT_SET
+
+    old_emblem = {"apiName": "TFT3_Item_DarkStarEmblem", "icon": "/Set3/DarkStar.tex"}
+    live_emblem = {"apiName": "TFT17_Item_DarkStarEmblem", "icon": "/Set17/DarkStar.tex"}
+    assert select_cdragon_item(
+        [live_emblem, old_emblem], current_set="17", is_craftable=False
+    ) is live_emblem
+    encounter = {"apiName": "TFT11_Encounter_GiveItem", "composition": []}
+    standard = {"apiName": "TFT_Item_GiantSlayer", "composition": ["a", "b"]}
+    assert select_cdragon_item(
+        [encounter, standard], current_set="17", is_craftable=True
+    ) is standard
 
     return "slug-derived set OK, CDragon-derived set OK, fallbacks OK"
 

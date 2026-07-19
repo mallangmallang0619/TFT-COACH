@@ -38,7 +38,7 @@ WEBSOCKET_PORT = 8765
 # compares it against its own expected value and shows a warning badge on
 # mismatch — a running backend from before a merge otherwise fails silently
 # (fields just missing), which has burned real debugging time twice.
-PROTOCOL_VERSION = 2
+PROTOCOL_VERSION = 3
 
 
 # ── Resolution ────────────────────────────────────────────────────────────────

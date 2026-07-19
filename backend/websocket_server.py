@@ -112,13 +112,19 @@ class TFTCoachServer:
 
     # ── Game Data Payload ─────────────────────────────────────────────────────
 
-    @staticmethod
-    def _build_game_data_payload() -> str:
+    def _build_game_data_payload(self) -> str:
         """Serialize game_data.py into a JSON message for the frontend."""
         from config import PROTOCOL_VERSION
+        crop_count, champion_count, ready_count = training_stats()
         return json.dumps({
             "type": "game_data",
             "protocol": PROTOCOL_VERSION,
+            "classifier_status": {
+                "active": self.detector.unit_classifier.available,
+                "crops": crop_count,
+                "champions": champion_count,
+                "ready_classes": ready_count,
+            },
             "item_recipes": [
                 {
                     "recipe": list(r["recipe"]),
