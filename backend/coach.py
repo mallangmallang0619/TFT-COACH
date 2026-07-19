@@ -718,9 +718,14 @@ class Coach:
 
     @staticmethod
     def _augment_stage_bucket(stage: str) -> str:
-        """Map the current stage to TFT Academy's pick-stage buckets."""
+        """Map the current stage to TFT Academy's pick-stage buckets. An
+        unreadable stage maps to "All" (the overall rating) — defaulting to
+        a late bucket skewed early augment screens toward late-game picks."""
         first = (stage or "").split("-")[0]
-        return {"1": "2-1", "2": "2-1", "3": "3-2"}.get(first, "4-2")
+        return {
+            "1": "2-1", "2": "2-1", "3": "3-2",
+            "4": "4-2", "5": "4-2", "6": "4-2", "7": "4-2",
+        }.get(first, "All")
 
     # ── General Tips ──────────────────────────────────────────────────────────
 

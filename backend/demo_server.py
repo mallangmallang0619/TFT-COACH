@@ -446,8 +446,10 @@ class DemoServer:
     @staticmethod
     def _build_game_data_payload() -> str:
         """Item recipes + component metadata for the frontend."""
+        from config import PROTOCOL_VERSION
         return json.dumps({
             "type": "game_data",
+            "protocol": PROTOCOL_VERSION,
             "item_recipes": [
                 {
                     "recipe": list(r["recipe"]),

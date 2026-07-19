@@ -34,6 +34,12 @@ UI_TEMPLATE_DIR = TEMPLATE_DIR / "ui"
 WEBSOCKET_HOST = "localhost"
 WEBSOCKET_PORT = 8765
 
+# Bumped whenever the WebSocket payload gains or changes fields. The overlay
+# compares it against its own expected value and shows a warning badge on
+# mismatch — a running backend from before a merge otherwise fails silently
+# (fields just missing), which has burned real debugging time twice.
+PROTOCOL_VERSION = 2
+
 
 # ── Resolution ────────────────────────────────────────────────────────────────
 
@@ -196,9 +202,12 @@ class GameROIs:
     """All regions of interest in the TFT game UI."""
 
     # Stage indicator — top center, right of the stage icon (e.g. "3-5").
-    # Calibrated against fixtures/tft_screenshot.png (3600×2026, 16:9).
+    # A WIDE band: the text's x position shifts with the number of round
+    # icons in the top bar (early-game bars are narrower, pushing the text
+    # right), so the band covers every observed position and the detector
+    # regex-extracts the value.
     stage: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.398, 0.010, 0.036, 0.034)
+        default_factory=lambda: RegionOfInterest(0.393, 0.012, 0.059, 0.032)
     )
 
     # Player HP — our value in the right-side player list (between the two
@@ -234,9 +243,11 @@ class GameROIs:
         default_factory=lambda: RegionOfInterest(0.183, 0.60, 0.565, 0.18)
     )
 
-    # Board area — the hex grid where champions are placed
+    # Board area — the hex grid where champions are placed. Calibrated
+    # against a real 2560x1440 planning frame (18 Jul): the old box ran
+    # down into the bench planks, so grid row 3 sampled BENCH units.
     board: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.25, 0.35, 0.50, 0.40)
+        default_factory=lambda: RegionOfInterest(0.25, 0.3819, 0.50, 0.3056)
     )
 
     # Augment selection screen — center overlay when choosing augments
@@ -301,43 +312,28 @@ class HexPosition:
     radius: float = 0.04
 
 
-def generate_hex_grid(radius: float = 0.04) -> list[HexPosition]:
-    """Generate the 28 hex positions (7 × 4) for the TFT board.
+# Per-row hex geometry, calibrated against a real 2560x1440 planning frame
+# (18 Jul 2026, units on known hexes + platform edges). The board renders
+# in PERSPECTIVE: far rows sit higher with tighter spacing, so the 4x7
+# grid is a trapezoid — a uniform brick layout can't match it. Values are
+# ratios of the board ROI; odd rows shift +half a pitch (stagger).
+_HEX_ROW_CY = (0.141, 0.373, 0.614, 0.864)          # hex-center y per row
+_HEX_ROW_PITCH = (0.1328, 0.1352, 0.1375, 0.1406)   # column spacing per row
+_HEX_CENTER_CX = 0.459                              # column 3, all rows
 
-    Rows use a brick stagger (odd rows offset by half a hex). The raw stagger
-    pushes odd rows' last column to cx≈1.0 — i.e. its sampling window would fall
-    off the right edge of the board ROI and never match. We remap the staggered
-    centers so the whole grid (including each hex's `radius` sampling window) is
-    inset within [0, 1] horizontally and centered, keeping every hex sampleable.
 
-    NOTE: this fixes internal consistency (no clipped hexes); the absolute
-    placement still wants calibration against a real screenshot.
-    """
-    rows, cols = 4, 7
-
-    # Raw brick layout: even rows at (col+0.5)/cols, odd rows shifted +half a hex.
-    raw_cx = {}
-    for row in range(rows):
-        for col in range(cols):
-            cx = (col + 0.5) / cols
-            if row % 2 == 1:
-                cx += 0.5 / cols
-            raw_cx[(row, col)] = cx
-
-    # Remap the raw center span into [radius, 1-radius] (+ a hair of margin) so
-    # every sampling window fits inside the ROI, preserving relative spacing.
-    lo, hi = min(raw_cx.values()), max(raw_cx.values())
-    margin = 0.005
-    target_lo, target_hi = radius + margin, 1.0 - radius - margin
-    scale = (target_hi - target_lo) / (hi - lo)
-
+def generate_hex_grid(radius: float = 0.044) -> list[HexPosition]:
+    """The 28 hex positions (4 rows × 7 cols) of our board half, as a
+    perspective trapezoid — see the calibration tables above."""
     hexes = []
-    for row in range(rows):
-        for col in range(cols):
-            cx = target_lo + (raw_cx[(row, col)] - lo) * scale
-            cy = (row + 0.5) / rows
+    for row in range(4):
+        cy = _HEX_ROW_CY[row]
+        pitch = _HEX_ROW_PITCH[row]
+        for col in range(7):
+            cx = _HEX_CENTER_CX + (col - 3) * pitch
+            if row % 2 == 1:
+                cx += pitch / 2
             hexes.append(HexPosition(row=row, col=col, cx=cx, cy=cy, radius=radius))
-
     return hexes
 
 

@@ -1113,6 +1113,69 @@ def test_econ_and_damage_tips():
     return "hold nudge, quiet-when-far, pair-beats-interest, loss forecast OK"
 
 
+def test_component_detection_real_frames():
+    """Basic components detect on real frames (local diagnose captures;
+    requires the fetched component templates — both skipped when absent).
+    Set 17's stylized component art (Chain Vest is a blue spiked pauldron)
+    was mistaken for non-components once; the scores say otherwise."""
+    import cv2
+    from pathlib import Path
+    from detector import Detector, TemplateStore
+
+    t = TemplateStore(); t.load()
+    if not t.component_templates:
+        return "no component templates on disk — skipped"
+    debug_dir = Path(__file__).parent / "_debug"
+    cases = [
+        ("diagnose_20260717_183943.png", {"chain_vest", "recurve_bow"}),
+        ("diagnose_20260717_184036.png", {"chain_vest", "bf_sword", "recurve_bow"}),
+    ]
+    checked = 0
+    for name, expected in cases:
+        path = debug_dir / name
+        if not path.exists():
+            continue
+        d = Detector(t)
+        got = {c.component_id for c in d._detect_components(cv2.imread(str(path)))}
+        assert expected <= got, f"{name}: {got} missing {expected - got}"
+        checked += 1
+    if not checked:
+        return "no diagnose frames present — skipped"
+    return f"{checked} frames detect their components"
+
+
+def test_held_item_detection():
+    """Completed items on the item bench are template-matched (change-gated
+    scan); unknown icons are rejected rather than guessed."""
+    import cv2
+    import numpy as np
+    from detector import Detector, TemplateStore
+    from config import GameROIs
+
+    t = TemplateStore(); t.load()
+    if not t.item_templates:
+        return "no item templates on disk — skipped"
+    d = Detector(t)
+
+    frame = np.full((1440, 2560, 3), 25, dtype=np.uint8)
+    x, y, rw, rh = GameROIs().item_bench.to_pixels(2560, 1440)
+    size = int(2560 * 0.0165)
+    names = [n for n in ("Deathblade", "Sunfire Cape") if n in t.item_templates]
+    assert names, "expected craftable templates on disk"
+    for i, nm in enumerate(names):
+        icon = cv2.resize(t.item_templates[nm], (size, size), interpolation=cv2.INTER_AREA)
+        sy = y + 20 + i * int(rh / 10)
+        frame[sy:sy + size, x + 8:x + 8 + size] = icon
+
+    got = d._detect_held_items(frame)
+    assert got == names, f"held items {got} != {names}"
+    assert d._detect_held_items(frame) == names, "cached path should agree"
+
+    empty = Detector(t)
+    assert empty._detect_held_items(np.full((1440, 2560, 3), 25, dtype=np.uint8)) == []
+    return f"detected {got}, cache + empty OK"
+
+
 def test_lobby_hp_real_frames():
     """All players' HP read in standings order from real frames (local
     diagnose captures; skipped when absent)."""
@@ -1133,6 +1196,9 @@ def test_lobby_hp_real_frames():
         ("diagnose_20260713_151422.png", [44, 30, 17, 16, 12, 0, 0, 0]),
         ("diagnose_20260711_023339.png", [62, 60, 39, 20, 5, 4, 0, 0]),
         ("diagnose_20260713_145641.png", [94, 88, 87, 86, 71, 69, 62]),
+        # One of the two tied 97s reads noisy and is dropped by the
+        # monotonicity cleanup — 7 of 8 rows, all values correct.
+        ("diagnose_20260718_015501.png", [100, 100, 100, 100, 97, 95, 95]),
     ]
     t = TemplateStore(); t.load()
     checked = 0
@@ -1219,6 +1285,7 @@ def test_hp_real_frames():
         ("diagnose_20260713_145641.png", 71),   # merged-glyph + icon-junk frame
         ("diagnose_20260713_151422.png", 17),   # hollow glyphs + spell glow
         ("diagnose_20260711_023339.png", 5),    # big single digit, near-death
+        ("diagnose_20260718_015501.png", 97),   # leading digit over gold frame art
     ]:
         if (debug_dir / name).exists():
             cases.append((debug_dir / name, truth))
@@ -1505,6 +1572,8 @@ def main():
     test("Unit classifier fallback", test_unit_classifier_fallback)
     test("Augment OCR (real frame)", test_augment_ocr_real_frame)
     test("HP OCR (real frames)", test_hp_real_frames)
+    test("Component detection (real frames)", test_component_detection_real_frames)
+    test("Held item detection", test_held_item_detection)
     test("Lobby HP (real frames)", test_lobby_hp_real_frames)
     test("Standings tips", test_standings_tips)
     test("Stage-aware augment pick", test_stage_aware_augment_pick)

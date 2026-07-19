@@ -69,6 +69,16 @@ function createOverlayWindow() {
   const isDev = process.env.NODE_ENV === "development";
   if (isDev) {
     overlayWindow.loadURL("http://localhost:5173");
+    // Dev server not running → fall back to the built bundle instead of a
+    // blank window. The bundle may be older than src/ — the in-app
+    // BACKEND/OVERLAY version badge surfaces real mismatches.
+    overlayWindow.webContents.once("did-fail-load", () => {
+      console.warn(
+        "[overlay] Vite dev server not reachable on :5173 — loading frontend/dist. " +
+        "Run `npm run dev:frontend` for live code, or `npm run build:frontend` to refresh the bundle."
+      );
+      overlayWindow.loadFile(path.join(__dirname, "../frontend/dist/index.html"));
+    });
   } else {
     overlayWindow.loadFile(path.join(__dirname, "../frontend/dist/index.html"));
   }

@@ -137,6 +137,11 @@ const TIER_COLORS = { S: "#ff4757", A: "#ffa502", B: "#2ed573", C: "#747d8c", X:
 const ACCENT = "#00d2ff";
 const ACCENT2 = "#7c5cfc";
 
+// Backend payload schema version this overlay is built for. Must match
+// backend config.PROTOCOL_VERSION — a red header badge appears when the
+// running backend disagrees (stale process or unmerged code).
+const BACKEND_PROTOCOL_EXPECTED = 2;
+
 // TFT cost-tier colors used to outline unit chips and cells
 const COST_COLORS = {
   1: "#9ca3af", 2: "#1f9d55", 3: "#2563eb", 4: "#9333ea", 5: "#d97706",
@@ -1028,7 +1033,7 @@ function devBtnStyle(color) {
 // ─── MAIN APP ────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const { gameState, gameData, isConnected, isDemo, demoInfo, serverStats, sendCommand } = useCoachSocket();
+  const { gameState, gameData, backendProtocol, isConnected, isDemo, demoInfo, serverStats, sendCommand } = useCoachSocket();
   const [devOpen, setDevOpen] = useState(false);
 
   // Electron overlay: hover-to-interact. The window is click-through by
@@ -1082,6 +1087,7 @@ export default function App() {
   const compSuggestions = backendAdvice?.comp_suggestions || [];
   const shopActions = backendAdvice?.shop_actions || [];
   const lobbyHp = isLive ? (gameState?.lobby_hp || []) : [];
+  const heldItems = isLive ? (gameState?.held_items || []) : [];
   const activeSynergies = isLive ? (gameState?.active_synergies || []) : [];
 
   // Champion data for the Comp/Position tabs
@@ -1188,6 +1194,19 @@ export default function App() {
           }}>
             TFT COACH
           </div>
+          {isConnected && backendProtocol !== null && backendProtocol !== BACKEND_PROTOCOL_EXPECTED && (
+            <span
+              title={`The running backend speaks payload v${backendProtocol}, this overlay expects v${BACKEND_PROTOCOL_EXPECTED}. Pull the latest code and restart the backend (and this overlay) — data fields will be missing or wrong until then.`}
+              style={{
+                fontFamily: "var(--mono)", fontSize: "9px", fontWeight: 700,
+                letterSpacing: "1px", padding: "3px 8px", borderRadius: "5px",
+                color: "#ff4757", border: "1px solid #ff475766",
+                background: "#ff475712", animation: "blink 1.6s infinite",
+              }}
+            >
+              ⚠ BACKEND OUTDATED (v{backendProtocol}≠v{BACKEND_PROTOCOL_EXPECTED})
+            </span>
+          )}
           <ConnectionBadge isConnected={isConnected} isDemo={isDemo} />
           {inElectron && (
             <span
@@ -1402,6 +1421,27 @@ export default function App() {
                           </div>
                         ) : null;
                       })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Held completed items (artifacts, radiants, specials) */}
+                {isLive && heldItems.length > 0 && (
+                  <div className="card" style={{ marginBottom: "12px" }}>
+                    <div style={{ fontSize: "9px", color: "#8b8fa3", marginBottom: "8px", fontFamily: "var(--mono)", letterSpacing: "2px" }}>
+                      HELD ITEMS ({heldItems.length})
+                    </div>
+                    <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                      {heldItems.map((name, idx) => (
+                        <div key={idx} style={{
+                          padding: "6px 10px", borderRadius: "6px",
+                          background: "#ffd32a10", border: "1px solid #ffd32a33",
+                          display: "flex", alignItems: "center", gap: "4px",
+                        }}>
+                          <GameIcon kind="items" name={name} emoji="🗡️" size={16} />
+                          <span style={{ fontSize: "10px", color: "#ffd32a", fontFamily: "var(--mono)" }}>{name}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
