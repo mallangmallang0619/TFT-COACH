@@ -114,6 +114,17 @@ def _longest_nonincreasing(vals: list[int]) -> list[int]:
     return out[::-1]
 
 
+def _eight_player_lobby(vals: list[int]) -> list[int]:
+    """Normalize OCR output to TFT's fixed eight standings slots.
+
+    ``-1`` means unreadable; ``0`` is reserved for an eliminated player.
+    Once a zero appears, every missing lower standing is also eliminated.
+    """
+    values = _longest_nonincreasing([value for value in vals if -1 < value <= 100])[:8]
+    fill = 0 if 0 in values else -1
+    return values + [fill] * (8 - len(values))
+
+
 def _circular_mask(size: int) -> np.ndarray:
     """A filled white circle on black, cached per size — masks out hex corners."""
     mask = _MASK_CACHE.get(size)
@@ -310,7 +321,7 @@ class Detector:
         self._lobby_age += 1
         if self._lobby_age >= 15:
             lobby = self._read_lobby_hp(frame)
-            if lobby:
+            if lobby and any(value >= 0 for value in lobby):
                 self._lobby_cache, self._lobby_age = lobby, 0
         state.lobby_hp = self._lobby_cache
         state.gold = self._ocr_number(frame, self.rois.gold, "Gold")
@@ -496,6 +507,7 @@ class Detector:
     # Raw frame ratios (like the trait panel) — at 16:9 the adaptive
     # viewport is the whole frame.
     _PLAYER_LIST_STRIP = (0.915, 0.08, 0.978, 0.82)   # x1, y1, x2, y2
+    _PLAYER_HP_SCAN = (0.900, 0.12, 0.980, 0.75)
 
     def _ocr_player_hp(self, frame: np.ndarray) -> int:
         """
@@ -511,6 +523,10 @@ class Detector:
         if pytesseract is None:
             return 0
         h, w = frame.shape[:2]
+        raw_hp = self._read_enlarged_hp_raw(frame)
+        if raw_hp is not None:
+            self._last_hp = raw_hp
+            return raw_hp
         x1r, y1r, x2r, y2r = self._PLAYER_LIST_STRIP
         strip = frame[int(y1r * h):int(y2r * h), int(x1r * w):int(x2r * w)]
         if strip.size == 0:
@@ -611,6 +627,52 @@ class Detector:
             self._last_hp = pick[2]
             return pick[2]
         return self._ocr_number(frame, self.rois.player_hp, "HP")
+
+    def _read_enlarged_hp_raw(self, frame: np.ndarray) -> Optional[int]:
+        """Read the enlarged local-player HP word from the standings HUD."""
+        h, w = frame.shape[:2]
+        x1r, y1r, x2r, y2r = self._PLAYER_HP_SCAN
+        strip = frame[int(y1r * h):int(y2r * h), int(x1r * w):int(x2r * w)]
+        if strip.size == 0:
+            return None
+        gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
+        gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        try:
+            data = pytesseract.image_to_data(
+                gray,
+                config="--psm 11 --oem 3 -c tessedit_char_whitelist=0123456789",
+                output_type=pytesseract.Output.DICT,
+            )
+        except Exception as exc:
+            logger.debug(f"raw player HP OCR failed: {exc}")
+            return None
+
+        candidates: list[tuple[tuple[int, int, int], int]] = []
+        strip_w = gray.shape[1]
+        for i, raw in enumerate(data.get("text") or []):
+            text = (raw or "").strip()
+            if not text.isdigit():
+                continue
+            value = int(text)
+            left = data["left"][i]
+            width = data["width"][i]
+            height = data["height"][i]
+            aspect = width / max(1, height * len(text))
+            if not (1 <= value <= 100 and 38 <= height <= 130):
+                continue
+            if left >= strip_w * 0.70 or not (0.35 <= aspect <= 1.70):
+                continue
+            candidates.append(((len(text), height, -left), value))
+
+        if not candidates:
+            return None
+        candidates.sort(reverse=True)
+        best_key, best_value = candidates[0]
+        if best_key[0] >= 2:
+            return best_value
+        if self._last_hp is not None and abs(best_value - self._last_hp) <= 25:
+            return best_value
+        return None
 
     @staticmethod
     def _find_enlarged_hp_row(gray2x: np.ndarray, strip_bgr: np.ndarray) -> Optional[tuple[int, int]]:
@@ -811,7 +873,54 @@ class Detector:
                 value = self._read_hp_digits(mband[:, b0:b1] * 255)
             if value is not None:
                 values.append(value)
-        return _longest_nonincreasing(values)
+        values = _longest_nonincreasing(values)
+        raw_values = self._read_lobby_hp_raw(frame)
+        if (
+            self._last_hp is not None
+            and self._last_hp in raw_values
+            and self._last_hp not in values
+        ):
+            values = raw_values
+        return _eight_player_lobby(values)
+
+    def _read_lobby_hp_raw(self, frame: np.ndarray) -> list[int]:
+        """Recover clean two/three-digit rows from the grayscale HP strip."""
+        h, w = frame.shape[:2]
+        x1r, y1r, x2r, y2r = self._PLAYER_HP_SCAN
+        strip = frame[int(y1r * h):int(y2r * h), int(x1r * w):int(x2r * w)]
+        if strip.size == 0:
+            return []
+        gray = cv2.cvtColor(strip, cv2.COLOR_BGR2GRAY)
+        gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        try:
+            data = pytesseract.image_to_data(
+                gray,
+                config="--psm 11 --oem 3 -c tessedit_char_whitelist=0123456789",
+                output_type=pytesseract.Output.DICT,
+            )
+        except Exception:
+            return []
+
+        rows: list[tuple[int, int]] = []
+        strip_w = gray.shape[1]
+        for i, raw in enumerate(data.get("text") or []):
+            text = (raw or "").strip()
+            if not text.isdigit() or len(text) > 3:
+                continue
+            left = data["left"][i]
+            top = data["top"][i]
+            width = data["width"][i]
+            height = data["height"][i]
+            if len(text) == 3 and int(text) > 100:
+                text = text[:2]
+            aspect = width / max(1, height * len(text))
+            value = int(text)
+            if not (1 <= value <= 100 and 18 <= height <= 100):
+                continue
+            if left >= strip_w * 0.85 or not (0.30 <= aspect <= 2.20):
+                continue
+            rows.append((top, value))
+        return _longest_nonincreasing([value for _, value in sorted(rows)])
 
     @staticmethod
     def _reread_hp_box(gray: np.ndarray, L: int, T: int, W: int, H: int) -> Optional[int]:

@@ -214,9 +214,8 @@ class GameState(BaseModel):
     # bottom. Display names.
     held_items: list[str] = Field(default_factory=list)
 
-    # Every player's HP from the right-side list, in standings order
-    # (non-increasing; 0 = eliminated). Includes our own HP. May be
-    # partial when some rows fail to read.
+    # All eight HP slots from the right-side list, in standings order
+    # (non-increasing; 0 = eliminated, -1 = unreadable). Includes our HP.
     lobby_hp: list[int] = Field(default_factory=list)
 
     # The five shop card names (None = empty/unreadable slot). Read via

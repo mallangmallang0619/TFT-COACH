@@ -21,7 +21,7 @@ from config import WEBSOCKET_HOST, WEBSOCKET_PORT, CAPTURE_FPS
 from capture import ScreenCapture
 from detector import Detector, TemplateStore
 from coach import Coach
-from harvest import BenchHarvester
+from harvest import BenchHarvester, training_stats
 from roster import RosterTracker
 from game_state import GameState, GamePhase
 from game_data import ITEM_RECIPES, COMPONENT_IDS, COMPONENT_NAMES, SHRED_ITEMS, BURN_ITEMS
@@ -68,6 +68,17 @@ class TFTCoachServer:
         # Load templates
         logger.info("Loading template images...")
         self.templates.load()
+        crop_count, champion_count, ready_count = training_stats()
+        if self.detector.unit_classifier.available:
+            logger.info(
+                f"Unit classifier active ({len(self.detector.unit_classifier.labels)} classes)"
+            )
+        else:
+            logger.info(
+                "Unit classifier inactive (no trained model); "
+                f"collector has {crop_count} crops across {champion_count} champions, "
+                f"{ready_count} ready at 20+"
+            )
 
         # Background refresh of the TFT Academy tier list (cache-checked,
         # debounced — does nothing if recently refreshed). include_details
@@ -310,7 +321,11 @@ class TFTCoachServer:
                 # row (scouting shifts, list animations): a jump bigger than
                 # any one round can deal must repeat on the next frame to be
                 # believed.
-                if prev.player_hp > 0 and state.player_hp > 0:
+                if (
+                    prev.phase != GamePhase.NOT_IN_GAME
+                    and prev.player_hp > 0
+                    and state.player_hp > 0
+                ):
                     if abs(state.player_hp - prev.player_hp) > 25:
                         if (
                             self._hp_candidate is not None
