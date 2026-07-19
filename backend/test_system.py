@@ -870,6 +870,15 @@ def test_bench_harvester():
         assert hv.process(frame([]), ["Aatrox"]) == 0
         assert not list(Path(tmp).rglob("*.png"))
 
+    # A unit can be moved or sold in the same capture window as a purchase.
+    # Filter the vacated slot before deciding whether pairing is ambiguous.
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        assert hv.process(frame([0]), []) == 0
+        assert hv.process(frame([1]), ["Gwen"]) == 1
+        saved = list(Path(tmp).rglob("*.png"))
+        assert len(saved) == 1 and saved[0].parent.name == "Gwen"
+
     # Continuous tracking: a confirmed slot keeps yielding crops while it
     # stays visually stable, up to the cap; any abrupt change stops it.
     with tempfile.TemporaryDirectory() as tmp:
@@ -892,8 +901,28 @@ def test_bench_harvester():
         assert got == [0, 0, 0, 0], f"untracked slot kept saving: {got}"
         assert len(list(Path(tmp).rglob("*.png"))) == 1
 
-    return ("pairing guards OK, imwrite-fail OK, "
-            "tracking: interval+cap OK, stop-on-change OK")
+    # A transient write/quality failure must not consume the tracking cap;
+    # retry the next stable frame instead of silently losing the sample.
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=1, track_max_saves=2)
+        hv.process(frame([]), [])
+        hv.process(frame([0]), [])
+        assert hv.process(frame([0]), ["Gwen"]) == 1
+        original_save = hv._save
+        attempts = 0
+
+        def fail_once(crop, name, slot):
+            nonlocal attempts
+            attempts += 1
+            return attempts > 1 and original_save(crop, name, slot)
+
+        hv._save = fail_once
+        assert hv.process(frame([0]), []) == 0
+        assert hv.process(frame([0]), []) == 1
+        assert len(list(Path(tmp).rglob("*.png"))) == 2
+
+    return ("pairing guards OK, vacated-slot filtering OK, imwrite-fail OK, "
+            "tracking: interval+cap+retry OK, stop-on-change OK")
 
 
 def test_window_picker():
@@ -915,12 +944,17 @@ def test_window_picker():
 
     pick = WindowFinder._pick_game_window
     assert pick([ide, term, browser, launcher, game]) is game
-    assert pick([ide, browser, launcher]) is launcher, "launcher is the fallback"
+    assert pick([ide, browser, launcher]) is None, "launcher is not a game frame"
+    assert pick([ide, browser, launcher], include_launcher=True) is launcher
     assert pick([ide, term, browser]) is None, "no game/client → capture nothing"
-    assert pick([W("League of Legends (TM) Client", minimized=True), launcher]) is launcher
+    assert pick([W("League of Legends (TM) Client", minimized=True), launcher]) is None
+    assert pick(
+        [W("League of Legends (TM) Client", minimized=True), launcher],
+        include_launcher=True,
+    ) is launcher
     assert pick([W("  League of Legends (TM) Client ")]) is not None
     assert pick([]) is None
-    return "game > launcher, exact titles only, IDE/terminal/browser ignored"
+    return "game only by default, optional launcher lookup, unrelated windows ignored"
 
 
 def test_classifier_data_pipeline():

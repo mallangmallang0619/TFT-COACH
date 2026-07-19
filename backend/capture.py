@@ -71,13 +71,13 @@ class WindowFinder:
     """
 
     @staticmethod
-    def find() -> Optional[WindowRect]:
+    def find(include_launcher: bool = False) -> Optional[WindowRect]:
         """Find the game window. Returns None if not found."""
         system = platform.system()
 
         try:
             if system == "Windows":
-                return WindowFinder._find_windows()
+                return WindowFinder._find_windows(include_launcher)
             elif system == "Darwin":
                 return WindowFinder._find_macos()
             else:
@@ -92,25 +92,30 @@ class WindowFinder:
     # it latched onto any window mentioning the game — editors and terminals
     # with this "TFT-COACH" project open, browser tabs about League — and
     # the detector then OCR'd garbage out of them.
-    _WINDOW_TITLES = ("league of legends (tm) client", "league of legends")
+    _GAME_WINDOW_TITLE = "league of legends (tm) client"
+    _LAUNCHER_WINDOW_TITLE = "league of legends"
 
     @staticmethod
-    def _pick_game_window(windows) -> Optional[object]:
+    def _pick_game_window(windows, include_launcher: bool = False) -> Optional[object]:
         """Choose the game window from candidates with (title, isMinimized,
-        width, height) attributes. Exact title match only, game before
-        launcher."""
+        width, height) attributes. Exact title match only. The launcher is
+        diagnostic-only because capturing it before a match prevents the
+        backend from noticing when the actual game window opens."""
         usable = [
             w for w in windows
             if not w.isMinimized and w.width > 200 and w.height > 200
         ]
-        for wanted in WindowFinder._WINDOW_TITLES:
+        wanted_titles = [WindowFinder._GAME_WINDOW_TITLE]
+        if include_launcher:
+            wanted_titles.append(WindowFinder._LAUNCHER_WINDOW_TITLE)
+        for wanted in wanted_titles:
             for w in usable:
                 if w.title.strip().lower() == wanted:
                     return w
         return None
 
     @staticmethod
-    def _find_windows() -> Optional[WindowRect]:
+    def _find_windows(include_launcher: bool = False) -> Optional[WindowRect]:
         """Find the game window on Windows using pygetwindow."""
         try:
             import pygetwindow as gw
@@ -118,7 +123,9 @@ class WindowFinder:
             logger.error("pygetwindow not installed — required on Windows")
             return None
 
-        win = WindowFinder._pick_game_window(gw.getAllWindows())
+        win = WindowFinder._pick_game_window(
+            gw.getAllWindows(), include_launcher=include_launcher
+        )
         if win is None:
             return None
         rect = WindowFinder._client_rect_windows(win)

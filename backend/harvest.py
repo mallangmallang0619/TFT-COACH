@@ -90,7 +90,8 @@ class BenchHarvester:
         # look two frames back.
         self._thumbs_prev: Optional[list[np.ndarray]] = None
         self._thumbs_prev2: Optional[list[np.ndarray]] = None
-        # slot -> [label, ref thumbnail, frames since last save, saves so far]
+        # slot -> [label, ref thumbnail, frames since last save, saves so far,
+        #          consecutive large-drift frames]
         self._tracked: dict[int, list] = {}
         self.saved_count = 0
 
@@ -112,35 +113,34 @@ class BenchHarvester:
             # ambient change of the other slots (lighting, idle animation).
             typical = float(np.median(diffs)) if diffs else 0.0
             threshold = max(_CHANGE_FLOOR, typical * _CHANGE_OUTLIER_FACTOR)
-            newly = [i for i in range(BENCH_SLOTS) if diffs[i] >= threshold]
+            changed = [i for i in range(BENCH_SLOTS) if diffs[i] >= threshold]
+            newly = [
+                i for i in changed
+                if self._became_occupied(thumbs[i], baseline[i])
+            ]
             logger.debug(
                 f"bench diffs={[f'{d:.0f}' for d in diffs]} "
-                f"threshold={threshold:.0f} newly={newly}"
+                f"threshold={threshold:.0f} changed={changed} occupied={newly}"
             )
 
             # Label purity beats coverage: only save when the number of
-            # changed slots matches the confirmed purchases exactly.
-            # A mismatch (unit moved board↔bench in the window, a combine
-            # consumed the copies) risks pairing the wrong crop with the
-            # name — skip those frames; more games bring more clean ones.
+            # newly occupied slots matches the confirmed purchases exactly.
+            # Vacated or moved slots can change in the same frame and are
+            # filtered first so they don't hide an otherwise clean purchase.
             if len(newly) == len(purchases):
                 for name, slot in zip(purchases, newly):
-                    if not self._became_occupied(thumbs[slot], baseline[slot]):
-                        logger.info(
-                            f"Skipping harvest: slot {slot} changed but did not become occupied"
-                        )
-                        continue
                     if self._save(crops[slot], name, slot):
                         saved += 1
                         # Keep harvesting this slot while the unit stands
                         # there — many poses per purchase.
                         if thumbs[slot] is not None:
-                            self._tracked[slot] = [name, thumbs[slot], 0, 1]
+                            self._tracked[slot] = [name, thumbs[slot], 0, 1, 0]
                             just_confirmed.add(slot)
             else:
                 logger.info(
                     f"Skipping harvest: {len(purchases)} purchases vs "
-                    f"{len(newly)} changed bench slots (ambiguous pairing)"
+                    f"{len(newly)} newly occupied bench slots "
+                    f"({len(changed)} changed; ambiguous pairing)"
                 )
         elif purchases:
             logger.info("Skipping harvest: purchase arrived before a bench baseline existed")
@@ -175,26 +175,38 @@ class BenchHarvester:
         for slot in list(self._tracked):
             if slot in just_confirmed:
                 continue    # landing crop already saved this frame
-            label, ref, frames_since, saves = self._tracked[slot]
+            label, ref, frames_since, saves, change_frames = self._tracked[slot]
             if thumbs[slot] is None:
                 del self._tracked[slot]
                 continue
             drift = float(np.mean(cv2.absdiff(thumbs[slot], ref)))
             if drift >= self.track_change_limit:
-                logger.debug(f"Slot {slot} changed (drift {drift:.0f}) — stop tracking {label}")
-                del self._tracked[slot]
+                # Empty/low-detail means the unit definitely left. A single
+                # viable high-drift frame may just be an idle animation or
+                # spell glow, so require it to repeat before abandoning the
+                # label without ever saving the uncertain frame.
+                if not self._is_viable_crop(thumbs[slot]) or change_frames >= 1:
+                    logger.debug(
+                        f"Slot {slot} changed (drift {drift:.0f}) — stop tracking {label}"
+                    )
+                    del self._tracked[slot]
+                else:
+                    self._tracked[slot] = [
+                        label, ref, frames_since, saves, change_frames + 1
+                    ]
                 continue
+            change_frames = 0
             frames_since += 1
             if frames_since >= self.track_interval:
                 if self._save(crops[slot], label, slot):
                     saved += 1
-                saves += 1
-                frames_since = 0
-                ref = thumbs[slot]
-                if saves >= self.track_max_saves:
-                    del self._tracked[slot]
-                    continue
-            self._tracked[slot] = [label, ref, frames_since, saves]
+                    saves += 1
+                    frames_since = 0
+                    ref = thumbs[slot]
+                    if saves >= self.track_max_saves:
+                        del self._tracked[slot]
+                        continue
+            self._tracked[slot] = [label, ref, frames_since, saves, change_frames]
         return saved
 
     def _bench_slot_crops(self, frame: np.ndarray) -> list[np.ndarray]:
