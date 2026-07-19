@@ -58,8 +58,18 @@ class TFTCoachServer:
         self._total_detection_ms = 0.0
         # Pending large HP change awaiting a confirming second frame.
         self._hp_candidate: int | None = None
+        self._not_in_game_frames = 0
+        self._tracking_session_active = False
         # Comp the player locked via the UI (None = follow suggestions).
         self._pinned_comp: str | None = None
+
+    def _reset_tracking_session(self) -> None:
+        """Drop frame-to-frame state when the game window changes or closes."""
+        self.roster.reset()
+        self.harvester.reset()
+        self._hp_candidate = None
+        self._not_in_game_frames = 0
+        self._tracking_session_active = False
 
     async def start(self):
         """Start the WebSocket server and capture loop."""
@@ -277,10 +287,13 @@ class TFTCoachServer:
                 # Try to find the game window
                 if not self.capture.is_game_visible:
                     if self.capture.locate_game():
+                        self._reset_tracking_session()
                         game_found_logged = True
                         game_lost_logged = False
                         logger.info("Game window detected — starting capture")
                     else:
+                        if self._tracking_session_active:
+                            self._reset_tracking_session()
                         if not game_lost_logged:
                             logger.info("Waiting for game window...")
                             game_lost_logged = True
@@ -295,6 +308,7 @@ class TFTCoachServer:
                 # Capture frame
                 frame = self.capture.grab_frame()
                 if frame is None:
+                    self._reset_tracking_session()
                     await asyncio.sleep(0.5)
                     continue
 
@@ -303,6 +317,25 @@ class TFTCoachServer:
                 state = await loop.run_in_executor(
                     None, self.detector.detect, frame
                 )
+
+                # Never let launcher/loading/closed-window frames poison the
+                # roster or harvester baselines. Two consecutive misses force
+                # a fresh window lookup, which also handles a game launched
+                # after the backend and windows recreated by display changes.
+                if state.phase == GamePhase.NOT_IN_GAME:
+                    self._not_in_game_frames += 1
+                    self.latest_state = state
+                    await self._broadcast_state()
+                    if self._not_in_game_frames >= 2:
+                        self.capture.window = None
+                        self._reset_tracking_session()
+                        await asyncio.sleep(0.5)
+                    else:
+                        await asyncio.sleep(0)
+                    continue
+
+                self._not_in_game_frames = 0
+                self._tracking_session_active = True
 
                 # Track purchases BEFORE the last-good patching below: the
                 # roster's gold-drop guard must see the RAW reading. Patching
