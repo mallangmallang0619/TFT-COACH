@@ -26,6 +26,7 @@ from roster import RosterTracker
 from game_state import GameState, GamePhase
 from game_data import ITEM_RECIPES, COMPONENT_IDS, COMPONENT_NAMES, SHRED_ITEMS, BURN_ITEMS
 import tftacademy_live
+import tactics_live
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,7 @@ class TFTCoachServer:
         self._hp_candidate: int | None = None
         self._not_in_game_frames = 0
         self._tracking_session_active = False
+        self._selected_augments: list[str] = []
         # Comp the player locked via the UI (None = follow suggestions).
         self._pinned_comp: str | None = None
 
@@ -70,6 +72,7 @@ class TFTCoachServer:
         self._hp_candidate = None
         self._not_in_game_frames = 0
         self._tracking_session_active = False
+        self._selected_augments.clear()
 
     async def start(self):
         """Start the WebSocket server and capture loop."""
@@ -98,6 +101,7 @@ class TFTCoachServer:
             initial_delay_seconds=2.0,
             include_details=True,
         )
+        tactics_live.schedule_background_refresh(initial_delay_seconds=3.0)
 
         # Start WebSocket server and capture loop concurrently
         self.is_running = True
@@ -162,6 +166,7 @@ class TFTCoachServer:
         # Re-check TFT Academy when the overlay opens. Debounced internally
         # so frequent reconnects don't hammer the upstream site.
         tftacademy_live.schedule_background_refresh(initial_delay_seconds=0.0)
+        tactics_live.schedule_background_refresh(initial_delay_seconds=0.0)
 
         try:
             # Push game data first so the frontend can update its recipe table
@@ -216,6 +221,16 @@ class TFTCoachServer:
                 # (null/empty name unpins).
                 self._pinned_comp = (msg.get("name") or "").strip() or None
                 logger.info(f"Comp pinned: {self._pinned_comp or '(unpinned)'}")
+
+            elif msg_type == "select_augment":
+                name = (msg.get("name") or "").strip()
+                selected = bool(msg.get("selected", True))
+                if name:
+                    if selected and name not in self._selected_augments:
+                        self._selected_augments.append(name)
+                    elif not selected and name in self._selected_augments:
+                        self._selected_augments.remove(name)
+                    logger.info(f"Selected augments: {self._selected_augments}")
 
             else:
                 logger.debug(f"Unknown message type: {msg_type}")
@@ -344,7 +359,11 @@ class TFTCoachServer:
                 # purchase on frames where gold OCR failed — and with it all
                 # harvester training crops.
                 purchases = self.roster.update(state)
-                self.harvester.process(frame, purchases)
+                self.harvester.process(
+                    frame,
+                    purchases,
+                    self.roster.pending_purchase_names,
+                )
 
                 # A single frame's OCR can fail while the region is obscured
                 # (combat effects, transitions) — hold the last good reading
@@ -386,6 +405,7 @@ class TFTCoachServer:
 
                 # Run coaching logic
                 state.pinned_comp = self._pinned_comp
+                state.selected_augments = list(self._selected_augments)
                 advice = self.coach.analyze(state)
                 state.advice = advice
 

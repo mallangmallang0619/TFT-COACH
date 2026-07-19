@@ -35,6 +35,7 @@ from game_data import (
     _normalize_augment_name as _norm_augment,
 )
 from synergy import compute_active_synergies, detect_comp_direction
+import tactics_live
 
 # Item-name lists for tip texts — derived from the flag sets so they can
 # never drift from the data (they used to hand-name items that no longer
@@ -67,7 +68,9 @@ STAGE_SLAM_URGENCY: dict[str, int] = {
 }
 
 # Item tier → base power contribution per completed item on board
-_ITEM_TIER_POWER = {"S": 40, "A": 30, "B": 20, "C": 10}
+_ITEM_TIER_POWER = {"S": 4.0, "A": 3.2, "B": 2.2, "C": 1.2}
+_STAR_POWER = {1: 1.0, 2: 1.8, 3: 3.4}
+_AUGMENT_POWER = {"S": 4.0, "A": 3.1, "B": 2.1, "C": 1.0, "X": 1.5}
 
 
 class Coach:
@@ -94,15 +97,17 @@ class Coach:
         if not state.active_synergies and state.board_champions:
             state.active_synergies = compute_active_synergies(state.board_champions)
 
-        # ── Board Power ───────────────────────────────────────────────────────
-        power, breakdown = self._calculate_board_power(state)
-        advice.board_power = round(power, 1)
-        advice.board_power_breakdown = breakdown
-
         # ── Comp Direction ────────────────────────────────────────────────────
         # Before item analysis: slam advice ranks items by whether the comp
         # the player is building actually wants them.
         self._analyze_comp_direction(state, advice)
+
+        # ── Board Power ───────────────────────────────────────────────────────
+        # Comp direction runs first so board coherence, item-holder fit, and
+        # comp-specific augments can contribute to the score.
+        power, breakdown = self._calculate_board_power(state, advice)
+        advice.board_power = round(power, 1)
+        advice.board_power_breakdown = breakdown
 
         # ── Item Slam Analysis ────────────────────────────────────────────────
         self._analyze_items(state, advice)
@@ -118,6 +123,7 @@ class Coach:
             self._analyze_augments(state, advice)
 
         # ── General Tips ──────────────────────────────────────────────────────
+        self._generate_board_strength_tip(state, advice)
         self._generate_tips(state, advice)
 
         return advice
@@ -125,48 +131,64 @@ class Coach:
     # ── Board Power ───────────────────────────────────────────────────────────
 
     def _calculate_board_power(
-        self, state: GameState
+        self, state: GameState, advice: Optional[CoachingAdvice] = None
     ) -> tuple[float, BoardPowerBreakdown]:
         """
-        Estimate board combat power without considering positioning.
-
-        Formula (all values additive):
-          champion contribution = cost × star_level² × item_multiplier
-            where item_multiplier = 1 + 0.3 per completed item
-          synergy bonus = power_per_breakpoint[current_tier] from TRAITS
-          item bonus = _ITEM_TIER_POWER[tier] per completed item on board
-
-        Higher = stronger board.  Typical ranges:
-          Early game  (stage 2): 20–60
-          Mid game    (stage 3): 80–160
-          Late game   (stage 4+): 160–350+
+        Return a 0-100 combat-strength estimate. Unit performance is centered
+        against units of the same shop cost using current tactics.tools stats;
+        TFT Academy remains the source for comp, item, and augment fit.
         """
-        champion_power = 0.0
-        synergy_power = 0.0
-        item_power = 0.0
+        if state.board_champions:
+            units = list(state.board_champions)
+            source = "detected_board"
+            confidence = 0.90
+        elif state.bench_champions:
+            # Until the classifier is trained, the purchase roster is the best
+            # available estimate. Score the strongest level-sized subset so a
+            # full bench does not look stronger than a fielded board.
+            units = sorted(
+                state.bench_champions,
+                key=lambda champion: (
+                    CHAMPIONS.get(champion.name, {}).get("base_power", champion.cost),
+                    champion.star_level,
+                ),
+                reverse=True,
+            )[:max(1, state.level)]
+            source = "roster_estimate"
+            confidence = 0.60
+        elif state.active_synergies:
+            units = []
+            source = "traits_only"
+            confidence = 0.35
+        else:
+            units = []
+            source = "none"
+            confidence = 0.0
 
-        for champ in state.board_champions:
+        raw_unit_power = 0.0
+        meta_power = 0.0
+        meta_rows: list[tuple[float, str]] = []
+        for champ in units:
             champ_data = CHAMPIONS.get(champ.name)
             cost = champ_data["cost"] if champ_data else champ.cost
-            base = cost * (champ.star_level ** 2)
+            base = champ_data.get("base_power", cost * 2.5) if champ_data else cost * 2.5
+            star_multiplier = _STAR_POWER.get(champ.star_level, 1.0)
+            raw_unit_power += base * star_multiplier
+            meta_rating = tactics_live.unit_meta_rating(champ.name, cost)
+            meta_power += meta_rating * 1.5 * min(star_multiplier, 2.0)
+            if tactics_live.unit_stat(champ.name):
+                meta_rows.append((meta_rating, champ.name))
 
-            # Each completed item on this champion multiplies their effectiveness
-            item_mult = 1.0
-            for item_name in champ.items:
-                # find_item_tier also rates radiant items, artifacts, and
-                # emblems (live TFT Academy tiers) — not just craftables.
-                tier, _kind = find_item_tier(item_name)
-                item_power += _ITEM_TIER_POWER.get(tier or "B", 20)
-                item_mult += 0.3
+        champion_power = min(45.0, raw_unit_power * 0.44)
+        meta_power = max(-8.0, min(8.0, meta_power))
 
-            champion_power += base * item_mult
-
+        raw_synergy_power = 0.0
         for synergy in state.active_synergies:
             if not synergy.is_active:
                 continue
             trait_data = TRAITS.get(synergy.name)
             if not trait_data:
-                synergy_power += synergy.count * 2.0
+                raw_synergy_power += synergy.count * 2.0
                 continue
             # Walk breakpoints to find the current activation tier
             bp_index = 0
@@ -175,16 +197,150 @@ class Coach:
                     bp_index = i
             powers = trait_data["power_per_breakpoint"]
             if bp_index < len(powers):
-                synergy_power += powers[bp_index]
+                raw_synergy_power += powers[bp_index]
+        synergy_power = min(20.0, raw_synergy_power * 0.35)
 
-        total = champion_power + synergy_power + item_power
+        primary = next(
+            (suggestion for suggestion in (advice.comp_suggestions if advice else [])
+             if suggestion.is_primary),
+            None,
+        )
+        composition_power = 0.0
+        if primary:
+            tier_factor = {
+                "S": 1.0, "A": 0.85, "B": 0.65,
+                "C": 0.45, "X": 0.30,
+            }.get(primary.tftacademy_tier or "", 0.50)
+            composition_power = min(
+                10.0,
+                primary.match_score * 7.0 + tier_factor * 3.0,
+            )
+
+        wanted_items: dict[str, set[str]] = {}
+        recommended_augments: set[str] = set()
+        if primary:
+            for unit in primary.board_layout:
+                wanted_items.setdefault(unit.get("name", ""), set()).update(
+                    _norm_item_name(item) for item in unit.get("items", [])
+                )
+            recommended_augments = {
+                _norm_augment(name) for name in primary.recommended_augments
+            }
+
+        item_power = 0.0
+        item_data_known = any(champion.items for champion in units)
+        for champion in units:
+            for item_name in champion.items:
+                tier, kind = find_item_tier(item_name)
+                value = _ITEM_TIER_POWER.get(tier or "B", 2.2)
+                if kind == "radiant":
+                    value *= 1.25
+                elif kind in ("artifact", "support"):
+                    value *= 1.15
+                if _norm_item_name(item_name) in wanted_items.get(champion.name, set()):
+                    value += 0.8
+                item_power += value
+        item_power = min(25.0, item_power)
+
+        augment_power = 0.0
+        for augment_name in state.selected_augments:
+            matched_name, rating_data = find_augment_rating(augment_name)
+            rating = (rating_data or {}).get("rating", "B")
+            augment_power += _AUGMENT_POWER.get(rating, 2.1)
+            if _norm_augment(matched_name or augment_name) in recommended_augments:
+                augment_power += 0.6
+        augment_power = min(10.0, augment_power)
+
+        total = max(0.0, min(100.0, (
+            champion_power
+            + meta_power
+            + synergy_power
+            + composition_power
+            + item_power
+            + augment_power
+        )))
+        label = self._board_power_label(total, state.stage, source)
+        meta_rows.sort()
+        meta = tactics_live.snapshot_meta()
         breakdown = BoardPowerBreakdown(
             champion_base=round(champion_power, 1),
+            meta_bonus=round(meta_power, 1),
             synergy_bonus=round(synergy_power, 1),
+            composition_bonus=round(composition_power, 1),
             item_bonus=round(item_power, 1),
+            augment_bonus=round(augment_power, 1),
             total=round(total, 1),
+            label=label,
+            source=source,
+            confidence=confidence,
+            meta_patch=meta.get("patch"),
+            item_data_known=item_data_known,
+            strongest_meta_unit=meta_rows[-1][1] if meta_rows else None,
+            weakest_meta_unit=meta_rows[0][1] if meta_rows else None,
         )
         return total, breakdown
+
+    @staticmethod
+    def _board_power_label(total: float, stage: str, source: str) -> str:
+        if source == "none":
+            return "Unknown"
+        try:
+            stage_number = int((stage or "1-1").split("-")[0])
+        except (TypeError, ValueError):
+            stage_number = 3
+        expected = {1: 6, 2: 20, 3: 35, 4: 52, 5: 68, 6: 78}.get(
+            stage_number, 84
+        )
+        if total >= expected + 8:
+            return "Strong"
+        if total <= expected - 8:
+            return "Weak"
+        return "Stable"
+
+    def _generate_board_strength_tip(
+        self, state: GameState, advice: CoachingAdvice
+    ) -> None:
+        breakdown = advice.board_power_breakdown
+        if breakdown.source == "none":
+            return
+        estimate_note = (
+            " (roster estimate until board classification is active)"
+            if breakdown.source == "roster_estimate" else ""
+        )
+        advice.tips.append(
+            f"Board strength {advice.board_power:.0f}/100 — "
+            f"{breakdown.label.lower()} for stage {state.stage}{estimate_note}."
+        )
+        if breakdown.label == "Weak":
+            sources = [
+                (breakdown.champion_base / 45.0, "unit upgrades"),
+                ((breakdown.synergy_bonus + breakdown.composition_bonus) / 30.0,
+                 "trait coherence"),
+            ]
+            if any(champion.items for champion in state.board_champions) or state.component_ids:
+                sources.append((breakdown.item_bonus / 25.0, "equipped items"))
+            if state.selected_augments:
+                sources.append((breakdown.augment_bonus / 10.0, "augment value"))
+            weakest = min(sources, key=lambda row: row[0])[1]
+            advice.tips.append(
+                f"Your weakest power source is {weakest}. Spend for immediate "
+                "combat value before protecting perfect economy."
+            )
+        elif breakdown.label == "Strong":
+            advice.tips.append(
+                "Your board is ahead for this stage — protect the streak and "
+                "only replace units with a clear upgrade."
+            )
+        if breakdown.meta_bonus <= -2 and breakdown.weakest_meta_unit:
+            advice.tips.append(
+                f"Meta weak link: {breakdown.weakest_meta_unit} is underperforming "
+                "against same-cost units on current tactics.tools data."
+            )
+        elif breakdown.meta_bonus >= 2 and breakdown.strongest_meta_unit:
+            advice.tips.append(
+                f"Meta anchor: {breakdown.strongest_meta_unit} is outperforming "
+                "same-cost units — prioritize its upgrade and item slots."
+            )
 
     # ── Item Analysis ─────────────────────────────────────────────────────────
 

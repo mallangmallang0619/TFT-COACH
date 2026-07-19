@@ -96,11 +96,21 @@ class PositioningSuggestion(BaseModel):
 
 
 class BoardPowerBreakdown(BaseModel):
-    """Breakdown of estimated board power by source."""
-    champion_base: float = 0.0   # Raw champion cost × star-level contribution
-    synergy_bonus: float = 0.0   # Active synergy/trait bonuses
-    item_bonus: float = 0.0      # Completed items on board champions
+    """0-100 board-strength score with explainable source contributions."""
+    champion_base: float = 0.0
+    meta_bonus: float = 0.0
+    synergy_bonus: float = 0.0
+    composition_bonus: float = 0.0
+    item_bonus: float = 0.0
+    augment_bonus: float = 0.0
     total: float = 0.0
+    label: str = "Unknown"
+    source: str = "none"
+    confidence: float = 0.0
+    meta_patch: Optional[str] = None
+    item_data_known: bool = False
+    strongest_meta_unit: Optional[str] = None
+    weakest_meta_unit: Optional[str] = None
 
 
 class CompSuggestion(BaseModel):

@@ -567,6 +567,94 @@ def test_context_comp_scoring():
     )
 
 
+def test_tactics_units_and_board_power():
+    """tactics.tools stats parse and affect explainable board strength."""
+    import json
+    from coach import Coach
+    from game_data import CHAMPIONS
+    from game_state import DetectedChampion, GamePhase, GameState
+    import tactics_live
+
+    rows = {}
+    for index, name in enumerate(list(CHAMPIONS)[:45]):
+        api_name = "TFT17_" + "".join(ch for ch in name if ch.isalnum())
+        rows[api_name] = {
+            "count": 10_000 + index,
+            "place": 4.5,
+            "top4": 50.0,
+            "won": 12.5,
+            "starPlace": 3.8,
+        }
+    payload = {
+        "props": {"pageProps": {"statsData": {
+            "totalEntries": 500_000,
+            "lastUpdated": 123456,
+            "units": rows,
+        }}}
+    }
+    html = (
+        "<title>TFT Units Stats Patch 17.7</title>"
+        f'<script id="__NEXT_DATA__" type="application/json">'
+        f"{json.dumps(payload)}</script>"
+    )
+    parsed = tactics_live.parse_units_html(html)
+    assert parsed["patch"] == "17.7"
+    assert len(parsed["units"]) >= 40
+
+    old_units = tactics_live._unit_stats
+    old_meta = tactics_live._snapshot_meta
+    try:
+        parsed["units"]["Aatrox"].update(
+            avg_place=3.7, top4=64.0, win=20.0
+        )
+        parsed["units"]["Briar"].update(
+            avg_place=5.3, top4=36.0, win=6.0
+        )
+        tactics_live.apply_snapshot(parsed)
+        coach = Coach()
+
+        def score(name, *, items=None, augments=None, board=True):
+            champion = DetectedChampion(
+                name=name,
+                star_level=2,
+                items=items or [],
+                board_row=0 if board else None,
+                board_col=0 if board else None,
+            )
+            state = GameState(
+                phase=GamePhase.PLANNING,
+                stage="2-5",
+                level=4,
+                board_champions=[champion] if board else [],
+                bench_champions=[] if board else [champion],
+                selected_augments=augments or [],
+            )
+            return coach.analyze(state)
+
+        strong = score("Aatrox")
+        weak = score("Briar")
+        geared = score(
+            "Aatrox",
+            items=["Warmog's Armor", "Gargoyle Stoneplate"],
+            augments=["Heroic Grab Bag"],
+        )
+        estimated = score("Aatrox", board=False)
+
+        assert strong.board_power_breakdown.meta_bonus > 0
+        assert weak.board_power_breakdown.meta_bonus < 0
+        assert strong.board_power > weak.board_power
+        assert geared.board_power > strong.board_power
+        assert geared.board_power_breakdown.item_bonus > 0
+        assert geared.board_power_breakdown.augment_bonus > 0
+        assert estimated.board_power_breakdown.source == "roster_estimate"
+        assert estimated.board_power_breakdown.confidence < 0.7
+    finally:
+        tactics_live._unit_stats = old_units
+        tactics_live._snapshot_meta = old_meta
+
+    return "live schema, cost-relative meta, items/augments, roster fallback OK"
+
+
 def test_items_tierlist():
     """Items tier-list parsing + apply: freshest list per kind wins, live
     tiers reach both LIVE_ITEM_TIERS and ITEM_RECIPES, radiants/artifacts
@@ -879,6 +967,17 @@ def test_bench_harvester():
         saved = list(Path(tmp).rglob("*.png"))
         assert len(saved) == 1 and saved[0].parent.name == "Gwen"
 
+    # Preserve the exact landing frame while the roster waits one readable
+    # frame to confirm the shop-card vanish. Confirmation can arrive after
+    # the unit has already been moved without losing the labeled crop.
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        assert hv.process(frame([]), []) == 0
+        assert hv.process(frame([0]), [], ["Gwen"]) == 0
+        assert hv.process(frame([]), ["Gwen"], []) == 1
+        saved = list(Path(tmp).rglob("*.png"))
+        assert len(saved) == 1 and saved[0].parent.name == "Gwen"
+
     # Continuous tracking: a confirmed slot keeps yielding crops while it
     # stays visually stable, up to the cap; any abrupt change stops it.
     with tempfile.TemporaryDirectory() as tmp:
@@ -921,8 +1020,8 @@ def test_bench_harvester():
         assert hv.process(frame([0]), []) == 1
         assert len(list(Path(tmp).rglob("*.png"))) == 2
 
-    return ("pairing guards OK, vacated-slot filtering OK, imwrite-fail OK, "
-            "tracking: interval+cap+retry OK, stop-on-change OK")
+    return ("pairing guards + pending landing cache OK, vacated-slot filtering OK, "
+            "imwrite-fail OK, tracking: interval+cap+retry OK, stop-on-change OK")
 
 
 def test_window_picker():
@@ -1636,6 +1735,7 @@ def main():
     test("Augments apply + fuzzy lookup", test_augments_apply_and_fuzzy)
     test("Set auto-detection", test_set_autodetect)
     test("Context comp scoring", test_context_comp_scoring)
+    test("Board strength + tactics.tools", test_tactics_units_and_board_power)
     test("Items tier list", test_items_tierlist)
     test("Comp-aware item advice", test_comp_aware_item_advice)
     test("Shop buy calls", test_shop_buy_calls)

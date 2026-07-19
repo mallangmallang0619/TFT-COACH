@@ -40,6 +40,7 @@ from game_state import (
 from coach import Coach
 from game_data import ITEM_RECIPES, COMPONENT_IDS, COMPONENT_NAMES, SHRED_ITEMS, BURN_ITEMS
 import tftacademy_live
+import tactics_live
 
 logger = logging.getLogger(__name__)
 
@@ -431,6 +432,7 @@ class DemoServer:
             initial_delay_seconds=2.0,
             include_details=True,
         )
+        tactics_live.schedule_background_refresh(initial_delay_seconds=3.0)
         async with websockets.serve(
             self._handle_client, WEBSOCKET_HOST, WEBSOCKET_PORT, ping_interval=20,
         ):
@@ -488,6 +490,7 @@ class DemoServer:
         # New connection — re-check TFT Academy. Debounced internally, so
         # rapid reconnects won't hammer the upstream site.
         tftacademy_live.schedule_background_refresh(initial_delay_seconds=0.0)
+        tactics_live.schedule_background_refresh(initial_delay_seconds=0.0)
         try:
             # Push static game data and demo-mode metadata immediately so
             # the frontend can render craftable items + dev controls without
@@ -568,6 +571,15 @@ class DemoServer:
 
         if not self._game:
             return  # remaining commands need an active game
+
+        if t == "select_augment":
+            name = (msg.get("name") or "").strip()
+            selected = bool(msg.get("selected", True))
+            if name and selected and name not in self._game.chosen_augments:
+                self._game.chosen_augments.append(name)
+            elif name and not selected and name in self._game.chosen_augments:
+                self._game.chosen_augments.remove(name)
+            return
 
         if t == "override_components":
             self._game.components = msg.get("components", [])
