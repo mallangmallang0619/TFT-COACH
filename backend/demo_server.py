@@ -432,7 +432,7 @@ class DemoServer:
             initial_delay_seconds=2.0,
             include_details=True,
         )
-        tactics_live.schedule_background_refresh(initial_delay_seconds=3.0)
+        tactics_live.schedule_periodic_refresh(initial_delay_seconds=3.0)
         async with websockets.serve(
             self._handle_client, WEBSOCKET_HOST, WEBSOCKET_PORT, ping_interval=20,
         ):

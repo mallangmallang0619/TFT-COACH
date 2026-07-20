@@ -23,6 +23,7 @@ UNITS_URL = "https://tactics.tools/units/sett/latest"
 USER_AGENT = "TFT-Coach/1.0 unit-stats cache"
 HTTP_TIMEOUT_SECONDS = 12
 DEFAULT_DEBOUNCE_SECONDS = 6 * 60 * 60
+PERIODIC_REFRESH_SECONDS = 4 * 60 * 60
 
 _NEXT_DATA_RE = re.compile(
     r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>',
@@ -35,6 +36,7 @@ _refresh_lock = asyncio.Lock()
 _last_refresh_attempt_at = 0.0
 _unit_stats: dict[str, dict] = {}
 _snapshot_meta: dict[str, object] = {}
+_periodic_task: Optional[asyncio.Task] = None
 
 
 def _norm(value: str) -> str:
@@ -166,6 +168,15 @@ def snapshot_meta() -> dict:
     return dict(_snapshot_meta)
 
 
+def _snapshot_revision(snapshot: dict) -> tuple:
+    return (
+        snapshot.get("patch"),
+        snapshot.get("source_updated_at"),
+        snapshot.get("games_analyzed"),
+        len(snapshot.get("units") or {}),
+    )
+
+
 def unit_meta_rating(name: str, cost: int) -> float:
     """Return -1..1 performance relative to other units of the same cost."""
     current = unit_stat(name)
@@ -211,15 +222,37 @@ async def refresh_async(
             logger.warning(f"tactics.tools unit-stat fetch failed: {error}")
             return {"checked": True, "refreshed": False, "error": str(error)}
 
-        apply_snapshot(snapshot)
-        saved = save_cache(snapshot)
-        logger.info(
-            f"tactics.tools unit stats refreshed: {len(_unit_stats)} units, "
-            f"patch {snapshot.get('patch')}"
+        previous_meta = snapshot_meta()
+        previous_revision = (
+            previous_meta.get("patch"),
+            previous_meta.get("source_updated_at"),
+            previous_meta.get("games_analyzed"),
+            len(_unit_stats),
         )
+        next_revision = _snapshot_revision(snapshot)
+        changed = next_revision != previous_revision
+        patch_changed = bool(
+            previous_meta.get("patch")
+            and snapshot.get("patch") != previous_meta.get("patch")
+        )
+        saved = False
+        if changed:
+            apply_snapshot(snapshot)
+            saved = save_cache(snapshot)
+            logger.info(
+                f"tactics.tools unit stats refreshed: {len(_unit_stats)} units, "
+                f"patch {snapshot.get('patch')}"
+                + (f" (was {previous_meta.get('patch')})" if patch_changed else "")
+            )
+        else:
+            logger.debug(
+                f"tactics.tools unit stats unchanged on patch {snapshot.get('patch')}"
+            )
         return {
             "checked": True,
-            "refreshed": saved,
+            "refreshed": changed and saved,
+            "changed": changed,
+            "patch_changed": patch_changed,
             "count": len(_unit_stats),
             "patch": snapshot.get("patch"),
             "error": None,
@@ -236,6 +269,39 @@ def schedule_background_refresh(initial_delay_seconds: float = 3.0) -> None:
         asyncio.get_running_loop().create_task(_delayed())
     except RuntimeError:
         return
+
+
+def schedule_periodic_refresh(
+    *,
+    initial_delay_seconds: float = 3.0,
+    interval_seconds: int = PERIODIC_REFRESH_SECONDS,
+) -> asyncio.Task:
+    global _periodic_task
+    if _periodic_task is not None and not _periodic_task.done():
+        return _periodic_task
+
+    async def _loop() -> None:
+        if initial_delay_seconds > 0:
+            await asyncio.sleep(initial_delay_seconds)
+        while True:
+            try:
+                await refresh_async(force=True)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("Unexpected error during tactics.tools refresh")
+            await asyncio.sleep(interval_seconds)
+
+    task = asyncio.create_task(_loop())
+    _periodic_task = task
+
+    def _clear(completed: asyncio.Task) -> None:
+        global _periodic_task
+        if _periodic_task is completed:
+            _periodic_task = None
+
+    task.add_done_callback(_clear)
+    return task
 
 
 _initial_patch = init_from_cache()

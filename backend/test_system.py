@@ -648,6 +648,9 @@ def test_tactics_units_and_board_power():
         assert geared.board_power_breakdown.augment_bonus > 0
         assert estimated.board_power_breakdown.source == "roster_estimate"
         assert estimated.board_power_breakdown.confidence < 0.7
+        assert strong.board_power_breakdown.meta_patch == "17.7"
+        assert strong.board_power_breakdown.meta_games_analyzed == 500_000
+        assert strong.board_power_breakdown.meta_rank == "Diamond+"
     finally:
         tactics_live._unit_stats = old_units
         tactics_live._snapshot_meta = old_meta
@@ -1607,6 +1610,33 @@ def test_tftacademy_debounce():
     return f"debounced OK (checked={result['checked']})"
 
 
+def test_tactics_periodic_refresh():
+    """Only one recurring tactics.tools updater can run per process."""
+    import asyncio
+    import tactics_live
+
+    async def _run():
+        first = tactics_live.schedule_periodic_refresh(
+            initial_delay_seconds=3600,
+            interval_seconds=3600,
+        )
+        second = tactics_live.schedule_periodic_refresh(
+            initial_delay_seconds=3600,
+            interval_seconds=3600,
+        )
+        assert first is second
+        first.cancel()
+        try:
+            await first
+        except asyncio.CancelledError:
+            pass
+        await asyncio.sleep(0)
+        assert tactics_live._periodic_task is None
+
+    asyncio.run(_run())
+    return "singleton schedule and cancellation OK"
+
+
 def test_websockets_import():
     import websockets
     return f"v{websockets.__version__}"
@@ -1736,6 +1766,7 @@ def main():
     test("Set auto-detection", test_set_autodetect)
     test("Context comp scoring", test_context_comp_scoring)
     test("Board strength + tactics.tools", test_tactics_units_and_board_power)
+    test("Periodic tactics.tools refresh", test_tactics_periodic_refresh)
     test("Items tier list", test_items_tierlist)
     test("Comp-aware item advice", test_comp_aware_item_advice)
     test("Shop buy calls", test_shop_buy_calls)

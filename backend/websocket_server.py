@@ -101,7 +101,7 @@ class TFTCoachServer:
             initial_delay_seconds=2.0,
             include_details=True,
         )
-        tactics_live.schedule_background_refresh(initial_delay_seconds=3.0)
+        tactics_live.schedule_periodic_refresh(initial_delay_seconds=3.0)
 
         # Start WebSocket server and capture loop concurrently
         self.is_running = True

@@ -659,6 +659,22 @@ function MatchScoreBar({ score }) {
   );
 }
 
+function formatMetaGames(value) {
+  if (!value) return null;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M games`;
+  if (value >= 1_000) return `${Math.round(value / 1_000)}K games`;
+  return `${value} games`;
+}
+
+function formatMetaAge(epochSeconds) {
+  if (!epochSeconds) return "cached data";
+  const elapsed = Math.max(0, Math.floor(Date.now() / 1000) - epochSeconds);
+  if (elapsed < 60) return "updated now";
+  if (elapsed < 3600) return `updated ${Math.floor(elapsed / 60)}m ago`;
+  if (elapsed < 86400) return `updated ${Math.floor(elapsed / 3600)}h ago`;
+  return `updated ${Math.floor(elapsed / 86400)}d ago`;
+}
+
 function BoardStrengthCard({ score, breakdown, stage }) {
   if (!breakdown || breakdown.source === "none") return null;
   const color = breakdown.label === "Strong"
@@ -666,11 +682,9 @@ function BoardStrengthCard({ score, breakdown, stage }) {
     : breakdown.label === "Weak" ? "#ff6348" : "#ffa502";
   const rows = [
     { label: "UNITS + STARS", value: breakdown.champion_base || 0, max: 45 },
-    {
-      label: "TRAITS + COMP",
-      value: (breakdown.synergy_bonus || 0) + (breakdown.composition_bonus || 0),
-      max: 30,
-    },
+    { label: "UNIT META", value: breakdown.meta_bonus || 0, max: 8, signed: true },
+    { label: "ACTIVE TRAITS", value: breakdown.synergy_bonus || 0, max: 20 },
+    { label: "COMP FIT", value: breakdown.composition_bonus || 0, max: 10 },
     {
       label: "ITEMS",
       value: breakdown.item_bonus || 0,
@@ -682,6 +696,8 @@ function BoardStrengthCard({ score, breakdown, stage }) {
   const sourceLabel = breakdown.source === "detected_board"
     ? "live board"
     : breakdown.source === "roster_estimate" ? "roster estimate" : "traits estimate";
+  const gamesLabel = formatMetaGames(breakdown.meta_games_analyzed);
+  const ageLabel = formatMetaAge(breakdown.meta_updated_at);
 
   return (
     <div className="card" style={{
@@ -711,12 +727,16 @@ function BoardStrengthCard({ score, breakdown, stage }) {
                 display: "flex", justifyContent: "space-between", marginBottom: "2px",
                 fontFamily: "var(--mono)", fontSize: "8px", color: "#777b8c",
               }}>
-                <span>{row.label}</span><span>{row.unknown ? "?" : row.value.toFixed(1)}</span>
+                <span>{row.label}</span>
+                <span>{row.unknown
+                  ? "?"
+                  : `${row.signed && row.value > 0 ? "+" : ""}${row.value.toFixed(1)}`}</span>
               </div>
               <div style={{ height: "3px", borderRadius: "2px", background: "#1a1b21" }}>
                 <div style={{
-                  height: "100%", borderRadius: "2px", background: color,
-                  width: `${Math.max(0, Math.min(100, row.value / row.max * 100))}%`,
+                  height: "100%", borderRadius: "2px",
+                  background: row.signed && row.value < 0 ? "#ff6348" : color,
+                  width: `${Math.max(0, Math.min(100, Math.abs(row.value) / row.max * 100))}%`,
                 }} />
               </div>
             </div>
@@ -725,7 +745,7 @@ function BoardStrengthCard({ score, breakdown, stage }) {
       </div>
       <div style={{
         marginTop: "8px", paddingTop: "7px", borderTop: "1px solid #2a2d35",
-        display: "flex", justifyContent: "space-between", gap: "8px",
+        display: "flex", justifyContent: "space-between", gap: "8px", flexWrap: "wrap",
         fontFamily: "var(--mono)", fontSize: "8px", color: "#666",
       }}>
         <span>
@@ -735,9 +755,13 @@ function BoardStrengthCard({ score, breakdown, stage }) {
             : ""}
         </span>
         <span>
-          Units: <a href="https://tactics.tools/units" target="_blank" rel="noreferrer"
+          <span style={{ color: "#2ed573" }}>● AUTO META</span>
+          {breakdown.meta_patch ? ` · PATCH ${breakdown.meta_patch}` : ""}
+          {breakdown.meta_rank ? ` · ${breakdown.meta_rank}` : ""}
+          {gamesLabel ? ` · ${gamesLabel}` : ""}
+          {` · ${ageLabel}`}
+          {" · "}<a href="https://tactics.tools/units/sett/latest" target="_blank" rel="noreferrer"
             style={{ color: "#7a8090" }}>tactics.tools</a>
-          {breakdown.meta_patch ? ` ${breakdown.meta_patch}` : ""}
         </span>
       </div>
       {breakdown.source === "roster_estimate" && (
@@ -1418,6 +1442,11 @@ export default function App() {
           {/* ── TAB NAV ── */}
           <div style={{ padding: "10px 16px", display: "flex", gap: "6px", borderBottom: "1px solid #1e2028", flexWrap: "wrap" }}>
             <TabBtn active={tab === "items"} onClick={() => setTab("items")}>⚔️ Items</TabBtn>
+            {boardPowerBreakdown?.source !== "none" && (
+              <TabBtn active={tab === "strength"} onClick={() => setTab("strength")}>
+                📈 Strength {Math.round(boardPower || 0)}
+              </TabBtn>
+            )}
             <TabBtn active={tab === "comp"} onClick={() => setTab("comp")}>
               🎯 Comp{compSuggestions.length > 0 && ` (${compSuggestions.length})`}
             </TabBtn>
@@ -1430,6 +1459,22 @@ export default function App() {
 
           {/* ── CONTENT ── */}
           <div style={{ padding: "12px 16px", overflowY: "auto" }}>
+
+            {tab === "strength" && (
+              <div style={{ animation: "slideIn 0.25s ease" }}>
+                <BoardStrengthCard
+                  score={boardPower}
+                  breakdown={boardPowerBreakdown}
+                  stage={stage}
+                />
+                <div className="card" style={{ color: "#8b8fa3", fontSize: "10px", lineHeight: 1.55 }}>
+                  The score updates every detected frame. Unit strength is compared with
+                  same-cost champions on the latest tactics.tools patch; stars, active
+                  traits, TFT Academy comp fit, equipped items, and marked augments add
+                  the remaining combat value.
+                </div>
+              </div>
+            )}
 
             {/* ═══ ITEMS TAB ═══ */}
             {tab === "items" && (
@@ -1631,12 +1676,6 @@ export default function App() {
             {/* ═══ COMP TAB ═══ */}
             {tab === "comp" && (
               <div style={{ animation: "slideIn 0.25s ease" }}>
-
-                <BoardStrengthCard
-                  score={boardPower}
-                  breakdown={boardPowerBreakdown}
-                  stage={stage}
-                />
 
                 {/* Your Current Units */}
                 <div style={{
