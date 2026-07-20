@@ -145,6 +145,16 @@ class RosterTracker:
     def total_purchases(self) -> int:
         return sum(self._copies.values())
 
+    @property
+    def pending_purchase_names(self) -> list[str]:
+        """Names whose shop-card vanish is awaiting confirmation.
+
+        The harvester uses this provisional signal to retain the bench
+        landing crop, but does not write it until ``update`` confirms the
+        purchase on a later readable shop frame.
+        """
+        return [name for _, name in self._pending_buys]
+
     # ── Internals ─────────────────────────────────────────────────────────────
 
     def _is_new_game(self, stage: str) -> bool:

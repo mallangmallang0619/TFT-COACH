@@ -659,6 +659,101 @@ function MatchScoreBar({ score }) {
   );
 }
 
+function BoardStrengthCard({ score, breakdown, stage }) {
+  if (!breakdown || breakdown.source === "none") return null;
+  const color = breakdown.label === "Strong"
+    ? "#2ed573"
+    : breakdown.label === "Weak" ? "#ff6348" : "#ffa502";
+  const rows = [
+    { label: "UNITS + STARS", value: breakdown.champion_base || 0, max: 45 },
+    {
+      label: "TRAITS + COMP",
+      value: (breakdown.synergy_bonus || 0) + (breakdown.composition_bonus || 0),
+      max: 30,
+    },
+    {
+      label: "ITEMS",
+      value: breakdown.item_bonus || 0,
+      max: 25,
+      unknown: !breakdown.item_data_known,
+    },
+    { label: "AUGMENTS", value: breakdown.augment_bonus || 0, max: 10 },
+  ];
+  const sourceLabel = breakdown.source === "detected_board"
+    ? "live board"
+    : breakdown.source === "roster_estimate" ? "roster estimate" : "traits estimate";
+
+  return (
+    <div className="card" style={{
+      marginBottom: "14px", borderColor: `${color}44`,
+      background: `linear-gradient(135deg, ${color}0d, rgba(21,22,28,0.95))`,
+    }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+        <div style={{ minWidth: "82px" }}>
+          <div style={{
+            fontFamily: "var(--mono)", fontSize: "30px", fontWeight: 800,
+            lineHeight: 1, color,
+          }}>
+            {Math.round(score || 0)}
+            <span style={{ fontSize: "11px", color: "#666" }}>/100</span>
+          </div>
+          <div style={{
+            marginTop: "5px", fontSize: "9px", fontFamily: "var(--mono)",
+            color, fontWeight: 700, letterSpacing: "1px",
+          }}>
+            {breakdown.label?.toUpperCase()} @ {stage}
+          </div>
+        </div>
+        <div style={{ flex: 1 }}>
+          {rows.map((row) => (
+            <div key={row.label} style={{ marginBottom: "5px" }}>
+              <div style={{
+                display: "flex", justifyContent: "space-between", marginBottom: "2px",
+                fontFamily: "var(--mono)", fontSize: "8px", color: "#777b8c",
+              }}>
+                <span>{row.label}</span><span>{row.unknown ? "?" : row.value.toFixed(1)}</span>
+              </div>
+              <div style={{ height: "3px", borderRadius: "2px", background: "#1a1b21" }}>
+                <div style={{
+                  height: "100%", borderRadius: "2px", background: color,
+                  width: `${Math.max(0, Math.min(100, row.value / row.max * 100))}%`,
+                }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{
+        marginTop: "8px", paddingTop: "7px", borderTop: "1px solid #2a2d35",
+        display: "flex", justifyContent: "space-between", gap: "8px",
+        fontFamily: "var(--mono)", fontSize: "8px", color: "#666",
+      }}>
+        <span>
+          {sourceLabel} · {Math.round((breakdown.confidence || 0) * 100)}% confidence
+          {breakdown.meta_bonus
+            ? ` · META ${breakdown.meta_bonus > 0 ? "+" : ""}${breakdown.meta_bonus.toFixed(1)}`
+            : ""}
+        </span>
+        <span>
+          Units: <a href="https://tactics.tools/units" target="_blank" rel="noreferrer"
+            style={{ color: "#7a8090" }}>tactics.tools</a>
+          {breakdown.meta_patch ? ` ${breakdown.meta_patch}` : ""}
+        </span>
+      </div>
+      {breakdown.source === "roster_estimate" && (
+        <div style={{ marginTop: "6px", fontSize: "9px", color: "#8b8fa3", lineHeight: 1.4 }}>
+          Uses your strongest level-sized roster subset until board classification is active.
+        </div>
+      )}
+      {!breakdown.item_data_known && (
+        <div style={{ marginTop: "4px", fontSize: "9px", color: "#666", lineHeight: 1.4 }}>
+          Equipped-item contribution is not scored until item assignment is detected.
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Comp suggestion card: shows comp name, internal+TFT Academy tier,
 // progress, held/missing units, and the composed direction tip.
 function CompCard({ comp, primary, pinned = false, onPin }) {
@@ -1084,8 +1179,17 @@ export default function App() {
   const slamRecs = backendAdvice?.slam_recommendations || [];
   const tips = backendAdvice?.tips || [];
   const augmentRatings = backendAdvice?.augment_ratings || [];
+  const selectedAugments = isLive ? (gameState?.selected_augments || []) : [];
+  const [lastAugmentRatings, setLastAugmentRatings] = useState([]);
+  useEffect(() => {
+    if (augmentRatings.length > 0) setLastAugmentRatings(augmentRatings);
+  }, [augmentRatings]);
+  const shownAugmentRatings = augmentRatings.length > 0
+    ? augmentRatings : lastAugmentRatings;
   const compSuggestions = backendAdvice?.comp_suggestions || [];
   const shopActions = backendAdvice?.shop_actions || [];
+  const boardPower = backendAdvice?.board_power ?? null;
+  const boardPowerBreakdown = backendAdvice?.board_power_breakdown ?? null;
   const lobbyHp = isLive ? (gameState?.lobby_hp || []) : [];
   const heldItems = isLive ? (gameState?.held_items || []) : [];
   const activeSynergies = isLive ? (gameState?.active_synergies || []) : [];
@@ -1281,6 +1385,18 @@ export default function App() {
             <StatBox label="LVL" value={level} color="#c8cad0" />
             <div style={{ width: "1px", height: "24px", background: "#2a2d35" }} />
             <StatBox label="STAGE" value={stage} color={ACCENT} />
+            {boardPower !== null && boardPowerBreakdown?.source !== "none" && (
+              <>
+                <div style={{ width: "1px", height: "24px", background: "#2a2d35" }} />
+                <StatBox
+                  label="BOARD"
+                  value={Math.round(boardPower)}
+                  color={boardPowerBreakdown?.label === "Strong"
+                    ? "#2ed573"
+                    : boardPowerBreakdown?.label === "Weak" ? "#ff6348" : "#ffa502"}
+                />
+              </>
+            )}
           </div>
 
           {/* ── LOBBY STANDINGS ── */}
@@ -1515,6 +1631,12 @@ export default function App() {
             {/* ═══ COMP TAB ═══ */}
             {tab === "comp" && (
               <div style={{ animation: "slideIn 0.25s ease" }}>
+
+                <BoardStrengthCard
+                  score={boardPower}
+                  breakdown={boardPowerBreakdown}
+                  stage={stage}
+                />
 
                 {/* Your Current Units */}
                 <div style={{
@@ -1894,13 +2016,16 @@ export default function App() {
             {/* ═══ AUGMENTS TAB ═══ */}
             {tab === "augments" && (
               <div style={{ animation: "slideIn 0.25s ease" }}>
-                {augmentRatings.length > 0 ? (
+                {shownAugmentRatings.length > 0 ? (
                   <>
-                    <div style={{ fontSize: "9px", color: "#2ed573", fontFamily: "var(--mono)", letterSpacing: "2px", marginBottom: "10px" }}>
-                      ● AUGMENT SELECTION DETECTED
+                    <div style={{ fontSize: "9px", color: augmentRatings.length > 0 ? "#2ed573" : "#8b8fa3", fontFamily: "var(--mono)", letterSpacing: "2px", marginBottom: "10px" }}>
+                      {augmentRatings.length > 0
+                        ? "● AUGMENT SELECTION DETECTED"
+                        : "LAST AUGMENT OPTIONS — MARK YOUR PICK"}
                     </div>
-                    {augmentRatings.map((aug, i) => {
+                    {shownAugmentRatings.map((aug, i) => {
                       const tierColor = aug.tier === "Prismatic" ? "#ff4757" : aug.tier === "Gold" ? "#ffd32a" : "#c0c0c0";
+                      const isTaken = selectedAugments.includes(aug.name);
                       return (
                         <div key={i} className="card" style={{
                           marginBottom: "8px",
@@ -1928,6 +2053,22 @@ export default function App() {
                                 letterSpacing: "1px", border: "1px solid #2ed57344",
                               }}>★ PICK</span>
                             )}
+                            <div style={{ flex: 1 }} />
+                            <button
+                              onClick={() => sendCommand("select_augment", {
+                                name: aug.name,
+                                selected: !isTaken,
+                              })}
+                              style={{
+                                fontSize: "8px", fontWeight: 800, cursor: "pointer",
+                                color: isTaken ? "#2ed573" : "#8b8fa3",
+                                background: isTaken ? "#2ed57318" : "transparent",
+                                padding: "3px 7px", borderRadius: "3px",
+                                fontFamily: "var(--mono)", letterSpacing: "1px",
+                                border: isTaken ? "1px solid #2ed57355" : "1px solid #3a3d4a",
+                              }}>
+                              {isTaken ? "✓ TAKEN" : "MARK TAKEN"}
+                            </button>
                           </div>
                           {(aug.reasons || []).map((reason, ri) => (
                             <div key={ri} style={{

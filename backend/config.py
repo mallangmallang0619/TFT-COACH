@@ -235,12 +235,12 @@ class GameROIs:
         default_factory=lambda: RegionOfInterest(0.002, 0.24, 0.030, 0.58)
     )
 
-    # Champion bench — the nine slots under the board. The box must cover
-    # the standing 3D unit MODELS, not the platform: on a live 1440p frame
-    # the units' bodies span y≈0.60-0.78 while the old platform-level box
-    # (y 0.77+) caught only their feet. Slot 0 starts near x 0.185.
+    # Champion bench — the nine slots under the board. Live diagnose frames
+    # place the models at y≈0.635-0.77. Starting at 0.60 included the fourth
+    # board row above the bench, which diluted slot changes and occasionally
+    # let an empty platform pass as the purchased unit.
     champion_bench: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.183, 0.60, 0.565, 0.18)
+        default_factory=lambda: RegionOfInterest(0.183, 0.635, 0.565, 0.135)
     )
 
     # Board area — the hex grid where champions are placed. Calibrated
