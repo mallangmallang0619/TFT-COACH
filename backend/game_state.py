@@ -108,6 +108,10 @@ class BoardPowerBreakdown(BaseModel):
     source: str = "none"
     confidence: float = 0.0
     meta_patch: Optional[str] = None
+    meta_rank: Optional[str] = None
+    meta_games_analyzed: int = 0
+    meta_updated_at: int = 0
+    meta_synced_at: Optional[str] = None
     item_data_known: bool = False
     strongest_meta_unit: Optional[str] = None
     weakest_meta_unit: Optional[str] = None
