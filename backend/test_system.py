@@ -903,9 +903,9 @@ def test_bench_harvester():
     bx, by, bw, bh = rois.champion_bench.to_pixels(w, h)
     slot_w = bw // 9
 
-    def frame(occupied_slots):
+    def frame(occupied_slots, seed=7):
         f = np.full((h, w, 3), 40, dtype=np.uint8)   # flat = empty bench
-        rng = np.random.default_rng(7)
+        rng = np.random.default_rng(seed)
         for s in occupied_slots:
             noise = rng.integers(0, 255, (bh, slot_w, 3), dtype=np.uint8)
             f[by:by + bh, bx + s * slot_w: bx + (s + 1) * slot_w] = noise
@@ -981,6 +981,20 @@ def test_bench_harvester():
         saved = list(Path(tmp).rglob("*.png"))
         assert len(saved) == 1 and saved[0].parent.name == "Gwen"
 
+    # OCR can expose the pending purchase several capture cycles after the
+    # actual landing. Recover that exact historical crop instead of requiring
+    # the transition to remain inside the old two-frame window.
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        assert hv.process(frame([]), []) == 0
+        assert hv.process(frame([0]), []) == 0
+        assert hv.process(frame([0]), []) == 0
+        assert hv.process(frame([0]), []) == 0
+        assert hv.process(frame([0]), [], ["Gwen"]) == 0
+        assert hv.process(frame([]), ["Gwen"], []) == 1
+        saved = list(Path(tmp).rglob("*.png"))
+        assert len(saved) == 1 and saved[0].parent.name == "Gwen"
+
     # Continuous tracking: a confirmed slot keeps yielding crops while it
     # stays visually stable, up to the cap; any abrupt change stops it.
     with tempfile.TemporaryDirectory() as tmp:
@@ -1023,8 +1037,27 @@ def test_bench_harvester():
         assert hv.process(frame([0]), []) == 1
         assert len(list(Path(tmp).rglob("*.png"))) == 2
 
-    return ("pairing guards + pending landing cache OK, vacated-slot filtering OK, "
-            "imwrite-fail OK, tracking: interval+cap+retry OK, stop-on-change OK")
+    # Idle animations and spell glows can produce two very different frames.
+    # Neither uncertain frame is saved, but stable tracking must resume after
+    # the visual settles instead of freezing the purchase after one second.
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(
+            out_dir=Path(tmp),
+            track_interval=1,
+            track_max_saves=3,
+            track_change_limit=1,
+        )
+        hv.process(frame([]), [])
+        hv.process(frame([0]), [])
+        assert hv.process(frame([0]), ["Gwen"]) == 1
+        assert hv.process(frame([0], seed=8), []) == 0
+        assert hv.process(frame([0], seed=9), []) == 0
+        assert hv.process(frame([0]), []) == 1
+        assert len(list(Path(tmp).rglob("*.png"))) == 2
+
+    return ("pairing guards + six-frame landing recovery OK, vacated-slot filtering "
+            "OK, imwrite-fail OK, tracking: interval+cap+retry+animation recovery OK, "
+            "stop-on-change OK")
 
 
 def test_window_picker():
@@ -1075,9 +1108,11 @@ def test_direct_window_capture():
 
     class FakeWindowsCapture:
         last_kwargs = None
+        last_instance = None
 
         def __init__(self, **kwargs):
             FakeWindowsCapture.last_kwargs = kwargs
+            FakeWindowsCapture.last_instance = self
             self.handlers = {}
             self.control = FakeControl()
 
@@ -1085,11 +1120,14 @@ def test_direct_window_capture():
             self.handlers[handler.__name__] = handler
             return handler
 
-        def start_free_threaded(self):
+        def emit(self, value):
             frame = SimpleNamespace(
-                frame_buffer=np.full((50, 100, 4), 37, dtype=np.uint8)
+                frame_buffer=np.full((50, 100, 4), value, dtype=np.uint8)
             )
             self.handlers["on_frame_arrived"](frame, None)
+
+        def start_free_threaded(self):
+            self.emit(37)
             return self.control
 
     original_api = capture_module._WindowsCapture
@@ -1102,6 +1140,10 @@ def test_direct_window_capture():
         captured = adapter.grab(timeout=0)
         assert captured.shape == (50, 100, 3)
         assert int(captured[0, 0, 0]) == 37
+        assert adapter.grab(timeout=0) is None, "stale frame was returned twice"
+        FakeWindowsCapture.last_instance.emit(52)
+        fresh = adapter.grab(timeout=0)
+        assert fresh is not None and int(fresh[0, 0, 0]) == 52
         assert FakeWindowsCapture.last_kwargs["window_hwnd"] == 12345
         adapter.stop()
         assert not adapter.active
