@@ -1161,12 +1161,15 @@ export default function App() {
   const inElectron = typeof window !== "undefined" && !!window.electronAPI;
   const [isInteractive, setIsInteractive] = useState(!inElectron);
   const [hoverLocked, setHoverLocked] = useState(false);
+  const [shareMode, setShareMode] = useState(false);
   useEffect(() => {
     if (!inElectron) return;
     window.electronAPI.onInteractionMode?.((interactive) =>
       setIsInteractive(interactive)
     );
     window.electronAPI.onHoverLock?.((locked) => setHoverLocked(locked));
+    window.electronAPI.onShareMode?.((enabled) => setShareMode(enabled));
+    window.electronAPI.getShareMode?.().then((enabled) => setShareMode(enabled));
   }, [inElectron]);
   // Only request interactivity on enter — release is handled by the main
   // process polling the cursor position, since renderer mouseleave events
@@ -1217,6 +1220,7 @@ export default function App() {
   const lobbyHp = isLive ? (gameState?.lobby_hp || []) : [];
   const heldItems = isLive ? (gameState?.held_items || []) : [];
   const activeSynergies = isLive ? (gameState?.active_synergies || []) : [];
+  const captureMethod = isLive ? (gameState?.capture_method || "screen") : "screen";
 
   // Champion data for the Comp/Position tabs
   const boardChampions = isLive ? (gameState?.board_champions || []) : [];
@@ -1355,6 +1359,21 @@ export default function App() {
           )}
         </div>
         <div style={{ display: "flex", gap: "6px" }}>
+          {inElectron && (
+            <button
+              onClick={() => window.electronAPI.setShareMode?.(!shareMode)}
+              title="Ctrl+Shift+R · Toggle visibility in Discord streams and screenshots"
+              style={{
+                background: shareMode ? "#2ed57318" : "none",
+                border: `1px solid ${shareMode ? "#2ed57366" : "#2a2d35"}`,
+                borderRadius: "6px", color: shareMode ? "#2ed573" : "#8b8fa3",
+                padding: "4px 10px", cursor: "pointer",
+                fontFamily: "var(--mono)", fontSize: "10px", fontWeight: 700,
+              }}
+            >
+              {shareMode ? "📡 SHARE ON" : "SHARE"}
+            </button>
+          )}
           {isDemo && (
             <button
               onClick={() => setDevOpen(!devOpen)}
@@ -1440,6 +1459,20 @@ export default function App() {
           )}
 
           {/* ── TAB NAV ── */}
+          {shareMode && isLive && (
+            <div style={{
+              padding: "7px 16px",
+              background: captureMethod === "window" ? "#2ed5730b" : "#ff63480d",
+              borderBottom: `1px solid ${captureMethod === "window" ? "#2ed5732b" : "#ff634833"}`,
+              color: captureMethod === "window" ? "#2ed573" : "#ff8a75",
+              fontFamily: "var(--mono)", fontSize: "9px", letterSpacing: "0.5px",
+            }}>
+              {captureMethod === "window"
+                ? "● SHARE MODE · Direct League capture active · detection remains overlay-safe"
+                : "⚠ SHARE MODE · Screen fallback active · overlay may affect covered detection regions"}
+            </div>
+          )}
+
           <div style={{ padding: "10px 16px", display: "flex", gap: "6px", borderBottom: "1px solid #1e2028", flexWrap: "wrap" }}>
             <TabBtn active={tab === "items"} onClick={() => setTab("items")}>⚔️ Items</TabBtn>
             {boardPowerBreakdown?.source !== "none" && (

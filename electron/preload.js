@@ -27,6 +27,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   setOpacity: (opacity) =>
     ipcRenderer.send("set-opacity", opacity),
 
+  setShareMode: (enabled) =>
+    ipcRenderer.send("set-share-mode", enabled),
+
+  getShareMode: () => ipcRenderer.invoke("get-share-mode"),
+
   // Listen for interaction mode changes from main process
   onInteractionMode: (callback) =>
     ipcRenderer.on("interaction-mode", (event, isInteractive) =>
@@ -36,6 +41,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Listen for ghost-lock state changes (Ctrl+Shift+G)
   onHoverLock: (callback) =>
     ipcRenderer.on("hover-lock", (event, locked) => callback(locked)),
+
+  onShareMode: (callback) =>
+    ipcRenderer.on("share-mode", (event, enabled) => callback(enabled)),
 
   // Check if running in Electron
   isElectron: true,

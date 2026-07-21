@@ -118,6 +118,7 @@ class TFTCoachServer:
     async def stop(self):
         """Gracefully shut down the server."""
         self.is_running = False
+        self.capture.close()
         for client in self.clients.copy():
             await client.close()
         logger.info("Server stopped.")
@@ -332,6 +333,7 @@ class TFTCoachServer:
                 state = await loop.run_in_executor(
                     None, self.detector.detect, frame
                 )
+                state.capture_method = self.capture.capture_method
 
                 # Never let launcher/loading/closed-window frames poison the
                 # roster or harvester baselines. Two consecutive misses force

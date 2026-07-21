@@ -194,6 +194,7 @@ class GameState(BaseModel):
     timestamp: float = Field(default_factory=time.time)
     frame_number: int = 0
     detection_ms: float = 0.0                  # How long detection took
+    capture_method: str = "screen"
 
     # Game phase
     phase: GamePhase = GamePhase.NOT_IN_GAME
