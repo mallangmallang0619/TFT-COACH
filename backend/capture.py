@@ -271,8 +271,9 @@ class WindowSurfaceCapture:
         self._control = None
         self._target_hwnd: Optional[int] = None
         self._latest_frame: Optional[np.ndarray] = None
-        self._frame_ready = threading.Event()
-        self._lock = threading.Lock()
+        self._condition = threading.Condition()
+        self._frame_sequence = 0
+        self._last_read_sequence = 0
         self._generation = None
         self._closed = False
         self.last_error: Optional[str] = None
@@ -311,15 +312,17 @@ class WindowSurfaceCapture:
                 if self._generation is not generation:
                     return
                 image = frame.frame_buffer[:, :, :3].copy()
-                with self._lock:
+                with self._condition:
                     self._latest_frame = image
-                self._frame_ready.set()
+                    self._frame_sequence += 1
+                    self._condition.notify_all()
 
             @capture.event
             def on_closed():
                 if self._generation is generation:
-                    self._closed = True
-                    self._frame_ready.set()
+                    with self._condition:
+                        self._closed = True
+                        self._condition.notify_all()
 
             control = capture.start_free_threaded()
             self._capture = capture
@@ -334,11 +337,19 @@ class WindowSurfaceCapture:
     def grab(self, timeout: float = 0.35) -> Optional[np.ndarray]:
         if not self.active:
             return None
-        if not self._frame_ready.wait(timeout):
-            return None
-        if self._closed:
-            return None
-        with self._lock:
+        deadline = time.monotonic() + timeout
+        with self._condition:
+            while (
+                not self._closed
+                and self._frame_sequence <= self._last_read_sequence
+            ):
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return None
+                self._condition.wait(remaining)
+            if self._closed:
+                return None
+            self._last_read_sequence = self._frame_sequence
             frame = self._latest_frame
         return frame.copy() if frame is not None else None
 
@@ -348,10 +359,12 @@ class WindowSurfaceCapture:
         self._capture = None
         self._control = None
         self._target_hwnd = None
-        self._closed = False
-        self._frame_ready.clear()
-        with self._lock:
+        with self._condition:
+            self._closed = True
             self._latest_frame = None
+            self._frame_sequence = 0
+            self._last_read_sequence = 0
+            self._condition.notify_all()
         if control is not None:
             try:
                 control.stop()

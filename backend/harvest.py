@@ -58,7 +58,7 @@ _OCCUPIED_STD_MIN = 19.5
 # slot's thumbnail stays within _TRACK_CHANGE_LIMIT of the last saved one
 # (idle animation drifts a little; moves/sells/combines jump far past it).
 _TRACK_SAVE_INTERVAL = 1        # every processed frame while stable
-_TRACK_MAX_SAVES = 20           # crops per purchase, landing crop included
+_TRACK_MAX_SAVES = 50           # crops per purchase, landing crop included
 _TRACK_CHANGE_LIMIT = 18.0      # tolerate idle poses and brief spell glows
 _CROP_MIN_STD = 18.0
 _CROP_MIN_LAPLACIAN = 500.0
@@ -221,7 +221,7 @@ class BenchHarvester:
                 # viable high-drift frame may just be an idle animation or
                 # spell glow, so require it to repeat before abandoning the
                 # label without ever saving the uncertain frame.
-                if tracked.change_frames >= 1:
+                if tracked.change_frames >= 2:
                     logger.debug(
                         f"Slot {slot} changed (drift {drift:.0f}) — "
                         f"stop tracking {tracked.label}"
@@ -239,6 +239,10 @@ class BenchHarvester:
                     tracked.frames_since = 0
                     tracked.reference = thumbs[slot]
                     if tracked.saves >= self.track_max_saves:
+                        logger.info(
+                            f"Harvest complete: {tracked.label} reached "
+                            f"{self.track_max_saves} crops (bench slot {slot})"
+                        )
                         del self._tracked[slot]
                         continue
         return saved
