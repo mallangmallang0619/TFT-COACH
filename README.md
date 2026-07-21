@@ -18,7 +18,7 @@ TFT client ──screen capture──► Python backend ──ws://localhost:876
  Module               | Purpose                                                     
 ----------------------|-------------------------------------------------------------
  `main.py`            | Entry point — starts capture loop + WebSocket server        
- `capture.py`         | Screen capture via `mss`, window detection, frame cropping  
+ `capture.py`         | Direct Windows game-window capture with `mss` fallback, frame cropping
  `detector.py`        | OpenCV template matching + Tesseract OCR for game state     
  `game_state.py`      | Data model for the full game state                          
  `coach.py`           | Coaching logic — generates advice from game state          
@@ -104,6 +104,7 @@ Hotkeys (global — they work while the game has focus):
 |------|--------|
 | `Ctrl+Shift+G` | **Ghost lock** — overlay never captures the mouse, even on hover. Use while scouting: TFT's player list sits underneath the panel, and this lets your clicks reach it. Press again to unlock. |
 | `Ctrl+Shift+H` | Show / hide the overlay (e.g. before alt-tabbing — the overlay floats above other apps). |
+| `Ctrl+Shift+R` | **Share Mode** — make the overlay visible in Discord streams and screenshots. The backend uses direct League-window capture so the overlay does not contaminate detection. |
 | `Ctrl+Shift+T` | Manual click-through toggle (also clears ghost lock). |
 | `Ctrl+Shift+Q` | Quit TFT Coach. |
 

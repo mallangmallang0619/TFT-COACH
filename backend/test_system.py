@@ -1059,6 +1059,75 @@ def test_window_picker():
     return "game only by default, optional launcher lookup, unrelated windows ignored"
 
 
+def test_direct_window_capture():
+    """HWND capture copies frames and normalizes outer bounds to client size."""
+    from types import SimpleNamespace
+    import numpy as np
+    import capture as capture_module
+    from capture import ScreenCapture, WindowRect, WindowSurfaceCapture
+
+    class FakeControl:
+        def __init__(self):
+            self.stopped = False
+
+        def stop(self):
+            self.stopped = True
+
+    class FakeWindowsCapture:
+        last_kwargs = None
+
+        def __init__(self, **kwargs):
+            FakeWindowsCapture.last_kwargs = kwargs
+            self.handlers = {}
+            self.control = FakeControl()
+
+        def event(self, handler):
+            self.handlers[handler.__name__] = handler
+            return handler
+
+        def start_free_threaded(self):
+            frame = SimpleNamespace(
+                frame_buffer=np.full((50, 100, 4), 37, dtype=np.uint8)
+            )
+            self.handlers["on_frame_arrived"](frame, None)
+            return self.control
+
+    original_api = capture_module._WindowsCapture
+    original_platform = capture_module.platform.system
+    try:
+        capture_module._WindowsCapture = FakeWindowsCapture
+        capture_module.platform.system = lambda: "Windows"
+        adapter = WindowSurfaceCapture()
+        assert adapter.start(12345)
+        captured = adapter.grab(timeout=0)
+        assert captured.shape == (50, 100, 3)
+        assert int(captured[0, 0, 0]) == 37
+        assert FakeWindowsCapture.last_kwargs["window_hwnd"] == 12345
+        adapter.stop()
+        assert not adapter.active
+    finally:
+        capture_module._WindowsCapture = original_api
+        capture_module.platform.system = original_platform
+
+    screen_capture = object.__new__(ScreenCapture)
+    screen_capture.window = WindowRect(
+        x=2,
+        y=25,
+        width=100,
+        height=50,
+        outer_width=104,
+        outer_height=78,
+        capture_inset=(2, 25, 2, 3),
+    )
+    outer_frame = np.zeros((78, 104, 3), dtype=np.uint8)
+    outer_frame[25:75, 2:102] = 91
+    normalized = screen_capture._normalize_window_frame(outer_frame)
+    assert normalized.shape == (50, 100, 3)
+    assert int(normalized.mean()) == 91
+
+    return "exact HWND, copied BGR frame, client-area normalization OK"
+
+
 def test_classifier_data_pipeline():
     """Training-data discovery and stratified split (no torch required)."""
     import tempfile
@@ -1776,6 +1845,7 @@ def main():
     test("Roster tracker", test_roster_tracker)
     test("Bench harvester", test_bench_harvester)
     test("Window picker", test_window_picker)
+    test("Direct window capture", test_direct_window_capture)
     test("Classifier data pipeline", test_classifier_data_pipeline)
     test("Unit classifier fallback", test_unit_classifier_fallback)
     test("Augment OCR (real frame)", test_augment_ocr_real_frame)

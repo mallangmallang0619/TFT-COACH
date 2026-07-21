@@ -1,5 +1,6 @@
 # Screen capture
 mss>=9.0.0
+windows-capture==2.0.0; platform_system == "Windows"
 
 # Computer vision
 opencv-python>=4.9.0

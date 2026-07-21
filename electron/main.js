@@ -18,6 +18,7 @@ const path = require("path");
 let overlayWindow = null;
 let isInteractive = false;
 let isVisible = true;
+let isShareMode = process.env.TFT_COACH_SHARE_MODE === "1";
 // Ghost lock: while true the overlay never captures the mouse, even on
 // hover — needed when clicking game UI that sits underneath it (the
 // player list used for scouting other boards is right below the panel).
@@ -58,7 +59,7 @@ function createOverlayWindow() {
   // Windows). Without this the backend's own capture includes the overlay
   // pixels — it sits exactly over the game's player-HP list, corrupting
   // OCR of everything underneath it.
-  overlayWindow.setContentProtection(true);
+  overlayWindow.setContentProtection(!isShareMode);
 
   // Enable click-through initially
   setClickThrough(true);
@@ -103,6 +104,16 @@ function createOverlayWindow() {
   console.log("  Ctrl+Shift+T  — Toggle click-through (interact with overlay)");
   console.log("  Ctrl+Shift+H  — Show/Hide overlay");
   console.log("  Ctrl+Shift+Q  — Quit TFT Coach");
+}
+
+function setShareMode(enabled) {
+  isShareMode = !!enabled;
+  if (!overlayWindow) return;
+  overlayWindow.setContentProtection(!isShareMode);
+  overlayWindow.webContents.send("share-mode", isShareMode);
+  console.log(
+    `[TFT Coach] Share Mode: ${isShareMode ? "ON - visible in captures" : "OFF - capture protected"}`
+  );
 }
 
 function setHoverLock(locked) {
@@ -176,6 +187,10 @@ function registerHotkeys() {
     console.log(`[TFT Coach] Overlay ${isVisible ? "shown" : "hidden"}`);
   });
 
+  register("Ctrl+Shift+R", () => {
+    setShareMode(!isShareMode);
+  });
+
   // Quit
   register("Ctrl+Shift+Q", () => {
     console.log("[TFT Coach] Quitting...");
@@ -189,6 +204,9 @@ function registerHotkeys() {
 app.whenReady().then(() => {
   createOverlayWindow();
   registerHotkeys();
+  overlayWindow.webContents.on("did-finish-load", () => {
+    overlayWindow.webContents.send("share-mode", isShareMode);
+  });
 });
 
 app.on("will-quit", () => {
@@ -266,3 +284,9 @@ ipcMain.on("set-opacity", (event, opacity) => {
     overlayWindow.setOpacity(Math.max(0.3, Math.min(1.0, opacity)));
   }
 });
+
+ipcMain.on("set-share-mode", (event, enabled) => {
+  setShareMode(enabled);
+});
+
+ipcMain.handle("get-share-mode", () => isShareMode);
