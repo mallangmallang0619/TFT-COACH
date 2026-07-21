@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -43,11 +44,15 @@ BENCH_SLOTS = 9
 
 # Bench slots are compared frame-to-frame as small grayscale thumbnails:
 # a unit arriving changes its slot drastically while empty planks stay
-# static. Texture alone can't do this — measured on a real frame, empty
-# plank slots have std 22-27 vs occupied 29-34, far too close to gate on.
+# static. On the recalibrated ROI, empty slots usually have thumbnail std
+# 14-19 while occupied slots start around 20, but relative frame-to-frame
+# evidence remains the primary guard because arena lighting varies.
 _THUMB_SIZE = (24, 32)          # (w, h) of the comparison thumbnail
-_CHANGE_FLOOR = 9.0             # minimum mean-abs-diff to count as a change
-_CHANGE_OUTLIER_FACTOR = 2.5    # ...and it must stand out vs the other slots
+_CHANGE_FLOOR = 6.0             # minimum mean-abs-diff to count as a change
+_CHANGE_OUTLIER_FACTOR = 1.6    # ...and it must stand out vs the other slots
+_LANDING_HISTORY_FRAMES = 6
+_EMPTY_STD_MAX = 21.0
+_OCCUPIED_STD_MIN = 19.5
 
 # Continuous tracking of confirmed slots: save every Nth frame while the
 # slot's thumbnail stays within _TRACK_CHANGE_LIMIT of the last saved one
@@ -55,9 +60,9 @@ _CHANGE_OUTLIER_FACTOR = 2.5    # ...and it must stand out vs the other slots
 _TRACK_SAVE_INTERVAL = 1        # every processed frame while stable
 _TRACK_MAX_SAVES = 20           # crops per purchase, landing crop included
 _TRACK_CHANGE_LIMIT = 18.0      # tolerate idle poses and brief spell glows
-_CROP_MIN_STD = 20.0
-_CROP_MIN_LAPLACIAN = 700.0
-_CROP_MIN_FULL_LAPLACIAN = 100.0
+_CROP_MIN_STD = 18.0
+_CROP_MIN_LAPLACIAN = 500.0
+_CROP_MIN_FULL_LAPLACIAN = 80.0
 
 
 @dataclass
@@ -77,6 +82,13 @@ class _TrackedSlot:
     frames_since: int = 0
     saves: int = 0
     change_frames: int = 0
+    occupancy_misses: int = 0
+
+
+@dataclass
+class _BenchFrame:
+    crops: list[np.ndarray]
+    thumbs: list[Optional[np.ndarray]]
 
 
 def training_stats(out_dir: Path = TRAINING_DIR) -> tuple[int, int, int]:
@@ -106,13 +118,12 @@ class BenchHarvester:
         self.track_interval = track_interval
         self.track_max_saves = track_max_saves
         self.track_change_limit = track_change_limit
-        # Thumbnails of each slot from the last two frames — purchases are
-        # confirmed one frame after the unit lands, so "just changed" must
-        # look two frames back.
-        self._thumbs_prev: Optional[list[np.ndarray]] = None
-        self._thumbs_prev2: Optional[list[np.ndarray]] = None
+        # Keep a short bench history so delayed shop confirmation can recover
+        # the exact frame where a unit landed instead of requiring perfect
+        # timing between OCR and animation.
         self._pending_landings: list[_PendingLanding] = []
         self._tracked: dict[int, _TrackedSlot] = {}
+        self._history: deque[_BenchFrame] = deque(maxlen=_LANDING_HISTORY_FRAMES)
         self.saved_count = 0
 
     def process(
@@ -124,6 +135,10 @@ class BenchHarvester:
         """Returns how many labeled crops were saved this frame."""
         crops = self._bench_slot_crops(frame)
         thumbs = [self._thumb(c) for c in crops]
+        current_frame = _BenchFrame(
+            crops=[crop.copy() for crop in crops],
+            thumbs=thumbs,
+        )
         pending_purchases = list(pending_purchases or [])
 
         saved = 0
@@ -136,9 +151,8 @@ class BenchHarvester:
             saved += count
 
         if purchases and not confirmed_from_cache:
-            baseline = self._thumbs_prev2 or self._thumbs_prev
             count = self._harvest_confirmed_fallback(
-                purchases, crops, thumbs, baseline, just_confirmed
+                purchases, thumbs, current_frame, just_confirmed
             )
             saved += count
 
@@ -150,22 +164,20 @@ class BenchHarvester:
             labels_match = [p.label for p in self._pending_landings] == pending_purchases
             if not labels_match:
                 self._stage_pending(
-                    pending_purchases, crops, thumbs, self._thumbs_prev
+                    pending_purchases, current_frame
                 )
         elif not purchases:
             self._pending_landings.clear()
 
         saved += self._harvest_tracked(crops, thumbs, just_confirmed)
 
-        self._thumbs_prev2 = self._thumbs_prev
-        self._thumbs_prev = thumbs
+        self._history.append(current_frame)
         return saved
 
     def reset(self) -> None:
-        self._thumbs_prev = None
-        self._thumbs_prev2 = None
         self._pending_landings.clear()
         self._tracked.clear()
+        self._history.clear()
 
     # ── Internals ─────────────────────────────────────────────────────────────
 
@@ -191,9 +203,18 @@ class BenchHarvester:
                 del self._tracked[slot]
                 continue
             if not self._became_occupied(thumbs[slot], tracked.empty_reference):
-                logger.debug(f"Slot {slot} became empty — stop tracking {tracked.label}")
-                del self._tracked[slot]
+                empty_distance = float(np.mean(cv2.absdiff(
+                    thumbs[slot], tracked.empty_reference
+                )))
+                if empty_distance < 4.0 or tracked.occupancy_misses >= 1:
+                    logger.debug(
+                        f"Slot {slot} became empty — stop tracking {tracked.label}"
+                    )
+                    del self._tracked[slot]
+                else:
+                    tracked.occupancy_misses += 1
                 continue
+            tracked.occupancy_misses = 0
             drift = float(np.mean(cv2.absdiff(thumbs[slot], tracked.reference)))
             if drift >= self.track_change_limit:
                 # Empty/low-detail means the unit definitely left. A single
@@ -225,29 +246,17 @@ class BenchHarvester:
     def _stage_pending(
         self,
         names: list[str],
-        crops: list[np.ndarray],
-        thumbs: list[Optional[np.ndarray]],
-        baseline: Optional[list[np.ndarray]],
+        current_frame: _BenchFrame,
     ) -> None:
         self._pending_landings.clear()
-        slots = self._newly_occupied_slots(thumbs, baseline)
-        if len(slots) != len(names) or baseline is None:
+        landings = self._find_recent_landings(names, current_frame)
+        if len(landings) != len(names):
             logger.info(
                 f"Holding purchase labels but no clean landing: {len(names)} pending vs "
-                f"{len(slots)} newly occupied bench slots"
+                f"{len(landings)} recoverable bench slots"
             )
             return
-        for name, slot in zip(names, slots):
-            if thumbs[slot] is None or baseline[slot] is None:
-                self._pending_landings.clear()
-                return
-            self._pending_landings.append(_PendingLanding(
-                label=name,
-                slot=slot,
-                crop=crops[slot].copy(),
-                occupied_thumb=thumbs[slot].copy(),
-                empty_thumb=baseline[slot].copy(),
-            ))
+        self._pending_landings = landings
         logger.debug(
             f"Retained pending bench landings: "
             f"{[(p.label, p.slot) for p in self._pending_landings]}"
@@ -284,33 +293,64 @@ class BenchHarvester:
     def _harvest_confirmed_fallback(
         self,
         purchases: list[str],
-        crops: list[np.ndarray],
         thumbs: list[Optional[np.ndarray]],
-        baseline: Optional[list[np.ndarray]],
+        current_frame: _BenchFrame,
         just_confirmed: set[int],
     ) -> int:
-        slots = self._newly_occupied_slots(thumbs, baseline)
-        if len(slots) != len(purchases) or baseline is None:
+        landings = self._find_recent_landings(purchases, current_frame)
+        if len(landings) != len(purchases):
             logger.info(
                 f"Skipping harvest: {len(purchases)} purchases vs "
-                f"{len(slots)} newly occupied bench slots"
+                f"{len(landings)} recoverable bench slots"
             )
             return 0
 
         saved = 0
-        for name, slot in zip(purchases, slots):
-            if thumbs[slot] is None or baseline[slot] is None:
-                continue
-            did_save = self._save(crops[slot], name, slot)
+        for landing in landings:
+            did_save = self._save(landing.crop, landing.label, landing.slot)
             saved += int(did_save)
-            self._tracked[slot] = _TrackedSlot(
-                label=name,
-                reference=thumbs[slot].copy(),
-                empty_reference=baseline[slot].copy(),
-                saves=int(did_save),
-            )
-            just_confirmed.add(slot)
+            current = thumbs[landing.slot]
+            if self._became_occupied(current, landing.empty_thumb):
+                self._tracked[landing.slot] = _TrackedSlot(
+                    label=landing.label,
+                    reference=current.copy(),
+                    empty_reference=landing.empty_thumb,
+                    saves=int(did_save),
+                )
+                just_confirmed.add(landing.slot)
         return saved
+
+    def _find_recent_landings(
+        self,
+        names: list[str],
+        current_frame: _BenchFrame,
+    ) -> list[_PendingLanding]:
+        frames = [*self._history, current_frame]
+        for index in range(len(frames) - 1, 0, -1):
+            before = frames[index - 1]
+            after = frames[index]
+            slots = self._newly_occupied_slots(after.thumbs, before.thumbs)
+            if not slots:
+                continue
+            if len(slots) != len(names):
+                return []
+            landings: list[_PendingLanding] = []
+            for name, slot in zip(names, slots):
+                occupied = after.thumbs[slot]
+                empty = before.thumbs[slot]
+                if occupied is None or empty is None:
+                    landings = []
+                    break
+                landings.append(_PendingLanding(
+                    label=name,
+                    slot=slot,
+                    crop=after.crops[slot].copy(),
+                    occupied_thumb=occupied.copy(),
+                    empty_thumb=empty.copy(),
+                ))
+            if landings:
+                return landings
+        return []
 
     def _newly_occupied_slots(
         self,
@@ -377,10 +417,19 @@ class BenchHarvester:
             return False
         current_std, current_laplacian = cls._crop_metrics(current)
         baseline_std, baseline_laplacian = cls._crop_metrics(baseline)
-        return (
-            current_std >= baseline_std + 2.0
-            or current_laplacian >= baseline_laplacian * 1.15
+        baseline_looks_empty = baseline_std <= _EMPTY_STD_MAX
+        contrast_gain = current_std >= max(
+            _OCCUPIED_STD_MIN,
+            baseline_std + 1.0,
         )
+        edge_gain = (
+            current_std >= baseline_std + 0.3
+            and current_laplacian >= max(
+                _CROP_MIN_LAPLACIAN,
+                baseline_laplacian * 1.18,
+            )
+        )
+        return baseline_looks_empty and (contrast_gain or edge_gain)
 
     def _save(self, crop: np.ndarray, name: str, slot: int) -> bool:
         if crop.size == 0:

@@ -981,6 +981,20 @@ def test_bench_harvester():
         saved = list(Path(tmp).rglob("*.png"))
         assert len(saved) == 1 and saved[0].parent.name == "Gwen"
 
+    # OCR can expose the pending purchase several capture cycles after the
+    # actual landing. Recover that exact historical crop instead of requiring
+    # the transition to remain inside the old two-frame window.
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        assert hv.process(frame([]), []) == 0
+        assert hv.process(frame([0]), []) == 0
+        assert hv.process(frame([0]), []) == 0
+        assert hv.process(frame([0]), []) == 0
+        assert hv.process(frame([0]), [], ["Gwen"]) == 0
+        assert hv.process(frame([]), ["Gwen"], []) == 1
+        saved = list(Path(tmp).rglob("*.png"))
+        assert len(saved) == 1 and saved[0].parent.name == "Gwen"
+
     # Continuous tracking: a confirmed slot keeps yielding crops while it
     # stays visually stable, up to the cap; any abrupt change stops it.
     with tempfile.TemporaryDirectory() as tmp:
@@ -1023,8 +1037,8 @@ def test_bench_harvester():
         assert hv.process(frame([0]), []) == 1
         assert len(list(Path(tmp).rglob("*.png"))) == 2
 
-    return ("pairing guards + pending landing cache OK, vacated-slot filtering OK, "
-            "imwrite-fail OK, tracking: interval+cap+retry OK, stop-on-change OK")
+    return ("pairing guards + six-frame landing recovery OK, vacated-slot filtering "
+            "OK, imwrite-fail OK, tracking: interval+cap+retry OK, stop-on-change OK")
 
 
 def test_window_picker():
