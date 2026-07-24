@@ -412,8 +412,13 @@ def fetch_items(
     cdragon: dict, *, force: bool = False, dry_run: bool = False
 ) -> tuple[int, list[str]]:
     """Download item icons: the craftables in game_data.ITEM_RECIPES plus
-    every radiant item, artifact, and emblem the live tier list knows."""
-    from game_data import ITEM_RECIPES, LIVE_ITEM_TIERS
+    every radiant item, artifact, emblem, and comp-layout special item."""
+    from game_data import (
+        ITEM_RECIPES,
+        LIVE_ITEM_TIERS,
+        META_COMPS,
+        find_item_name_by_api,
+    )
     try:
         # Importing tftacademy_live fills LIVE_ITEM_TIERS from the cache.
         import tftacademy_live  # noqa: F401
@@ -422,16 +427,36 @@ def fetch_items(
 
     items = cdragon.get("items", [])
     by_norm: dict[str, list[dict]] = {}
+    by_api: dict[str, dict] = {}
     for item in items:
         if item.get("name"):
             by_norm.setdefault(normalize(item["name"]), []).append(item)
+        if item.get("apiName"):
+            by_api[item["apiName"]] = item
     current_set = detect_current_set(cdragon)
     craftable_names = {normalize(recipe["name"]) for recipe in ITEM_RECIPES}
+
+    # Comp pages contain Set-specific granted items (for example Psionic
+    # mods) that are absent from the generic tier-list endpoint.
+    detail_api_by_name: dict[str, str] = {}
+    for comp in META_COMPS:
+        for unit in (comp.get("detail") or {}).get("units") or []:
+            for item in unit.get("items") or []:
+                api_name = item.get("apiName") or ""
+                if not api_name or api_name.startswith("TFT_Flex"):
+                    continue
+                name = find_item_name_by_api(
+                    api_name,
+                    item.get("name") or "",
+                ).strip()
+                if name:
+                    detail_api_by_name.setdefault(name, api_name)
 
     wanted = list(dict.fromkeys(
         [r["name"] for r in ITEM_RECIPES]
         + [e["name"] for e in LIVE_ITEM_TIERS.values()
            if e["kind"] in ("radiant", "artifact", "emblem")]
+        + list(detail_api_by_name)
     ))
 
     ok = 0
@@ -450,6 +475,8 @@ def fetch_items(
             current_set=current_set,
             is_craftable=normalized in craftable_names,
         )
+        if entry is None:
+            entry = by_api.get(detail_api_by_name.get(name, ""))
         icon = entry.get("icon") if entry else None
         if not icon:
             logger.warning(f"  ✗ {name}: no item icon in CDragon items")

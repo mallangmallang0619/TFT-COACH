@@ -32,6 +32,7 @@ from game_data import (
     META_COMPS,
     META_COMPS_BY_CARRY,
     _normalize_augment_name,
+    find_item_name_by_api,
 )
 from tftacademy_live import canonical_name
 
@@ -201,7 +202,11 @@ def _layout_from_detail(detail: dict) -> list[dict]:
             "name": canonical_name(u["name"]),
             "board_index": u["boardIndex"],
             "stars": u.get("stars", 1),
-            "items": [canonical_name(i["name"]) for i in (u.get("items") or [])],
+            "items": [
+                _current_item_name(i)
+                for i in (u.get("items") or [])
+                if not _is_item_placeholder(i)
+            ],
             "cost": CHAMPIONS.get(canonical_name(u["name"]), {}).get("cost", 1),
         }
         for u in (detail or {}).get("units") or []
@@ -209,12 +214,27 @@ def _layout_from_detail(detail: dict) -> list[dict]:
     ]
 
 
+def _is_item_placeholder(item: dict) -> bool:
+    """TFT Academy uses Flex tokens as empty build slots, not real items."""
+    return (item.get("apiName") or "").startswith("TFT_Flex")
+
+
+def _current_item_name(item: dict) -> str:
+    """Use the stable API id to repair stale display names in comp detail."""
+    current = find_item_name_by_api(
+        item.get("apiName") or "",
+        item.get("name") or "",
+    )
+    return canonical_name(current)
+
+
 def _item_names_from_detail(detail: dict) -> list[str]:
     """All build items across a scraped comp's units (canonical names)."""
     return [
-        canonical_name(i["name"])
+        _current_item_name(i)
         for u in (detail or {}).get("units") or []
         for i in (u.get("items") or [])
+        if not _is_item_placeholder(i)
     ]
 
 
@@ -232,7 +252,11 @@ def _carry_items_from_detail(detail: dict) -> set[str]:
         return set()
     for u in (detail or {}).get("units") or []:
         if canonical_name(u.get("name") or "") == carry:
-            return {canonical_name(i["name"]) for i in (u.get("items") or [])}
+            return {
+                _current_item_name(i)
+                for i in (u.get("items") or [])
+                if not _is_item_placeholder(i)
+            }
     return set()
 
 

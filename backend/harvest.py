@@ -373,7 +373,15 @@ class BenchHarvester:
         changed = [i for i in range(BENCH_SLOTS) if diffs[i] >= threshold]
         occupied = [
             i for i in changed
-            if self._became_occupied(thumbs[i], baseline[i])
+            if self._became_occupied(
+                thumbs[i],
+                baseline[i],
+                # The slot is already a strong change outlier relative to
+                # the other eight slots. Accept same-contrast champions too:
+                # several dark/small models change the pixels substantially
+                # without increasing thumbnail stddev or edge energy.
+                change_evidence=diffs[i] >= threshold,
+            )
         ]
         logger.debug(
             f"bench diffs={[f'{d:.0f}' for d in diffs]} "
@@ -416,6 +424,8 @@ class BenchHarvester:
         cls,
         current: Optional[np.ndarray],
         baseline: Optional[np.ndarray],
+        *,
+        change_evidence: bool = False,
     ) -> bool:
         if not cls._is_viable_crop(current) or baseline is None:
             return False
@@ -433,7 +443,13 @@ class BenchHarvester:
                 baseline_laplacian * 1.18,
             )
         )
-        return baseline_looks_empty and (contrast_gain or edge_gain)
+        # `change_evidence` is supplied only by _newly_occupied_slots after
+        # the candidate has beaten the frame-relative outlier threshold.
+        # Requiring contrast/edge gain as well rejected legitimate champions
+        # whose model replaces bench detail instead of adding more of it.
+        return baseline_looks_empty and (
+            contrast_gain or edge_gain or change_evidence
+        )
 
     def _save(self, crop: np.ndarray, name: str, slot: int) -> bool:
         if crop.size == 0:

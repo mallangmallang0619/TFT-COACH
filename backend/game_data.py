@@ -105,6 +105,26 @@ BURN_ITEMS:  set[str] = {r["name"] for r in ITEM_RECIPES if r.get("burn")}
 # artifacts ("ornn" items), and emblems — none of which have a component
 # recipe, so they only exist here. {normalized name: {"name","tier","kind"}}
 LIVE_ITEM_TIERS: dict[str, dict] = {}
+# Current display name by Riot API identifier.  Comp-detail payloads can keep
+# legacy labels after an item is renamed (for example Guardian Angel while
+# the current item is Edge of Night), but the API identifier remains stable.
+LIVE_ITEM_NAMES_BY_API: dict[str, str] = {}
+# Set-specific items that do not appear in the general item tier-list API.
+# These still occur in comp layouts and have real CDragon icons.
+STATIC_ITEM_NAMES_BY_API: dict[str, str] = {
+    "TFT17_Item_PsyOps_ChemicalCapacitorMod": "Malware Matrix",
+    "TFT17_Item_PsyOps_ChemicalCapacitorMod_Radiant": "Malware Matrix",
+    "TFT17_Item_PsyOps_DroneMod": "Drone Uplink",
+    "TFT17_Item_PsyOps_DroneMod_Radiant": "Drone Uplink",
+    "TFT17_Item_PsyOps_GrenadeMod": "Biomatter Preserver",
+    "TFT17_Item_PsyOps_GrenadeMod_Radiant": "Biomatter Preserver",
+    "TFT17_Item_PsyOps_SemiconductorMod": "Semiconductor",
+    "TFT17_Item_PsyOps_SemiconductorMod_Radiant": "Semiconductor",
+    "TFT17_Item_PsyOps_SympatheticImplantMod": "Sympathetic Implant",
+    "TFT17_Item_PsyOps_SympatheticImplantMod_Radiant": "Sympathetic Implant",
+    "TFT17_Item_PsyOps_TargetlockMod": "Target-Lock Optics",
+    "TFT17_Item_PsyOps_TargetlockMod_Radiant": "Target-Lock Optics",
+}
 
 
 def norm_item_key(name: str) -> str:
@@ -130,6 +150,14 @@ def find_item_tier(name: str) -> tuple[str | None, str | None]:
     if static:
         return static["tier"], "craftable"
     return None, None
+
+
+def find_item_name_by_api(api_name: str, fallback: str = "") -> str:
+    """Resolve an item API identifier to its current in-game display name."""
+    return LIVE_ITEM_NAMES_BY_API.get(
+        api_name,
+        STATIC_ITEM_NAMES_BY_API.get(api_name, fallback),
+    )
 
 
 # ── Champion Data  (Set 17: Space Gods) ───────────────────────────────────────

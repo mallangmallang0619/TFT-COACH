@@ -162,13 +162,20 @@ const TREND_GLYPH = {
 
 function getCraftableItems(componentIds, recipes) {
   const items = [];
+  const seen = new Set();
   for (let i = 0; i < componentIds.length; i++) {
     for (let j = i + 1; j < componentIds.length; j++) {
       const pair = [componentIds[i], componentIds[j]].sort();
       const match = recipes.find(
         (it) => [...it.recipe].sort().join() === pair.join()
       );
-      if (match) items.push(match);
+      // Component instances can produce the same recipe pair more than
+      // once (2 swords + 1 vest used to list Edge of Night twice). This
+      // list presents build options, so each completed item belongs once.
+      if (match && !seen.has(match.name)) {
+        seen.add(match.name);
+        items.push(match);
+      }
     }
   }
   const tierOrder = { S: 0, A: 1, B: 2, C: 3 };
@@ -538,6 +545,7 @@ function MetaTierBadge({ tier, trend }) {
 // missing (fresh clone, renamed item) the emoji keeps working.
 function GameIcon({ kind, name, emoji, size = 18 }) {
   const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [kind, name]);
   if (failed || !name) {
     return <span style={{ fontSize: `${Math.round(size * 0.85)}px`, lineHeight: 1 }}>{emoji || "•"}</span>;
   }
@@ -569,17 +577,45 @@ function ItemPlan({ suggestion, componentIds, itemRecipes }) {
   }, [componentIds]);
 
   const carriers = suggestion.board_layout.filter((u) => u.items?.length > 0);
+  // Reserve shared components across the whole suggested plan. Previously
+  // every item checked a fresh copy of `held`, so two Edge of Nights could
+  // both turn green with only one Chain Vest.
+  const craftability = useMemo(() => {
+    const pool = { ...held };
+    const result = {};
+    carriers.forEach((unit, unitIndex) => {
+      unit.items.forEach((itemName, itemIndex) => {
+        const recipe = recipeByName[itemName];
+        const key = `${unitIndex}:${itemIndex}`;
+        if (!recipe) {
+          result[key] = { known: false, can: false };
+          return;
+        }
+        const needed = {};
+        for (const component of recipe) {
+          needed[component] = (needed[component] || 0) + 1;
+        }
+        const can = Object.entries(needed).every(
+          ([component, count]) => (pool[component] || 0) >= count
+        );
+        result[key] = { known: true, can, recipe };
+        if (can) {
+          for (const [component, count] of Object.entries(needed)) {
+            pool[component] -= count;
+          }
+        }
+      });
+    });
+    return result;
+  }, [carriers, held, recipeByName]);
+
   if (carriers.length === 0) return null;
 
-  const craftable = (itemName) => {
-    const recipe = recipeByName[itemName];
-    if (!recipe) return { known: false, can: false };
-    const pool = { ...held };
-    for (const comp of recipe) {
-      if (!pool[comp]) return { known: true, can: false, recipe };
-      pool[comp] -= 1;
-    }
-    return { known: true, can: true, recipe };
+  const craftable = (unitIndex, itemIndex) => {
+    return craftability[`${unitIndex}:${itemIndex}`] || {
+      known: false,
+      can: false,
+    };
   };
 
   return (
@@ -606,7 +642,7 @@ function ItemPlan({ suggestion, componentIds, itemRecipes }) {
             </span>
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {u.items.map((it, j) => {
-                const c = craftable(it);
+                const c = craftable(i, j);
                 return (
                   <span key={j}
                     title={c.can
