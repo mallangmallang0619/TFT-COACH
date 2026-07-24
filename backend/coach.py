@@ -412,6 +412,7 @@ class Coach:
         comp_items = self._comp_item_context(advice)
 
         # ── Generate recommendations ──────────────────────────────────────────
+        recommended_names: set[str] = set()
         for i, comp1 in enumerate(components):
             for j in range(i + 1, len(components)):
                 comp2 = components[j]
@@ -420,6 +421,13 @@ class Coach:
                 for item in ITEM_RECIPES:
                     if tuple(sorted(item["recipe"])) != recipe_key:
                         continue
+                    # Multiple physical copies of the same component pair
+                    # describe one recommendation option. Without this guard,
+                    # 2 swords + 1 vest emitted Edge of Night twice because
+                    # each sword was paired independently with the same vest.
+                    if item["name"] in recommended_names:
+                        continue
+                    recommended_names.add(item["name"])
 
                     is_shred = item.get("shred", False)
                     is_burn  = item.get("burn", False)

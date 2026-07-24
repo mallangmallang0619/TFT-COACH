@@ -109,6 +109,22 @@ def test_coach():
     sf = [r for r in advice.slam_recommendations if r.item_name == "Sunfire Cape"]
     assert len(sf) > 0, "Should recommend Sunfire Cape"
 
+    # Physical component instances must not duplicate the same build option:
+    # both swords can pair with the one vest, but only one Edge can be made.
+    duplicate_state = GameState(
+        phase=GamePhase.PLANNING,
+        stage="3-5",
+        component_ids=["bf_sword", "bf_sword", "chain_vest"],
+    )
+    duplicate_advice = coach.analyze(duplicate_state)
+    edge_recs = [
+        r for r in duplicate_advice.slam_recommendations
+        if r.item_name == "Edge of Night"
+    ]
+    assert len(edge_recs) == 1, (
+        f"one vest can only produce one Edge of Night option, got {len(edge_recs)}"
+    )
+
     # Low HP tip
     assert any("25 HP" in t or "danger" in t.lower() for t in advice.tips), \
         "Should warn about low HP"
@@ -669,7 +685,9 @@ def test_items_tierlist():
         {"type": "craftables", "updated": "2026-01-01",
          "tier": {"S": ["TFT_Item_FrozenHeart"], "A": [], "B": [], "C": []}},
         {"type": "craftables", "updated": "2026-07-01",
-         "tier": {"S": ["TFT_Item_Deathblade"], "B": ["TFT_Item_GuinsoosRageblade"]}},
+         "tier": {"S": ["TFT_Item_Deathblade"],
+                  "A": ["TFT_Item_GuardianAngel"],
+                  "B": ["TFT_Item_GuinsoosRageblade"]}},
         {"type": "ornns", "updated": "2026-07-01",
          "tier": {"S": ["TFT_Item_Artifact_Dawncore"]}},
         {"type": "radiants", "updated": "2026-07-01",
@@ -678,6 +696,7 @@ def test_items_tierlist():
     ]}
     names = {
         "TFT_Item_Deathblade": "Deathblade",
+        "TFT_Item_GuardianAngel": "Edge of Night",
         "TFT_Item_GuinsoosRageblade": "Guinsoo's Rageblade",
         "TFT_Item_Artifact_Dawncore": "Dawncore",
         "TFT5_Item_ThiefsGlovesRadiant": "Rascal's Gloves",
@@ -692,6 +711,7 @@ def test_items_tierlist():
 
     # Apply (snapshot + restore so later tests see pristine data).
     live_before = dict(game_data.LIVE_ITEM_TIERS)
+    api_names_before = dict(game_data.LIVE_ITEM_NAMES_BY_API)
     tiers_before = {r["name"]: r["tier"] for r in game_data.ITEM_RECIPES}
     try:
         apply_items_to_game_data(entries)
@@ -702,9 +722,32 @@ def test_items_tierlist():
         guinsoo = next(r for r in game_data.ITEM_RECIPES
                        if r["name"] == "Guinsoo's Rageblade")
         assert guinsoo["tier"] == "B", "live tier should reach ITEM_RECIPES"
+        assert game_data.find_item_name_by_api(
+            "TFT_Item_GuardianAngel", "Guardian Angel"
+        ) == "Edge of Night"
+
+        # Comp details frequently retain that legacy label. The stable API
+        # id must drive both the current icon filename and recipe lookup.
+        from synergy import _layout_from_detail
+        layout = _layout_from_detail({"units": [{
+            "name": "Akali",
+            "boardIndex": 0,
+            "items": [
+                {"apiName": "TFT_Item_GuardianAngel",
+                 "name": "Guardian Angel"},
+                {"apiName": "TFT17_Item_PsyOps_TargetlockMod",
+                 "name": "Psy Ops_Targetlock Mod"},
+                {"apiName": "TFT_Flex", "name": "Flex"},
+            ],
+        }]})
+        assert layout[0]["items"] == [
+            "Edge of Night", "Target-Lock Optics",
+        ], layout[0]["items"]
     finally:
         game_data.LIVE_ITEM_TIERS.clear()
         game_data.LIVE_ITEM_TIERS.update(live_before)
+        game_data.LIVE_ITEM_NAMES_BY_API.clear()
+        game_data.LIVE_ITEM_NAMES_BY_API.update(api_names_before)
         for r in game_data.ITEM_RECIPES:
             r["tier"] = tiers_before[r["name"]]
 
@@ -960,6 +1003,20 @@ def test_bench_harvester():
         assert hv.process(frame([0]), []) == 0
         assert hv.process(frame([]), ["Aatrox"]) == 0
         assert not list(Path(tmp).rglob("*.png"))
+
+    # Some small/dark champions replace as much bench texture as they add.
+    # Their slot is an unambiguous change outlier even though contrast and
+    # edge energy do not increase; retain that landing instead of requiring
+    # the old contrast-only gate.
+    hv = BenchHarvester()
+    checker = (
+        (np.indices((32, 24)).sum(axis=0) % 2) * 40 + 80
+    ).astype(np.uint8)
+    baseline = [checker.copy() for _ in range(9)]
+    current = [thumb.copy() for thumb in baseline]
+    current[4] = np.fliplr(checker).copy()
+    assert hv._became_occupied(current[4], baseline[4]) is False
+    assert hv._newly_occupied_slots(current, baseline) == [4]
 
     # A unit can be moved or sold in the same capture window as a purchase.
     # Filter the vacated slot before deciding whether pairing is ambiguous.

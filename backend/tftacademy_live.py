@@ -866,11 +866,14 @@ def apply_items_to_game_data(entries: list[dict]) -> None:
     import game_data
 
     game_data.LIVE_ITEM_TIERS.clear()
+    game_data.LIVE_ITEM_NAMES_BY_API.clear()
     for e in entries:
         if e.get("name") and e.get("tier"):
             game_data.LIVE_ITEM_TIERS[game_data.norm_item_key(e["name"])] = {
                 "name": e["name"], "tier": e["tier"], "kind": e["kind"],
             }
+        if e.get("api_name") and e.get("name"):
+            game_data.LIVE_ITEM_NAMES_BY_API[e["api_name"]] = e["name"]
 
     for recipe in game_data.ITEM_RECIPES:
         live = game_data.LIVE_ITEM_TIERS.get(game_data.norm_item_key(recipe["name"]))
