@@ -390,7 +390,7 @@ class Coach:
             )
 
         # Low-HP escalation
-        if state.player_hp <= 40:
+        if state.player_hp <= 35:
             if advice.slam_urgency_level in ("low", "medium"):
                 advice.slam_urgency_level = "high"
                 advice.slam_urgency_message = (
@@ -661,7 +661,7 @@ class Coach:
                 result.append(champ.name)
         return result
 
-    # ── Positioning Analysis ──────────────────────────────────────────────────
+    # ── Positioning Analysis wip ──────────────────────────────────────────────────
 
     def _analyze_positioning(self, state: GameState, advice: CoachingAdvice):
         """Analyze board positioning and suggest improvements."""
@@ -714,7 +714,7 @@ class Coach:
         total_pairs = len(positions) * (len(positions) - 1) / 2
         return (close_pairs / total_pairs) > 0.7 if total_pairs > 0 else False
 
-    # ── Comp Direction Analysis ───────────────────────────────────────────────
+    # ── Comp Direction Analysis ─wip──────────────────────────────────────────────
 
     def _analyze_comp_direction(self, state: GameState, advice: CoachingAdvice):
         """
@@ -786,10 +786,10 @@ class Coach:
 
     # Base value of a tier-list rating when scoring an offer. Unknown
     # augments land between B and C — unknown ≠ bad, just unproven.
-    _AUGMENT_RATING_SCORE = {"S": 4.0, "A": 3.0, "B": 2.0, "C": 1.0}
-    _AUGMENT_COMP_BOOST = 1.5     # comp we're building recommends this augment
-    _AUGMENT_PINNED_BOOST = 1.5   # ...extra when it's the comp the player LOCKED
-    _AUGMENT_TRAIT_BOOST = 1.0    # trait-specific augment for an active synergy
+    _AUGMENT_RATING_SCORE = {"S": 4.0, "A": 3.4, "B": 2.6, "C": 1.0}
+    _AUGMENT_COMP_BOOST = 2     # comp we're building recommends this augment
+    _AUGMENT_PINNED_BOOST = 1.4   # ...extra when it's the comp the player LOCKED
+    _AUGMENT_TRAIT_BOOST = 1.23    # trait-specific augment for an active synergy
 
     def _analyze_augments(self, state: GameState, advice: CoachingAdvice):
         """
@@ -1027,16 +1027,19 @@ class Coach:
             advice.tips.append(
                 "Stage 2-1: First PvP round. Focus on econ and collecting pairs. "
                 "Don't over-slam yet unless you have S-tier or shred/burn items."
+                "Stage 2-1: First augment. Pick based on potential plan"
             )
         elif stage == "3-2":
             advice.tips.append(
-                "Stage 3-2: First augment. Pick based on your items and board "
-                "direction. Econ augments are safest if you're unsure of your comp."
+                "Stage 3-2: Second augment. Pick based on your items,board and lobby strength/comp "
+                "direction. Econ augments are safest if you're unsure of your comp or if fast9."
             )
         elif stage == "4-2":
             advice.tips.append(
-                "Stage 4-2: Second augment. You should have a clear direction — "
-                "pick augments that amplify your existing synergies and carries."
+                "Stage 4-2: Third augment. You should have a clear direction by now. "
+                "pick augments that amplify your existing synergies and carries. Get econ if " \
+                "you need to hit comp breakpoints or if you are behind on board strength." \
+                "If you have already hit your comp, pick combat augments"
             )
 
         # Component hoarding
