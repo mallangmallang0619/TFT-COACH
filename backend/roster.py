@@ -25,6 +25,7 @@ from collections import Counter
 from typing import Optional
 
 from game_state import DetectedChampion, GameState
+from game_data import CHAMPIONS
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +169,12 @@ class RosterTracker:
             twos, ones = divmod(rem, 3)
             for star, count in ((3, threes), (2, twos), (1, ones)):
                 units.extend(
-                    DetectedChampion(name=name, star_level=star, confidence=0.9)
+                    DetectedChampion(
+                        name=name,
+                        star_level=star,
+                        cost=int((CHAMPIONS.get(name) or {}).get("cost", 1)),
+                        confidence=0.9,
+                    )
                     for _ in range(count)
                 )
         return units

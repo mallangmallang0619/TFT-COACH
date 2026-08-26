@@ -63,7 +63,7 @@ from config import (
     ShopGeometry,
     TraitPanel,
 )
-from game_data import TRAITS, find_champion_name, find_augment_rating
+from game_data import CHAMPIONS, TRAITS, find_champion_name, find_augment_rating
 from unit_classifier import UnitClassifier
 from game_state import (
     GameState,
@@ -198,7 +198,11 @@ class TemplateStore:
         """Load all template images from disk."""
         self.component_templates = self._load_dir(COMPONENT_TEMPLATE_DIR)
         self.item_templates = self._load_dir(ITEM_TEMPLATE_DIR)
-        self.champion_templates = self._load_dir(CHAMPION_TEMPLATE_DIR)
+        self.champion_templates = {
+            name: image
+            for name, image in self._load_dir(CHAMPION_TEMPLATE_DIR).items()
+            if name in CHAMPIONS
+        }
         self.ui_templates = self._load_dir(TEMPLATE_DIR / "ui")
         self._build_champion_gray()
         self._build_trait_gray()

@@ -946,6 +946,17 @@ def test_roster_tracker():
     w.update(state("2-1", base, 18))
     assert w.total_purchases == 0, "Wisp-covered shop card counted as a purchase"
 
+    # Roster-estimate units must carry their real Set 18 shop cost. The
+    # default Pydantic value used to make every detected unit look like a
+    # 1-cost and distorted board-strength comparisons.
+    priced = RosterTracker()
+    priced_shop = ["Hecarim", "Akali", "Camille", "Karma", "Kobuko"]
+    priced.update(state("2-1", priced_shop, 20))
+    priced.update(state("2-1", [None, *priced_shop[1:]], 17))
+    priced.update(state("2-1", [None, *priced_shop[1:]], 17))
+    hecarim = next(u for u in priced.owned_units() if u.name == "Hecarim")
+    assert hecarim.cost == 3, f"Hecarim roster cost should be 3, got {hecarim.cost}"
+
     # A card replacement before the empty slot is confirmed is an ambiguous
     # refresh, not a safe purchase/ML label.
     strict = RosterTracker()
@@ -1091,6 +1102,29 @@ def test_bench_harvester():
         quality = BenchHarvester(out_dir=Path(tmp))
         assert quality._save(smooth_crop, "Portal", 8) is False
         assert not list(Path(tmp).rglob("*.png"))
+
+    # UE5 renders a newly bought champion as a sharp blue hologram. It has
+    # plenty of edge detail, so the generic quality gate used to save it as a
+    # mislabeled champion crop. Reject it, retain the trusted slot label, and
+    # retry after the animation settles.
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=1)
+        empty = frame([])
+        effect = empty.copy()
+        yy, xx = np.indices((bh, slot_w))
+        checker = ((yy // 6 + xx // 6) % 2).astype(bool)
+        effect_crop = np.empty((bh, slot_w, 3), dtype=np.uint8)
+        effect_crop[checker] = (235, 190, 25)
+        effect_crop[~checker] = (180, 145, 20)
+        effect[by:by + bh, bx:bx + slot_w] = effect_crop
+        settled = frame([0], seed=91)
+
+        assert hv.process(empty, []) == 0
+        assert hv.process(effect, ["Rakan"]) == 0
+        assert not list(Path(tmp).rglob("*.png"))
+        assert hv.process(settled, []) == 1  # first clean model frame: retry
+        saved = list(Path(tmp).rglob("*.png"))
+        assert len(saved) == 1 and saved[0].parent.name == "Rakan"
 
     # A unit can be moved or sold in the same capture window as a purchase.
     # Filter the vacated slot before deciding whether pairing is ambiguous.

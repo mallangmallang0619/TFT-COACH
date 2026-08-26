@@ -229,6 +229,11 @@ def main() -> int:
     templates = TemplateStore()
     templates.load()
     detector = Detector(templates)
+    # Mirror live mode. Portrait-template matching is only valid for the
+    # synthetic simulator; UE5 board units are 3D models and otherwise yield
+    # convincing false labels in diagnostics. With a trained model this falls
+    # through to the CNN path; without one board/bench correctly stay empty.
+    detector.match_board_units = False
     state = detector.detect(frame)
 
     print()

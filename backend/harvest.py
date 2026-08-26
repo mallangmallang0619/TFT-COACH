@@ -66,6 +66,12 @@ _CROP_MIN_LAPLACIAN = 500.0
 # Real Set 18 unit crops measured 210-3200; empty portal/platform crops that
 # previously slipped through measured 125-140. Keep a margin between them.
 _CROP_MIN_FULL_LAPLACIAN = 180.0
+# A newly bought unit is briefly rendered as a bright cyan/blue hologram.
+# Those frames are sharp enough to pass the edge checks but teach the model
+# the purchase effect instead of the champion.  A real selected unit may have
+# a thin cyan outline (observed at ~7% of the crop); the materialisation effect
+# fills much more of the crop (observed at ~16%), so keep a conservative gap.
+_MATERIALIZATION_BLUE_COMPONENT_RATIO = 0.10
 
 
 @dataclass
@@ -223,6 +229,27 @@ class BenchHarvester:
                 continue
             tracked.occupancy_misses = 0
             drift = float(np.mean(cv2.absdiff(thumbs[slot], tracked.reference)))
+
+            # The first confirmation frame can still be the UE5 purchase
+            # hologram.  If it failed the quality gate, keep the trusted slot
+            # label alive and follow the animation until it settles.  Rebase
+            # on large visual changes instead of treating the hologram ->
+            # champion transition as the unit leaving.
+            if tracked.saves == 0:
+                if drift >= self.track_change_limit:
+                    tracked.reference = thumbs[slot].copy()
+                    tracked.frames_since = 0
+                    tracked.change_frames = 0
+                    continue
+                tracked.frames_since += 1
+                if tracked.frames_since >= self.track_interval:
+                    if self._save(crops[slot], tracked.label, slot):
+                        saved += 1
+                        tracked.saves = 1
+                        tracked.frames_since = 0
+                        tracked.reference = thumbs[slot].copy()
+                continue
+
             if drift >= self.track_change_limit:
                 # Empty/low-detail means the unit definitely left. A single
                 # viable high-drift frame may just be an idle animation or
@@ -297,14 +324,16 @@ class BenchHarvester:
             # rather than the cached dust/shadow animation.
             did_save = self._save(crops[landing.slot], landing.label, landing.slot)
             saved += int(did_save)
-            if did_save:
-                self._tracked[landing.slot] = _TrackedSlot(
-                    label=landing.label,
-                    reference=current.copy(),
-                    empty_reference=landing.empty_thumb,
-                    saves=1,
-                )
-                just_confirmed.add(landing.slot)
+            # Even when the first crop is rejected (most commonly the bright
+            # UE5 materialisation effect), the purchase-to-slot pairing is
+            # already trusted. Keep tracking and retry on a settled frame.
+            self._tracked[landing.slot] = _TrackedSlot(
+                label=landing.label,
+                reference=current.copy(),
+                empty_reference=landing.empty_thumb,
+                saves=int(did_save),
+            )
+            just_confirmed.add(landing.slot)
         return True, saved
 
     def _harvest_confirmed_fallback(
@@ -332,14 +361,13 @@ class BenchHarvester:
                 current_frame.crops[landing.slot], landing.label, landing.slot
             )
             saved += int(did_save)
-            if did_save:
-                self._tracked[landing.slot] = _TrackedSlot(
-                    label=landing.label,
-                    reference=current.copy(),
-                    empty_reference=landing.empty_thumb,
-                    saves=1,
-                )
-                just_confirmed.add(landing.slot)
+            self._tracked[landing.slot] = _TrackedSlot(
+                label=landing.label,
+                reference=current.copy(),
+                empty_reference=landing.empty_thumb,
+                saves=int(did_save),
+            )
+            just_confirmed.add(landing.slot)
         return saved
 
     def _find_recent_landings(
@@ -515,6 +543,12 @@ class BenchHarvester:
         ):
             logger.info(f"Skipping low-detail training crop: {name} (bench slot {slot})")
             return False
+        if self._has_materialization_effect(crop):
+            logger.info(
+                f"Skipping materialization-effect training crop: "
+                f"{name} (bench slot {slot})"
+            )
+            return False
         safe = name.replace("'", "").replace(" ", "_").replace(".", "")
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         out = self.out_dir / safe / f"{ts}_slot{slot}.png"
@@ -530,3 +564,24 @@ class BenchHarvester:
         self.saved_count += 1
         logger.info(f"Training crop saved: {name} (bench slot {slot}) → {out.name}")
         return True
+
+    @staticmethod
+    def _has_materialization_effect(crop: np.ndarray) -> bool:
+        """Return True for the cyan/blue full-model purchase hologram."""
+        hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+        blue = (
+            (hsv[:, :, 0] >= 80)
+            & (hsv[:, :, 0] <= 115)
+            & (hsv[:, :, 1] >= 130)
+            & (hsv[:, :, 2] >= 140)
+        ).astype(np.uint8)
+        # Champion models and random scene detail can contain the same total
+        # amount of blue in scattered pixels. The purchase hologram is one
+        # contiguous full-model region, so gate on its largest component.
+        count, _labels, stats, _centroids = cv2.connectedComponentsWithStats(
+            blue, connectivity=8
+        )
+        if count <= 1:
+            return False
+        largest = int(stats[1:, cv2.CC_STAT_AREA].max())
+        return largest / float(blue.size) >= _MATERIALIZATION_BLUE_COMPONENT_RATIO
