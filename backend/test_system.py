@@ -141,42 +141,47 @@ def test_active_synergies():
     from game_state import DetectedChampion
     from synergy import compute_active_synergies
 
-    # Three Meeple champs: Poppy + Veigar (each in Meeple) and Gnar (also Meeple)
-    # Veigar is also Replicator, Poppy is also Bastion, Gnar is also Sniper
+    # Three Set 18 Blackthorn units; duplicate copies still count once.
     board = [
-        DetectedChampion(name="Poppy",  board_row=3, board_col=1),
-        DetectedChampion(name="Veigar", board_row=3, board_col=2),
-        DetectedChampion(name="Gnar",   board_row=2, board_col=3),
+        DetectedChampion(name="Rek'Sai", board_row=3, board_col=1),
+        DetectedChampion(name="Veigar",  board_row=3, board_col=2),
+        DetectedChampion(name="Warwick", board_row=2, board_col=3),
     ]
     synergies = compute_active_synergies(board)
     by_name = {s.name: s for s in synergies}
 
-    # Meeple breakpoints are [3, 5, 7, 10] so 3 Meeple is active at the first BP
-    assert "Meeple" in by_name, "Meeple trait should be present"
-    assert by_name["Meeple"].count == 3
-    assert by_name["Meeple"].is_active is True
-    # Next breakpoint after 3 is 5
-    assert by_name["Meeple"].breakpoint == 5
+    assert by_name["Blackthorn"].count == 3
+    assert by_name["Blackthorn"].is_active is True
+    assert by_name["Blackthorn"].breakpoint == 4
 
-    # Bastion breakpoints are [2, 4, 6] — only Poppy contributes, count = 1, not active
-    assert by_name["Bastion"].count == 1
-    assert by_name["Bastion"].is_active is False
-    assert by_name["Bastion"].breakpoint == 2
+    assert by_name["Brawler"].count == 1
+    assert by_name["Brawler"].is_active is False
+    assert by_name["Brawler"].breakpoint == 2
 
     # Duplicate champions should not double-count: add a 2-star Veigar
     board.append(DetectedChampion(name="Veigar", star_level=2, board_row=2, board_col=4))
     syn2 = {s.name: s for s in compute_active_synergies(board)}
-    assert syn2["Meeple"].count == 3, "Duplicate Veigar must not increase Meeple count"
+    assert syn2["Blackthorn"].count == 3
 
     # Bench-side champions (no board_row/col) should NOT contribute
     board_with_bench = [
-        DetectedChampion(name="Poppy",  board_row=3, board_col=1),
-        DetectedChampion(name="Veigar"),  # no board pos = bench
+        DetectedChampion(name="Rek'Sai", board_row=3, board_col=1),
+        DetectedChampion(name="Veigar"),
     ]
     syn3 = {s.name: s for s in compute_active_synergies(board_with_bench)}
-    assert syn3["Meeple"].count == 1, "Bench Veigar must not contribute"
+    assert syn3["Blackthorn"].count == 1
 
-    return f"3 Meeple active (next bp=5), dedupe OK, bench excluded"
+    # Avatar Lux supplies two points for her selected origin, while two forms
+    # can never double-count through their shared unique group.
+    lux_board = [
+        DetectedChampion(name="Lux (Coven)", board_row=0, board_col=1),
+        DetectedChampion(name="Lux (Solar)", board_row=0, board_col=2),
+    ]
+    lux = {s.name: s for s in compute_active_synergies(lux_board)}
+    assert lux["Coven"].count == 2
+    assert "Solar" not in lux
+
+    return "Set 18 traits, Avatar +2, form dedupe, bench exclusion OK"
 
 
 def test_comp_detection():
@@ -184,11 +189,13 @@ def test_comp_detection():
     from game_state import DetectedChampion
     from synergy import compute_active_synergies, detect_comp_direction
 
-    # A clearly Meeple-leaning early board
+    # A clearly Blossom-leaning board.
     board = [
-        DetectedChampion(name="Poppy",  board_row=3, board_col=0),
-        DetectedChampion(name="Veigar", board_row=3, board_col=1),
-        DetectedChampion(name="Gnar",   board_row=2, board_col=2),
+        DetectedChampion(name="Karma",     board_row=3, board_col=0),
+        DetectedChampion(name="Yorick",    board_row=3, board_col=1),
+        DetectedChampion(name="Yunara",    board_row=2, board_col=2),
+        DetectedChampion(name="Master Yi", board_row=2, board_col=3),
+        DetectedChampion(name="Ahri",      board_row=0, board_col=4),
     ]
     synergies = compute_active_synergies(board)
     suggestions = detect_comp_direction(synergies, board)
@@ -197,17 +204,17 @@ def test_comp_detection():
     assert suggestions[0].is_primary, "Top suggestion should be marked primary"
 
     primary = suggestions[0]
-    assert "Meeple" in primary.name, f"Primary should be the Meeple comp, got: {primary.name}"
-    assert "Poppy" in primary.held_units or "Veigar" in primary.held_units
-    # Next breakpoint should be the 5 Meeple target (we have 3, need 2 more)
-    assert primary.next_breakpoint_trait == "Meeple"
-    assert primary.next_breakpoint == 2
+    assert "Blossom" in primary.name, f"Primary should be Blossom, got: {primary.name}"
+    assert "Karma" in primary.held_units or "Ahri" in primary.held_units
+    blossom = next(s for s in suggestions if s.name == "Blossom Flex")
+    assert blossom.next_breakpoint_trait == "Blossom"
+    assert blossom.next_breakpoint == 2
 
     # An empty board should produce no suggestions
     empty_suggestions = detect_comp_direction([], [])
     assert empty_suggestions == [], "Empty board → no suggestions"
 
-    return f"primary={primary.name} (score={primary.match_score:.2f}), need {primary.next_breakpoint} more {primary.next_breakpoint_trait}"
+    return f"primary={primary.name}, need {primary.next_breakpoint} {primary.next_breakpoint_trait}"
 
 
 def test_coach_comp_direction():
@@ -222,27 +229,29 @@ def test_coach_comp_direction():
         player_hp=70,
         gold=30,
         board_champions=[
-            DetectedChampion(name="Kai'Sa", star_level=2, board_row=0, board_col=6),
-            DetectedChampion(name="Karma",  star_level=1, board_row=0, board_col=0),
-            DetectedChampion(name="Jhin",   star_level=1, board_row=0, board_col=5),
-            DetectedChampion(name="Lissandra", star_level=2, board_row=3, board_col=3),
+            DetectedChampion(name="Ezreal",  star_level=2, board_row=0, board_col=6),
+            DetectedChampion(name="Gnar",    star_level=1, board_row=2, board_col=4),
+            DetectedChampion(name="Hecarim", star_level=2, board_row=3, board_col=3),
+            DetectedChampion(name="Xayah",   star_level=2, board_row=0, board_col=5),
         ],
     )
 
     advice = coach.analyze(state)
     assert len(advice.comp_suggestions) > 0, "Should produce comp suggestions"
-    primary = advice.comp_suggestions[0]
-    assert "Dark Star" in primary.name, f"Primary should be Dark Star, got: {primary.name}"
+    elderwood = next(
+        (s for s in advice.comp_suggestions if "Elderwood" in s.name), None
+    )
+    assert elderwood is not None, "Elderwood direction should be suggested"
 
     # Verify the synergies got auto-populated by the coach
-    assert any(s.name == "Dark Star" for s in state.active_synergies), \
+    assert any(s.name == "Elderwood" for s in state.active_synergies), \
         "Coach should auto-populate active_synergies from the board"
 
     # The tip should mention comp direction
     assert any("Comp direction" in t or "comp direction" in t.lower() for t in advice.tips), \
         f"Should add a comp direction tip, got: {advice.tips}"
 
-    return f"primary={primary.name} score={primary.match_score:.2f}, synergies populated"
+    return f"direction={elderwood.name} score={elderwood.match_score:.2f}, synergies populated"
 
 
 def test_tftacademy_enrichment():
@@ -251,48 +260,44 @@ def test_tftacademy_enrichment():
     from coach import Coach
     from game_data import META_COMPS, AUGMENT_RATINGS
 
-    # Sanity: we actually loaded TFT Academy data. The tier itself comes from
-    # the live-synced cache and shifts every patch, so look it up rather than
-    # hardcoding it.
+    # Sanity: the tracked launch cache is Set 18 and contains details.
     assert len(META_COMPS) >= 20, f"META_COMPS too small: {len(META_COMPS)}"
-    dark_star = next((c for c in META_COMPS if c["name"] == "Dark Star"), None)
-    assert dark_star is not None, "Dark Star entry from TFT Academy should be present"
-    assert dark_star["tier"] in ("S", "A", "B", "C", "X"), \
-        f"Dark Star has invalid tier: {dark_star['tier']}"
+    target = next(
+        c for c in META_COMPS
+        if len((c.get("detail") or {}).get("units") or []) >= 6
+    )
+    assert target["slug"].startswith("set-18-")
+    assert target["tier"] in ("S", "A", "B", "C", "X")
+    assert len(AUGMENT_RATINGS) >= 200, "Set 18 augment pool did not load"
 
-    # New augments from the comp-page references should be in AUGMENT_RATINGS
-    for aug in ("Aura Farming", "Portable Forge", "Two Tanky", "Bonk"):
-        assert aug in AUGMENT_RATINGS, f"Augment '{aug}' missing from AUGMENT_RATINGS"
-
-    # Build a Dark-Star-leaning board — Jhin is the TFT Academy carry for that comp
+    # Build the cached final board and verify the matching suggestion carries
+    # the current TFT Academy metadata.
     coach = Coach()
+    units = (target["detail"]["units"] or [])[:9]
     state = GameState(
         phase=GamePhase.PLANNING,
         stage="4-2",
         player_hp=60,
         gold=40,
         board_champions=[
-            DetectedChampion(name="Jhin",       star_level=2, board_row=0, board_col=6),
-            DetectedChampion(name="Kai'Sa",     star_level=2, board_row=0, board_col=5),
-            DetectedChampion(name="Karma",      star_level=1, board_row=0, board_col=0),
-            DetectedChampion(name="Lissandra",  star_level=2, board_row=3, board_col=3),
-            DetectedChampion(name="Mordekaiser",star_level=2, board_row=3, board_col=2),
+            DetectedChampion(
+                name=u["name"], star_level=max(1, u.get("stars") or 1),
+                board_row=i // 7, board_col=i % 7,
+            )
+            for i, u in enumerate(units)
         ],
     )
     advice = coach.analyze(state)
-    primary = advice.comp_suggestions[0]
-
-    assert primary.tftacademy_tier == dark_star["tier"], \
-        f"Dark Star should be {dark_star['tier']}-tier, got: {primary.tftacademy_tier}"
-    assert primary.tftacademy_name == "Dark Star", \
-        f"Should match TFT Academy 'Dark Star' entry, got: {primary.tftacademy_name}"
-    # The composed direction tip should reference TFT Academy
-    assert "TFT Academy" in primary.direction_tip, \
-        f"Direction tip should mention TFT Academy, got: {primary.direction_tip}"
+    matched = next(
+        (s for s in advice.comp_suggestions if s.tftacademy_name == target["name"]),
+        None,
+    )
+    assert matched is not None, f"cached comp not suggested: {target['name']}"
+    assert matched.tftacademy_tier == target["tier"]
+    assert "TFT Academy" in matched.direction_tip
 
     return (
-        f"primary={primary.name} → TFT Academy '{primary.tftacademy_name}' "
-        f"({primary.tftacademy_tier}-tier {primary.tftacademy_trend or '—'})"
+        f"Set 18 '{matched.tftacademy_name}' enriched as {matched.tftacademy_tier}-tier"
     )
 
 
@@ -463,6 +468,14 @@ def test_augments_apply_and_fuzzy():
     snapshot = dict(game_data.AUGMENT_RATINGS)
     seed_snapshot = tftacademy_live._curated_augment_seed
     try:
+        game_data.AUGMENT_RATINGS.clear()
+        game_data.AUGMENT_RATINGS.update({
+            "Heroic Grab Bag": {
+                "rating": "S", "tip": "Free components for your board."
+            },
+            "Aura Farming": {"rating": "A", "tip": "Curated-only seed."},
+        })
+        tftacademy_live._curated_augment_seed = None
         live = [
             {"api_name": "TFT_Augment_HeroicGrabBag", "name": "Heroic Grab Bag",
              "slot": "gold", "ratings": {"All": "B"}},
@@ -498,14 +511,24 @@ def test_augments_apply_and_fuzzy():
 
 
 def _dark_star_board():
-    """Board leaning Dark Star — shared by the context-scoring tests."""
+    """Partial current-meta board shared by the context-scoring tests."""
+    from game_data import META_COMPS
     from game_state import DetectedChampion
+    target = next(
+        c for c in META_COMPS
+        if (c.get("detail") or {}).get("main_champion")
+        and len((c.get("detail") or {}).get("units") or []) >= 7
+        and (c.get("detail") or {}).get("augments")
+    )
+    detail = target["detail"]
+    carry = detail["main_champion"]["name"]
+    ordered = [carry] + [u["name"] for u in detail["units"] if u["name"] != carry]
     return [
-        DetectedChampion(name="Jhin",        star_level=2, board_row=0, board_col=6),
-        DetectedChampion(name="Kai'Sa",      star_level=2, board_row=0, board_col=5),
-        DetectedChampion(name="Karma",       star_level=1, board_row=0, board_col=0),
-        DetectedChampion(name="Lissandra",   star_level=2, board_row=3, board_col=3),
-        DetectedChampion(name="Mordekaiser", star_level=2, board_row=3, board_col=2),
+        DetectedChampion(
+            name=name, star_level=2 if name == carry else 1,
+            board_row=i // 7, board_col=i % 7,
+        )
+        for i, name in enumerate(ordered[:5])
     ]
 
 
@@ -592,8 +615,12 @@ def test_tactics_units_and_board_power():
     import tactics_live
 
     rows = {}
-    for index, name in enumerate(list(CHAMPIONS)[:45]):
-        api_name = "TFT17_" + "".join(ch for ch in name if ch.isalnum())
+    current = [
+        (name, data) for name, data in CHAMPIONS.items()
+        if name != "Lux" and not name.startswith("Lux (")
+    ]
+    for index, (name, data) in enumerate(current[:45]):
+        api_name = data["api_name"]
         rows[api_name] = {
             "count": 10_000 + index,
             "place": 4.5,
@@ -609,21 +636,21 @@ def test_tactics_units_and_board_power():
         }}}
     }
     html = (
-        "<title>TFT Units Stats Patch 17.7</title>"
+        "<title>TFT Units Stats Patch 18.1</title>"
         f'<script id="__NEXT_DATA__" type="application/json">'
         f"{json.dumps(payload)}</script>"
     )
     parsed = tactics_live.parse_units_html(html)
-    assert parsed["patch"] == "17.7"
+    assert parsed["patch"] == "18.1"
     assert len(parsed["units"]) >= 40
 
     old_units = tactics_live._unit_stats
     old_meta = tactics_live._snapshot_meta
     try:
-        parsed["units"]["Aatrox"].update(
+        parsed["units"]["Akali"].update(
             avg_place=3.7, top4=64.0, win=20.0
         )
-        parsed["units"]["Briar"].update(
+        parsed["units"]["Camille"].update(
             avg_place=5.3, top4=36.0, win=6.0
         )
         tactics_live.apply_snapshot(parsed)
@@ -647,14 +674,14 @@ def test_tactics_units_and_board_power():
             )
             return coach.analyze(state)
 
-        strong = score("Aatrox")
-        weak = score("Briar")
+        strong = score("Akali")
+        weak = score("Camille")
         geared = score(
-            "Aatrox",
+            "Akali",
             items=["Warmog's Armor", "Gargoyle Stoneplate"],
             augments=["Heroic Grab Bag"],
         )
-        estimated = score("Aatrox", board=False)
+        estimated = score("Akali", board=False)
 
         assert strong.board_power_breakdown.meta_bonus > 0
         assert weak.board_power_breakdown.meta_bonus < 0
@@ -664,7 +691,7 @@ def test_tactics_units_and_board_power():
         assert geared.board_power_breakdown.augment_bonus > 0
         assert estimated.board_power_breakdown.source == "roster_estimate"
         assert estimated.board_power_breakdown.confidence < 0.7
-        assert strong.board_power_breakdown.meta_patch == "17.7"
+        assert strong.board_power_breakdown.meta_patch == "18.1"
         assert strong.board_power_breakdown.meta_games_analyzed == 500_000
         assert strong.board_power_breakdown.meta_rank == "Diamond+"
     finally:
@@ -853,9 +880,9 @@ def test_roster_tracker():
     from roster import RosterTracker
     from game_state import GameState, GamePhase
 
-    def state(stage, shop, gold):
+    def state(stage, shop, gold, wisps=None):
         return GameState(phase=GamePhase.PLANNING, stage=stage,
-                         shop_units=shop, gold=gold)
+                         shop_units=shop, shop_wisps=wisps or [], gold=gold)
 
     r = RosterTracker()
     # First frame establishes the baseline — no purchases yet.
@@ -908,6 +935,16 @@ def test_roster_tracker():
     gwens = [u for u in units if u.name == "Gwen"]
     assert len(gwens) == 1 and gwens[0].star_level == 2, \
         f"3 Gwen copies should combine to one 2-star, got {[(u.name, u.star_level) for u in gwens]}"
+
+    # Set 18 Wisp cover: a readable non-champion shop title is not a buy,
+    # even if gold drops to purchase the Wisp. The hidden unit reappears.
+    w = RosterTracker()
+    base = ["Akali", "Camille", "Karma", "Kobuko", "Leona"]
+    w.update(state("2-1", base, 20))
+    covered = ["Akali", None, "Karma", "Kobuko", "Leona"]
+    w.update(state("2-1", covered, 18, [None, "Aftershock", None, None, None]))
+    w.update(state("2-1", base, 18))
+    assert w.total_purchases == 0, "Wisp-covered shop card counted as a purchase"
 
     # A single backwards-stage frame (OCR misread) must NOT reset...
     r.update(state("1-5", ["Poppy", "Gnar", "Lulu", "Sona", "Shen"], 30))
@@ -1010,13 +1047,22 @@ def test_bench_harvester():
     # the old contrast-only gate.
     hv = BenchHarvester()
     checker = (
-        (np.indices((32, 24)).sum(axis=0) % 2) * 40 + 80
+        (np.indices((32, 24)).sum(axis=0) % 2) * 60 + 60
     ).astype(np.uint8)
     baseline = [checker.copy() for _ in range(9)]
     current = [thumb.copy() for thumb in baseline]
     current[4] = np.fliplr(checker).copy()
     assert hv._became_occupied(current[4], baseline[4]) is False
     assert hv._newly_occupied_slots(current, baseline) == [4]
+
+    # Still reject the reverse direction when both contrast and edge detail
+    # collapse: that is a unit vacating a slot, not the purchased unit landing.
+    occupied_thumb = np.random.default_rng(4).integers(
+        0, 256, (32, 24), dtype=np.uint8
+    )
+    assert hv._became_occupied(
+        checker, occupied_thumb, change_evidence=True
+    ) is False
 
     # A unit can be moved or sold in the same capture window as a purchase.
     # Filter the vacated slot before deciding whether pairing is ambiguous.
@@ -1118,35 +1164,38 @@ def test_bench_harvester():
 
 
 def test_window_picker():
-    """Capture must only target the game or the League client — exact
-    titles. Substring matching latched onto editors/terminals with this
-    'TFT-COACH' project open and browser tabs mentioning League."""
+    """Capture targets TFT.exe, independent of window title."""
     from capture import WindowFinder
 
     class W:
-        def __init__(self, title, minimized=False, w=2560, h=1440):
+        def __init__(self, title, process_name=None, minimized=False, w=2560, h=1440):
             self.title, self.isMinimized = title, minimized
+            self.process_name = process_name
             self.width, self.height = w, h
 
     ide = W("TFT-COACH - Visual Studio Code")
     term = W("Windows PowerShell - python backend/main.py TFT-COACH")
     browser = W("best TFT comps - League of Legends guide - Chrome")
     launcher = W("League of Legends")
-    game = W("League of Legends (TM) Client")
+    game = W("Teamfight Tactics", "TFT.exe")
+    helper = W("TFT startup helper", "TFT.exe", w=640, h=480)
+    unreal_game = W("TFT", "TFTClient-Win64-Shipping.exe")
 
     pick = WindowFinder._pick_game_window
-    assert pick([ide, term, browser, launcher, game]) is game
+    assert pick([ide, term, browser, launcher, helper, game]) is game
+    assert pick([W("localized title", "tFt.ExE")]) is not None
+    assert pick([unreal_game]) is unreal_game
+    assert pick([W("Teamfight Tactics", "not-tft.exe")]) is None
     assert pick([ide, browser, launcher]) is None, "launcher is not a game frame"
     assert pick([ide, browser, launcher], include_launcher=True) is launcher
     assert pick([ide, term, browser]) is None, "no game/client → capture nothing"
-    assert pick([W("League of Legends (TM) Client", minimized=True), launcher]) is None
+    assert pick([W("TFT", "TFT.exe", minimized=True), launcher]) is None
     assert pick(
-        [W("League of Legends (TM) Client", minimized=True), launcher],
+        [W("TFT", "TFT.exe", minimized=True), launcher],
         include_launcher=True,
     ) is launcher
-    assert pick([W("  League of Legends (TM) Client ")]) is not None
     assert pick([]) is None
-    return "game only by default, optional launcher lookup, unrelated windows ignored"
+    return "TFT executables only, largest surface preferred, optional launcher lookup"
 
 
 def test_direct_window_capture():
@@ -1239,7 +1288,10 @@ def test_classifier_data_pipeline():
         root = Path(tmp)
         # Gwen and the _empty background class have enough crops; Zed
         # doesn't; stray files are ignored.
-        for name, n in [("Gwen", 25), ("_empty", 30), ("Zed", 3)]:
+        for name, n in [
+            ("Gwen", 25), ("_empty", 30), ("Zed", 3),
+            ("Lux_Coven", 12), ("Lux_Solar", 12),
+        ]:
             d = root / name
             d.mkdir()
             for i in range(n):
@@ -1247,15 +1299,15 @@ def test_classifier_data_pipeline():
         (root / "notes.txt").write_text("ignore me")
 
         usable, skipped = discover_dataset(root, min_crops=20)
-        assert set(usable) == {"Gwen", "_empty"}, usable.keys()
+        assert set(usable) == {"Gwen", "Lux", "_empty"}, usable.keys()
         assert skipped == {"Zed": 3}, skipped
 
         train, val, labels = split_dataset(usable, val_fraction=0.15)
-        assert labels == ["Gwen", "_empty"]  # sorted, background kept
-        assert len(train) + len(val) == 55
+        assert labels == ["Gwen", "Lux", "_empty"]  # forms pooled, background kept
+        assert len(train) + len(val) == 79
         # Every class keeps at least one val sample; splits are disjoint.
         val_classes = {lbl for _, lbl in val}
-        assert val_classes == {0, 1}, "each class needs a val sample"
+        assert val_classes == {0, 1, 2}, "each class needs a val sample"
         assert not set(p for p, _ in train) & set(p for p, _ in val)
 
         # Missing directory → empty, not an error.
@@ -1658,7 +1710,9 @@ def test_shop_ocr_real_frame():
     d = Detector(t)
     frame = cv2.imread(str(fixture))
     got = d._detect_shop(frame)
-    expected = ["Gwen", None, "Rek'Sai", "Miss Fortune", "Ornn"]
+    # This fixture is a legacy Set 17 frame; retired names must no longer
+    # resolve against the active roster, while overlapping units still do.
+    expected = [None, None, "Rek'Sai", None, "Ornn"]
     assert got == expected, f"shop OCR mismatch: {got} != {expected}"
     return f"5 slots read: {got}"
 
@@ -1749,6 +1803,31 @@ def test_set_autodetect():
     ) is standard
 
     return "slug-derived set OK, CDragon-derived set OK, fallbacks OK"
+
+
+def test_set18_roster_and_lux():
+    """Enchanted Wilds roster is complete and Lux forms share one ML label."""
+    from collections import Counter
+    from game_data import (
+        ACTIVE_ENGINE, ACTIVE_SET_NUMBER, CHAMPIONS, LUX_FORMS,
+        canonical_training_label,
+    )
+
+    assert ACTIVE_SET_NUMBER == 18 and ACTIVE_ENGINE == "unreal"
+    groups: dict[str, tuple[str, dict]] = {}
+    for name, data in CHAMPIONS.items():
+        groups.setdefault(data.get("unique_group", name), (name, data))
+    assert len(groups) == 65, f"expected 65 unique units, got {len(groups)}"
+    by_cost = Counter(data["cost"] for _, data in groups.values())
+    assert [by_cost[i] for i in range(1, 6)] == [14, 13, 14, 14, 10]
+    assert len(LUX_FORMS) == 9
+    for origin in LUX_FORMS:
+        name = f"Lux ({origin})"
+        assert canonical_training_label(name) == "Lux"
+        assert CHAMPIONS[name]["trait_points"][origin] == 2
+    assert CHAMPIONS["Elder Dragon"]["board_slots"] == 2
+    assert CHAMPIONS["Elder Dragon"]["trait_points"]["Riftbeast"] == 3
+    return "65 units, cost pools, 9 pooled Lux forms, special trait points OK"
 
 
 def test_tftacademy_debounce():
@@ -1932,6 +2011,7 @@ def main():
     test("Augments parser", test_augments_parser)
     test("Augments apply + fuzzy lookup", test_augments_apply_and_fuzzy)
     test("Set auto-detection", test_set_autodetect)
+    test("Set 18 roster + Lux", test_set18_roster_and_lux)
     test("Context comp scoring", test_context_comp_scoring)
     test("Board strength + tactics.tools", test_tactics_units_and_board_power)
     test("Periodic tactics.tools refresh", test_tactics_periodic_refresh)

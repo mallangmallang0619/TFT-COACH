@@ -76,6 +76,9 @@ class RosterTracker:
 
         purchases: list[str] = []
         shop = list(state.shop_units or [])
+        shop_wisps = list(state.shop_wisps or [])
+        if len(shop_wisps) != 5:
+            shop_wisps = [None] * 5
         gold = state.gold if state.gold is not None and state.gold >= 0 else None
 
         # A shop with no readable card is an obscured shop (carousel,
@@ -88,7 +91,13 @@ class RosterTracker:
                 # 1. Resolve last frame's pending vanishes: still gone (or
                 #    replaced by a refresh) → confirmed buy; the same card
                 #    back in its slot → transient occlusion, cancel.
+                still_pending: list[tuple[int, str]] = []
                 for slot, name in self._pending_buys:
+                    if shop_wisps[slot]:
+                        # The underlying card is temporarily hidden; wait for
+                        # a later shop instead of confirming a phantom buy.
+                        still_pending.append((slot, name))
+                        continue
                     if shop[slot] == name:
                         logger.debug(
                             f"Vanish of {name} reverted — occlusion, not a buy"
@@ -99,17 +108,21 @@ class RosterTracker:
                     logger.info(
                         f"Purchase confirmed: {name} (copies: {self._copies[name]})"
                     )
-                self._pending_buys = []
+                self._pending_buys = still_pending
 
                 # 2. Stage this frame's vanishes for next-frame confirmation.
-                vanished = self._diff_shop(self._prev_shop, shop)
+                vanished = self._diff_shop(
+                    self._prev_shop,
+                    shop,
+                    blocked_slots={i for i, title in enumerate(shop_wisps) if title},
+                )
                 if vanished and not self._gold_supports_purchase(gold):
                     logger.debug(
                         f"Ignoring vanished cards {[n for _, n in vanished]} — "
                         f"gold did not drop"
                     )
                     vanished = []
-                self._pending_buys = vanished
+                self._pending_buys.extend(vanished)
             self._prev_shop = shop
 
         # While a reset is pending, keep the old stage baseline — updating
@@ -167,11 +180,17 @@ class RosterTracker:
             return False
 
     def _diff_shop(
-        self, prev: list[Optional[str]], cur: list[Optional[str]]
+        self,
+        prev: list[Optional[str]],
+        cur: list[Optional[str]],
+        blocked_slots: Optional[set[int]] = None,
     ) -> list[tuple[int, str]]:
         """Returns (slot, name) for cards that look purchased this frame."""
+        blocked_slots = blocked_slots or set()
         vanished = [
-            (i, a) for i, (a, b) in enumerate(zip(prev, cur)) if a and b is None
+            (i, a)
+            for i, (a, b) in enumerate(zip(prev, cur))
+            if i not in blocked_slots and a and b is None
         ]
         replaced = sum(1 for a, b in zip(prev, cur) if a and b and a != b)
 

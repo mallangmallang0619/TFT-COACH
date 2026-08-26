@@ -231,7 +231,10 @@ def parse_comps(html: str) -> list[dict]:
 # the JS or run a headless browser.
 
 # Strip a leading set-prefix like "TFT17_" or "TFT_Item_"/"TFT_Augment_".
-_API_PREFIX_RE = re.compile(r"^TFT\d*(?:_(?:Item|Augment))?_")
+_API_PREFIX_RE = re.compile(
+    r"^(?:TFT\d*(?:_(?:Item|Augment))?_|DA_(?:18_)?)",
+    re.IGNORECASE,
+)
 
 # Display-name overrides keyed by the prefix-stripped apiName, lowercased.
 # TFT Academy ships some units under internal codenames that don't match the
@@ -294,6 +297,12 @@ def _build_canonical_index() -> dict[str, str]:
         for v in variants:
             collapsed = " ".join(v.split())   # collapse double spaces
             index[collapsed.lower()] = canonical
+    # Unreal-era Set 18 entries use DA_* identifiers that cannot be recovered
+    # by stripping a TFT<number> prefix. Index the reviewed roster ids directly.
+    for canonical, data in game_data.CHAMPIONS.items():
+        api_name = data.get("api_name")
+        if api_name:
+            index[api_name.lower()] = canonical
     return index
 
 
@@ -318,6 +327,9 @@ def _human_name(api_name: str) -> str:
     that label to its canonical game_data spelling (with apostrophes) when
     possible. Falls back to the camelCase-split label for unknown names.
     """
+    direct = canonical_name(api_name)
+    if direct != api_name:
+        return direct
     stripped = _API_PREFIX_RE.sub("", api_name)
     override = _APINAME_OVERRIDES.get(stripped.lower())
     if override is not None:
@@ -548,7 +560,7 @@ def _fetch_comp_detail_blocking(slug: str) -> str:
 
 AUGMENTS_API_URL_TEMPLATE = "https://tftacademy.com/api/tierlist/augments?set={set_number}"
 # Fallback set number, used only when it can't be derived from comp slugs.
-CURRENT_SET_NUMBER = 17
+CURRENT_SET_NUMBER = 18
 
 _SLUG_SET_NUMBER_RE = re.compile(r"^set-?(\d+)", re.IGNORECASE)
 

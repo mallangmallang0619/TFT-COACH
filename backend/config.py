@@ -38,7 +38,7 @@ WEBSOCKET_PORT = 8765
 # compares it against its own expected value and shows a warning badge on
 # mismatch — a running backend from before a merge otherwise fails silently
 # (fields just missing), which has burned real debugging time twice.
-PROTOCOL_VERSION = 3
+PROTOCOL_VERSION = 4
 
 
 # ── Resolution ────────────────────────────────────────────────────────────────
@@ -126,7 +126,14 @@ def compute_viewport(
 # ── Capture ───────────────────────────────────────────────────────────────────
 
 CAPTURE_FPS = 2  # Frames per second to analyze (higher = more CPU)
-GAME_WINDOW_TITLE = "League of Legends"  # Window title to locate
+# The Unreal client no longer uses the legacy League game-window title on
+# Windows. Match the owning executable instead so title changes/localization do
+# not make capture fall back to the desktop.
+GAME_PROCESS_NAME = "TFT.exe"
+# The visible Unreal render window is currently owned by the packaged Shipping
+# binary, while TFT.exe may be the bootstrap process. Accept both exact names.
+GAME_PROCESS_NAMES = (GAME_PROCESS_NAME, "TFTClient-Win64-Shipping.exe")
+GAME_WINDOW_TITLE = "Teamfight Tactics"  # macOS/Linux fallback only
 
 
 # ── Detection Thresholds ──────────────────────────────────────────────────────
@@ -202,12 +209,10 @@ class GameROIs:
     """All regions of interest in the TFT game UI."""
 
     # Stage indicator — top center, right of the stage icon (e.g. "3-5").
-    # A WIDE band: the text's x position shifts with the number of round
-    # icons in the top bar (early-game bars are narrower, pushing the text
-    # right), so the band covers every observed position and the detector
-    # regex-extracts the value.
+    # Unreal HUD: the stage text hugs the top edge. Keep this narrow enough
+    # to exclude the adjacent round-history icons, which also contain digits.
     stage: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.393, 0.012, 0.059, 0.032)
+        default_factory=lambda: RegionOfInterest(0.388, 0.000, 0.035, 0.032)
     )
 
     # Player HP — our value in the right-side player list (between the two
@@ -216,14 +221,14 @@ class GameROIs:
         default_factory=lambda: RegionOfInterest(0.901, 0.597, 0.046, 0.034)
     )
 
-    # Gold count — bottom center, right of the coin icon.
+    # Gold count — bottom center, excluding the coin icon (its swirl OCRs as 9).
     gold: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.497, 0.806, 0.026, 0.040)
+        default_factory=lambda: RegionOfInterest(0.530, 0.806, 0.022, 0.040)
     )
 
     # Level indicator — bottom-left "Lvl. N" panel (digit-whitelisted OCR).
     level: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.169, 0.820, 0.020, 0.034)
+        default_factory=lambda: RegionOfInterest(0.188, 0.810, 0.035, 0.040)
     )
 
     # Item bench — the component inventory: a slot column on the far LEFT

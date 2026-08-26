@@ -1,498 +1,594 @@
 {
   "source_url": "https://tactics.tools/units/sett/latest",
-  "patch": "17.7",
+  "patch": "18.1",
   "rank": "Diamond+",
-  "games_analyzed": 2014115,
-  "source_updated_at": 1784585127,
-  "synced_at": "2026-07-20T22:34:19.954818+00:00",
+  "games_analyzed": 26055,
+  "source_updated_at": 1787760873,
+  "synced_at": "2026-08-26T17:38:51.632434+00:00",
   "units": {
-    "Master Yi": {
-      "api_name": "TFT17_MasterYi",
-      "games": 130349,
-      "avg_place": 4.41,
-      "top4": 52.35,
-      "win": 9.69,
-      "star_avg_place": 1.41
-    },
-    "Talon": {
-      "api_name": "TFT17_Talon",
-      "games": 42766,
-      "avg_place": 4.83,
-      "top4": 42.99,
-      "win": 10.26,
-      "star_avg_place": 4.67
-    },
-    "Pyke": {
-      "api_name": "TFT17_Pyke",
-      "games": 62500,
-      "avg_place": 4.42,
-      "top4": 52.71,
-      "win": 8.56,
-      "star_avg_place": 4.34
-    },
-    "Kai'Sa": {
-      "api_name": "TFT17_Kaisa",
-      "games": 114807,
-      "avg_place": 4.55,
-      "top4": 48.5,
-      "win": 9.83,
-      "star_avg_place": 3.94
-    },
-    "Ornn": {
-      "api_name": "TFT17_Ornn",
-      "games": 296390,
-      "avg_place": 4.38,
-      "top4": 52.08,
-      "win": 12.53,
-      "star_avg_place": 3.42
-    },
-    "Mordekaiser": {
-      "api_name": "TFT17_Mordekaiser",
-      "games": 531195,
-      "avg_place": 4.52,
-      "top4": 49.44,
-      "win": 12.07,
-      "star_avg_place": 4.03
-    },
-    "Corki": {
-      "api_name": "TFT17_Corki",
-      "games": 124800,
-      "avg_place": 4.6,
-      "top4": 47.44,
-      "win": 9.97,
-      "star_avg_place": 1.29
-    },
-    "Aurora": {
-      "api_name": "TFT17_Aurora",
-      "games": 98487,
-      "avg_place": 4.96,
-      "top4": 40.84,
-      "win": 21.54,
-      "star_avg_place": 3.49
-    },
-    "Poppy": {
-      "api_name": "TFT17_Poppy",
-      "games": 140126,
-      "avg_place": 4.67,
-      "top4": 45.85,
-      "win": 10.22,
-      "star_avg_place": 4.2
-    },
-    "Zed": {
-      "api_name": "TFT17_Zed",
-      "games": 16099,
-      "avg_place": 4.31,
-      "top4": 52.57,
-      "win": 18.34,
-      "star_avg_place": 1.18
-    },
-    "Xayah": {
-      "api_name": "TFT17_Xayah",
-      "games": 185115,
-      "avg_place": 4.5,
-      "top4": 48.96,
-      "win": 15.46,
-      "star_avg_place": 1.31
-    },
-    "Maokai": {
-      "api_name": "TFT17_Maokai",
-      "games": 681854,
-      "avg_place": 4.41,
-      "top4": 52.15,
-      "win": 10.82,
-      "star_avg_place": 3.35
-    },
-    "Diana": {
-      "api_name": "TFT17_Diana",
-      "games": 44757,
-      "avg_place": 4.69,
-      "top4": 47.0,
-      "win": 11.72,
-      "star_avg_place": 3.97
-    },
-    "Jhin": {
-      "api_name": "TFT17_Jhin",
-      "games": 305278,
-      "avg_place": 3.85,
-      "top4": 61.94,
-      "win": 19.65,
-      "star_avg_place": 1.07
-    },
-    "Urgot": {
-      "api_name": "TFT17_Urgot",
-      "games": 308005,
-      "avg_place": 4.25,
-      "top4": 55.72,
-      "win": 11.98,
-      "star_avg_place": 3.53
-    },
-    "Tahm Kench": {
-      "api_name": "TFT17_TahmKench",
-      "games": 598497,
-      "avg_place": 4.44,
-      "top4": 50.98,
-      "win": 13.73,
-      "star_avg_place": 1.37
-    },
-    "Lissandra": {
-      "api_name": "TFT17_Lissandra",
-      "games": 273440,
-      "avg_place": 4.57,
-      "top4": 48.51,
-      "win": 8.66,
-      "star_avg_place": 4.41
-    },
-    "Viktor": {
-      "api_name": "TFT17_Viktor",
-      "games": 72889,
-      "avg_place": 4.36,
-      "top4": 53.2,
-      "win": 9.34,
-      "star_avg_place": 3.76
-    },
-    "Briar": {
-      "api_name": "TFT17_Briar",
-      "games": 132444,
-      "avg_place": 5.08,
-      "top4": 41.01,
-      "win": 10.18,
-      "star_avg_place": 4.27
-    },
-    "Jax": {
-      "api_name": "TFT17_Jax",
-      "games": 391012,
-      "avg_place": 4.46,
-      "top4": 50.68,
-      "win": 12.15,
-      "star_avg_place": 3.74
-    },
-    "Fiora": {
-      "api_name": "TFT17_Fiora",
-      "games": 403174,
-      "avg_place": 4.12,
-      "top4": 56.12,
-      "win": 21.49,
-      "star_avg_place": 1.02
-    },
-    "Kindred": {
-      "api_name": "TFT17_Kindred",
-      "games": 393074,
-      "avg_place": 4.13,
-      "top4": 58.44,
-      "win": 10.65,
-      "star_avg_place": 1.47
-    },
-    "Aurelion Sol": {
-      "api_name": "TFT17_AurelionSol",
-      "games": 202516,
-      "avg_place": 4.41,
-      "top4": 52.27,
-      "win": 15.58,
-      "star_avg_place": 1.25
-    },
-    "Morgana": {
-      "api_name": "TFT17_Morgana",
-      "games": 609363,
-      "avg_place": 4.14,
-      "top4": 57.14,
-      "win": 16.0,
-      "star_avg_place": 1.18
-    },
-    "Cho'Gath": {
-      "api_name": "TFT17_Chogath",
-      "games": 172888,
-      "avg_place": 4.57,
-      "top4": 47.87,
-      "win": 10.88,
-      "star_avg_place": 4.47
-    },
-    "Riven": {
-      "api_name": "TFT17_Riven",
-      "games": 276980,
-      "avg_place": 4.34,
-      "top4": 52.63,
-      "win": 13.29,
-      "star_avg_place": 1.32
-    },
-    "Sona": {
-      "api_name": "TFT17_Sona",
-      "games": 324540,
-      "avg_place": 4.12,
-      "top4": 57.34,
-      "win": 14.46,
-      "star_avg_place": 1.09
-    },
-    "Nami": {
-      "api_name": "TFT17_Nami",
-      "games": 253306,
+    "Draven": {
+      "api_name": "DA_Draven18",
+      "games": 2678,
       "avg_place": 4.24,
-      "top4": 54.7,
-      "win": 13.82,
-      "star_avg_place": 1.19
+      "top4": 51.64,
+      "win": 22.82,
+      "star_avg_place": 1.0
     },
-    "Twisted Fate": {
-      "api_name": "TFT17_TwistedFate",
-      "games": 80050,
-      "avg_place": 4.85,
-      "top4": 43.19,
-      "win": 7.81,
-      "star_avg_place": 4.64
-    },
-    "LeBlanc": {
-      "api_name": "TFT17_Leblanc",
-      "games": 179543,
-      "avg_place": 4.6,
-      "top4": 48.41,
-      "win": 8.17,
-      "star_avg_place": 1.26
-    },
-    "Rammus": {
-      "api_name": "TFT17_Rammus",
-      "games": 238257,
-      "avg_place": 4.56,
-      "top4": 48.42,
-      "win": 10.59,
-      "star_avg_place": 1.25
-    },
-    "Blitzcrank": {
-      "api_name": "TFT17_Blitzcrank",
-      "games": 738256,
-      "avg_place": 4.03,
-      "top4": 58.43,
-      "win": 18.63,
-      "star_avg_place": 1.05
-    },
-    "Ezreal": {
-      "api_name": "TFT17_Ezreal",
-      "games": 90705,
-      "avg_place": 4.69,
-      "top4": 45.12,
-      "win": 13.18,
-      "star_avg_place": 4.62
-    },
-    "Illaoi": {
-      "api_name": "TFT17_Illaoi",
-      "games": 471184,
-      "avg_place": 4.69,
-      "top4": 46.24,
-      "win": 11.58,
-      "star_avg_place": 3.28
-    },
-    "Samira": {
-      "api_name": "TFT17_Samira",
-      "games": 151998,
-      "avg_place": 4.46,
-      "top4": 50.14,
-      "win": 12.75,
-      "star_avg_place": 3.52
-    },
-    "Milio": {
-      "api_name": "TFT17_Milio",
-      "games": 162548,
-      "avg_place": 4.73,
-      "top4": 45.52,
-      "win": 8.73,
-      "star_avg_place": 4.29
-    },
-    "Aatrox": {
-      "api_name": "TFT17_Aatrox",
-      "games": 649910,
-      "avg_place": 4.41,
-      "top4": 51.42,
-      "win": 13.45,
-      "star_avg_place": 4.31
-    },
-    "Bard": {
-      "api_name": "TFT17_Bard",
-      "games": 314073,
-      "avg_place": 4.08,
-      "top4": 57.87,
-      "win": 16.3,
-      "star_avg_place": 1.08
-    },
-    "Karma": {
-      "api_name": "TFT17_Karma",
-      "games": 521903,
-      "avg_place": 4.34,
-      "top4": 52.95,
-      "win": 13.1,
-      "star_avg_place": 1.3
-    },
-    "Caitlyn": {
-      "api_name": "TFT17_Caitlyn",
-      "games": 212953,
-      "avg_place": 4.32,
-      "top4": 54.4,
-      "win": 9.42,
-      "star_avg_place": 4.6
-    },
-    "Akali": {
-      "api_name": "TFT17_Akali",
-      "games": 530649,
-      "avg_place": 4.34,
-      "top4": 53.23,
-      "win": 12.9,
-      "star_avg_place": 3.6
-    },
-    "Shen": {
-      "api_name": "TFT17_Shen",
-      "games": 533561,
-      "avg_place": 3.86,
-      "top4": 61.58,
-      "win": 20.55,
-      "star_avg_place": 1.06
-    },
-    "Teemo": {
-      "api_name": "TFT17_Teemo",
-      "games": 93501,
-      "avg_place": 4.6,
-      "top4": 47.77,
-      "win": 9.41,
-      "star_avg_place": 4.54
-    },
-    "Veigar": {
-      "api_name": "TFT17_Veigar",
-      "games": 59305,
-      "avg_place": 4.69,
-      "top4": 44.68,
-      "win": 12.18,
-      "star_avg_place": 4.34
-    },
-    "Nunu": {
-      "api_name": "TFT17_Nunu",
-      "games": 713944,
-      "avg_place": 4.49,
-      "top4": 49.39,
-      "win": 14.68,
-      "star_avg_place": 1.13
-    },
-    "Leona": {
-      "api_name": "TFT17_Leona",
-      "games": 151892,
-      "avg_place": 4.77,
-      "top4": 44.88,
-      "win": 7.71,
-      "star_avg_place": 4.4
-    },
-    "Gragas": {
-      "api_name": "TFT17_Gragas",
-      "games": 139549,
-      "avg_place": 4.58,
-      "top4": 48.81,
-      "win": 8.11,
-      "star_avg_place": 4.4
-    },
-    "Gwen": {
-      "api_name": "TFT17_Gwen",
-      "games": 202119,
-      "avg_place": 4.31,
-      "top4": 53.5,
-      "win": 13.01,
-      "star_avg_place": 3.97
-    },
-    "Jinx": {
-      "api_name": "TFT17_Jinx",
-      "games": 172256,
-      "avg_place": 4.74,
-      "top4": 46.36,
-      "win": 14.92,
-      "star_avg_place": 4.04
-    },
-    "Zoe": {
-      "api_name": "TFT17_Zoe",
-      "games": 60208,
-      "avg_place": 4.64,
-      "top4": 48.11,
-      "win": 7.4,
-      "star_avg_place": 4.05
-    },
-    "Graves": {
-      "api_name": "TFT17_Graves",
-      "games": 301217,
-      "avg_place": 4.41,
-      "top4": 49.86,
-      "win": 20.27,
-      "star_avg_place": 1.07
-    },
-    "Fizz": {
-      "api_name": "TFT17_Fizz",
-      "games": 105329,
-      "avg_place": 4.68,
-      "top4": 45.76,
-      "win": 9.97,
-      "star_avg_place": 4.08
-    },
-    "Nasus": {
-      "api_name": "TFT17_Nasus",
-      "games": 198404,
-      "avg_place": 4.44,
-      "top4": 50.75,
-      "win": 12.42,
-      "star_avg_place": 4.19
-    },
-    "Lulu": {
-      "api_name": "TFT17_Lulu",
-      "games": 90254,
-      "avg_place": 4.72,
-      "top4": 45.37,
-      "win": 10.25,
-      "star_avg_place": 4.05
-    },
-    "Pantheon": {
-      "api_name": "TFT17_Pantheon",
-      "games": 362162,
-      "avg_place": 4.53,
-      "top4": 48.92,
-      "win": 12.2,
-      "star_avg_place": 4.32
-    },
-    "Rhaast": {
-      "api_name": "TFT17_Rhaast",
-      "games": 415142,
-      "avg_place": 3.97,
-      "top4": 60.12,
-      "win": 17.8,
-      "star_avg_place": 3.69
-    },
-    "Miss Fortune": {
-      "api_name": "TFT17_MissFortune",
-      "games": 79541,
-      "avg_place": 4.4,
-      "top4": 52.86,
-      "win": 8.66,
-      "star_avg_place": 3.93
-    },
-    "Vex": {
-      "api_name": "TFT17_Vex",
-      "games": 356723,
-      "avg_place": 4.31,
-      "top4": 51.98,
-      "win": 19.19,
-      "star_avg_place": 1.04
+    "Taric": {
+      "api_name": "DA_Taric18",
+      "games": 7593,
+      "avg_place": 3.91,
+      "top4": 60.63,
+      "win": 19.45,
+      "star_avg_place": 1.0
     },
     "Gnar": {
-      "api_name": "TFT17_Gnar",
-      "games": 63129,
-      "avg_place": 4.71,
-      "top4": 44.43,
-      "win": 12.11,
-      "star_avg_place": 3.73
+      "api_name": "DA_18_GnarSmall",
+      "games": 6204,
+      "avg_place": 3.77,
+      "top4": 62.75,
+      "win": 20.71,
+      "star_avg_place": 1.67
     },
-    "Bel'Veth": {
-      "api_name": "TFT17_Belveth",
-      "games": 294918,
+    "Azir": {
+      "api_name": "DA_18_Azir",
+      "games": 3174,
+      "avg_place": 4.61,
+      "top4": 49.02,
+      "win": 8.63,
+      "star_avg_place": 4.11
+    },
+    "Lux (Coven)": {
+      "api_name": "DA_18_Lux_Coven",
+      "games": 163,
+      "avg_place": 4.62,
+      "top4": 44.79,
+      "win": 24.54,
+      "star_avg_place": 0.0
+    },
+    "Lux (Solar)": {
+      "api_name": "DA_18_Lux_Sunbeam",
+      "games": 38,
+      "avg_place": 3.68,
+      "top4": 71.05,
+      "win": 15.79,
+      "star_avg_place": 0.0
+    },
+    "Teemo": {
+      "api_name": "DA_18_Teemo",
+      "games": 1055,
+      "avg_place": 4.32,
+      "top4": 54.31,
+      "win": 11.66,
+      "star_avg_place": 4.14
+    },
+    "Alune": {
+      "api_name": "DA_18_Alune",
+      "games": 4144,
+      "avg_place": 3.79,
+      "top4": 63.3,
+      "win": 18.92,
+      "star_avg_place": 1.0
+    },
+    "Ivern": {
+      "api_name": "DA_18_Ivern",
+      "games": 4844,
+      "avg_place": 3.85,
+      "top4": 59.91,
+      "win": 23.16,
+      "star_avg_place": 1.0
+    },
+    "Rengar": {
+      "api_name": "DA_18_Rengar",
+      "games": 1115,
+      "avg_place": 4.25,
+      "top4": 54.26,
+      "win": 18.12,
+      "star_avg_place": 3.56
+    },
+    "LeBlanc": {
+      "api_name": "DA_18_LeBlanc",
+      "games": 2576,
+      "avg_place": 4.57,
+      "top4": 48.1,
+      "win": 13.47,
+      "star_avg_place": 3.53
+    },
+    "Ahri": {
+      "api_name": "DA_18_Ahri",
+      "games": 5125,
+      "avg_place": 4.4,
+      "top4": 52.33,
+      "win": 12.31,
+      "star_avg_place": 1.37
+    },
+    "Soraka": {
+      "api_name": "DA_18_Soraka",
+      "games": 3947,
+      "avg_place": 4.39,
+      "top4": 52.82,
+      "win": 11.27,
+      "star_avg_place": 1.5
+    },
+    "Caitlyn": {
+      "api_name": "DA_18_Caitlyn",
+      "games": 844,
+      "avg_place": 4.98,
+      "top4": 43.25,
+      "win": 8.06,
+      "star_avg_place": 3.94
+    },
+    "Akali": {
+      "api_name": "DA_18_Akali_AD",
+      "games": 465,
+      "avg_place": 5.16,
+      "top4": 37.42,
+      "win": 5.81,
+      "star_avg_place": 5.21
+    },
+    "Kog'Maw": {
+      "api_name": "DA_KogMaw18_AD",
+      "games": 3647,
       "avg_place": 4.46,
-      "top4": 51.79,
-      "win": 9.36,
-      "star_avg_place": 4.1
+      "top4": 51.55,
+      "win": 10.69,
+      "star_avg_place": 3.44
+    },
+    "Nidalee": {
+      "api_name": "DA_Nidalee18_AP",
+      "games": 2521,
+      "avg_place": 4.4,
+      "top4": 52.92,
+      "win": 10.55,
+      "star_avg_place": 1.47
+    },
+    "Shen": {
+      "api_name": "DA_18_Shen",
+      "games": 1613,
+      "avg_place": 4.74,
+      "top4": 45.38,
+      "win": 9.55,
+      "star_avg_place": 4.34
+    },
+    "Kobuko": {
+      "api_name": "DA_18_Kobuko",
+      "games": 1708,
+      "avg_place": 4.42,
+      "top4": 52.28,
+      "win": 11.89,
+      "star_avg_place": 4.13
+    },
+    "Lux": {
+      "api_name": "DA_Lux18_Base",
+      "games": 15,
+      "avg_place": 2.87,
+      "top4": 86.67,
+      "win": 0.0,
+      "star_avg_place": 0.0
+    },
+    "Hecarim": {
+      "api_name": "DA_18_Hecarim",
+      "games": 6669,
+      "avg_place": 4.52,
+      "top4": 50.28,
+      "win": 11.02,
+      "star_avg_place": 3.23
+    },
+    "Pebbles": {
+      "api_name": "DA_18_Sentry",
+      "games": 2368,
+      "avg_place": 4.69,
+      "top4": 47.59,
+      "win": 9.21,
+      "star_avg_place": 4.43
+    },
+    "Lux (Elderwood)": {
+      "api_name": "DA_18_Lux_Elderwood",
+      "games": 538,
+      "avg_place": 3.17,
+      "top4": 73.05,
+      "win": 34.01,
+      "star_avg_place": 5.0
+    },
+    "Tristana": {
+      "api_name": "DA_18_Tristana",
+      "games": 2117,
+      "avg_place": 4.38,
+      "top4": 52.39,
+      "win": 13.04,
+      "star_avg_place": 3.43
+    },
+    "Malphite": {
+      "api_name": "DA_18_Malphite",
+      "games": 3103,
+      "avg_place": 4.59,
+      "top4": 49.02,
+      "win": 8.6,
+      "star_avg_place": 1.5
+    },
+    "Cassiopeia": {
+      "api_name": "DA_18_Cassiopeia",
+      "games": 1080,
+      "avg_place": 4.96,
+      "top4": 41.3,
+      "win": 9.35,
+      "star_avg_place": 3.71
+    },
+    "Leona": {
+      "api_name": "DA_18_Leona",
+      "games": 2279,
+      "avg_place": 4.51,
+      "top4": 50.64,
+      "win": 14.44,
+      "star_avg_place": 4.15
+    },
+    "Varus": {
+      "api_name": "DA_18_Varus",
+      "games": 655,
+      "avg_place": 4.89,
+      "top4": 42.29,
+      "win": 10.08,
+      "star_avg_place": 4.54
+    },
+    "Rammus": {
+      "api_name": "DA_18_Rammus",
+      "games": 2596,
+      "avg_place": 4.29,
+      "top4": 53.97,
+      "win": 13.6,
+      "star_avg_place": 3.45
+    },
+    "Kha'Zix": {
+      "api_name": "DA_18_KhaZix",
+      "games": 926,
+      "avg_place": 4.59,
+      "top4": 47.95,
+      "win": 11.99,
+      "star_avg_place": 3.99
+    },
+    "Yunara": {
+      "api_name": "DA_18_Yunara",
+      "games": 1784,
+      "avg_place": 4.77,
+      "top4": 45.35,
+      "win": 8.97,
+      "star_avg_place": 4.08
+    },
+    "Maokai": {
+      "api_name": "DA_18_Maokai",
+      "games": 4872,
+      "avg_place": 4.07,
+      "top4": 55.83,
+      "win": 21.49,
+      "star_avg_place": 1.0
+    },
+    "Ashe": {
+      "api_name": "DA_18_Ashe",
+      "games": 3742,
+      "avg_place": 3.84,
+      "top4": 62.19,
+      "win": 18.44,
+      "star_avg_place": 1.0
+    },
+    "Veigar": {
+      "api_name": "DA_18_Veigar",
+      "games": 1566,
+      "avg_place": 4.48,
+      "top4": 51.28,
+      "win": 10.34,
+      "star_avg_place": 4.18
+    },
+    "Diana": {
+      "api_name": "DA_18_Diana",
+      "games": 6843,
+      "avg_place": 4.5,
+      "top4": 50.61,
+      "win": 10.51,
+      "star_avg_place": 3.38
+    },
+    "Ornn": {
+      "api_name": "DA_18_Ornn",
+      "games": 3858,
+      "avg_place": 4.62,
+      "top4": 47.56,
+      "win": 13.01,
+      "star_avg_place": 4.05
+    },
+    "Karma": {
+      "api_name": "DA_Karma18",
+      "games": 3544,
+      "avg_place": 4.59,
+      "top4": 48.34,
+      "win": 10.98,
+      "star_avg_place": 4.3
+    },
+    "Raptor": {
+      "api_name": "DA_CrimsonRaptor18",
+      "games": 3374,
+      "avg_place": 4.55,
+      "top4": 49.7,
+      "win": 8.95,
+      "star_avg_place": 3.55
+    },
+    "Xayah": {
+      "api_name": "DA_18_Xayah",
+      "games": 3327,
+      "avg_place": 4.67,
+      "top4": 46.47,
+      "win": 13.35,
+      "star_avg_place": 3.93
+    },
+    "Lux (Blackthorn)": {
+      "api_name": "DA_Lux18_Blackthorn",
+      "games": 336,
+      "avg_place": 3.6,
+      "top4": 68.45,
+      "win": 18.15,
+      "star_avg_place": 0.0
+    },
+    "Amumu": {
+      "api_name": "DA_Amumu18",
+      "games": 6715,
+      "avg_place": 4.29,
+      "top4": 52.51,
+      "win": 16.93,
+      "star_avg_place": 1.38
+    },
+    "Sejuani": {
+      "api_name": "DA_18_Sejuani",
+      "games": 2323,
+      "avg_place": 4.5,
+      "top4": 51.14,
+      "win": 13.86,
+      "star_avg_place": 3.89
+    },
+    "Elise": {
+      "api_name": "DA_18_Elise",
+      "games": 1519,
+      "avg_place": 5.29,
+      "top4": 35.09,
+      "win": 8.1,
+      "star_avg_place": 3.83
+    },
+    "Alistar": {
+      "api_name": "DA_18_Alistar",
+      "games": 3450,
+      "avg_place": 4.57,
+      "top4": 47.01,
+      "win": 14.0,
+      "star_avg_place": 3.98
+    },
+    "Lux (Lunar)": {
+      "api_name": "DA_18_Lux_Moonbeam",
+      "games": 558,
+      "avg_place": 3.3,
+      "top4": 71.86,
+      "win": 24.91,
+      "star_avg_place": 0.0
+    },
+    "Master Yi": {
+      "api_name": "DA_18_MasterYi_AD",
+      "games": 1988,
+      "avg_place": 4.69,
+      "top4": 45.62,
+      "win": 10.16,
+      "star_avg_place": 3.55
+    },
+    "Ancient Sentinel": {
+      "api_name": "DA_Sentinel18",
+      "games": 8881,
+      "avg_place": 4.4,
+      "top4": 51.82,
+      "win": 12.88,
+      "star_avg_place": 1.25
+    },
+    "Brambleback": {
+      "api_name": "DA_Brambleback18",
+      "games": 4616,
+      "avg_place": 4.56,
+      "top4": 49.85,
+      "win": 8.56,
+      "star_avg_place": 1.53
+    },
+    "Lux (Blossom)": {
+      "api_name": "DA_Lux18_Blossom",
+      "games": 617,
+      "avg_place": 3.37,
+      "top4": 69.21,
+      "win": 26.09,
+      "star_avg_place": 1.0
+    },
+    "Sivir": {
+      "api_name": "DA_18_Sivir",
+      "games": 4445,
+      "avg_place": 4.31,
+      "top4": 53.7,
+      "win": 13.54,
+      "star_avg_place": 1.04
+    },
+    "Ezreal": {
+      "api_name": "DA_18_Ezreal",
+      "games": 3755,
+      "avg_place": 4.42,
+      "top4": 50.09,
+      "win": 15.21,
+      "star_avg_place": 1.0
+    },
+    "Morgana": {
+      "api_name": "DA_18_Morgana",
+      "games": 4128,
+      "avg_place": 4.5,
+      "top4": 50.78,
+      "win": 11.99,
+      "star_avg_place": 1.18
+    },
+    "Warwick": {
+      "api_name": "DA_18_Warwick",
+      "games": 651,
+      "avg_place": 5.04,
+      "top4": 41.47,
+      "win": 4.76,
+      "star_avg_place": 4.64
+    },
+    "Zyra": {
+      "api_name": "DA_18_Zyra",
+      "games": 5552,
+      "avg_place": 4.44,
+      "top4": 52.45,
+      "win": 9.98,
+      "star_avg_place": 1.41
     },
     "Rek'Sai": {
-      "api_name": "TFT17_RekSai",
-      "games": 111933,
+      "api_name": "DA_18_RekSai",
+      "games": 1850,
       "avg_place": 4.6,
-      "top4": 49.85,
-      "win": 6.96,
-      "star_avg_place": 4.18
+      "top4": 49.57,
+      "win": 8.97,
+      "star_avg_place": 4.13
+    },
+    "Lux (Inferno)": {
+      "api_name": "DA_18_Lux_Inferno",
+      "games": 319,
+      "avg_place": 3.73,
+      "top4": 65.2,
+      "win": 24.76,
+      "star_avg_place": 3.0
+    },
+    "Scuttlecrab": {
+      "api_name": "DA_Scuttlecrab18",
+      "games": 2103,
+      "avg_place": 4.73,
+      "top4": 46.79,
+      "win": 8.23,
+      "star_avg_place": 4.12
+    },
+    "Murkwolf": {
+      "api_name": "DA_Murkwolf18",
+      "games": 1119,
+      "avg_place": 4.83,
+      "top4": 44.24,
+      "win": 7.15,
+      "star_avg_place": 4.52
+    },
+    "Lillia": {
+      "api_name": "DA_18_Lillia",
+      "games": 3206,
+      "avg_place": 4.38,
+      "top4": 51.06,
+      "win": 13.63,
+      "star_avg_place": 1.07
+    },
+    "Vi": {
+      "api_name": "DA_Vi18",
+      "games": 6690,
+      "avg_place": 4.44,
+      "top4": 51.64,
+      "win": 11.79,
+      "star_avg_place": 3.17
+    },
+    "Rakan": {
+      "api_name": "DA_18_Rakan",
+      "games": 4619,
+      "avg_place": 4.52,
+      "top4": 50.42,
+      "win": 13.01,
+      "star_avg_place": 3.74
+    },
+    "Lux (Primal)": {
+      "api_name": "DA_18_Lux_Primal",
+      "games": 400,
+      "avg_place": 3.35,
+      "top4": 72.25,
+      "win": 26.75,
+      "star_avg_place": 0.0
+    },
+    "Fiddlesticks": {
+      "api_name": "DA_Fiddlesticks18",
+      "games": 5028,
+      "avg_place": 4.49,
+      "top4": 50.99,
+      "win": 10.68,
+      "star_avg_place": 3.5
+    },
+    "Aphelios": {
+      "api_name": "DA_18_Aphelios",
+      "games": 4860,
+      "avg_place": 4.36,
+      "top4": 53.0,
+      "win": 11.75,
+      "star_avg_place": 1.0
+    },
+    "Elder Dragon": {
+      "api_name": "DA_18_ElderDragon",
+      "games": 2334,
+      "avg_place": 4.13,
+      "top4": 55.14,
+      "win": 21.12,
+      "star_avg_place": 1.11
+    },
+    "Sett": {
+      "api_name": "DA_18_Sett",
+      "games": 6314,
+      "avg_place": 4.33,
+      "top4": 53.29,
+      "win": 12.78,
+      "star_avg_place": 1.0
+    },
+    "Kayle": {
+      "api_name": "DA_18_Kayle",
+      "games": 1928,
+      "avg_place": 4.53,
+      "top4": 50.47,
+      "win": 15.09,
+      "star_avg_place": 4.07
+    },
+    "Gromp": {
+      "api_name": "DA_Gromp18_AP",
+      "games": 921,
+      "avg_place": 4.73,
+      "top4": 45.49,
+      "win": 9.12,
+      "star_avg_place": 4.67
+    },
+    "Camille": {
+      "api_name": "DA_18_Camille",
+      "games": 416,
+      "avg_place": 6.45,
+      "top4": 15.38,
+      "win": 3.85,
+      "star_avg_place": 5.64
+    },
+    "Yorick": {
+      "api_name": "DA_18_Yorick",
+      "games": 6086,
+      "avg_place": 4.51,
+      "top4": 50.36,
+      "win": 10.98,
+      "star_avg_place": 4.34
+    },
+    "Kennen": {
+      "api_name": "DA_18_Kennen",
+      "games": 5560,
+      "avg_place": 3.9,
+      "top4": 59.84,
+      "win": 21.06,
+      "star_avg_place": 1.0
+    },
+    "Krug": {
+      "api_name": "DA_Krug18",
+      "games": 3101,
+      "avg_place": 4.66,
+      "top4": 46.57,
+      "win": 9.38,
+      "star_avg_place": 3.57
+    },
+    "Lux (Fae)": {
+      "api_name": "DA_18_Lux_Fae",
+      "games": 148,
+      "avg_place": 3.64,
+      "top4": 66.22,
+      "win": 27.03,
+      "star_avg_place": 1.0
     }
   }
 }

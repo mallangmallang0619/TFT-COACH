@@ -237,6 +237,12 @@ class GameState(BaseModel):
     # name-banner OCR; feeds the purchase-tracking roster.
     shop_units: list[Optional[str]] = Field(default_factory=list)
 
+    # Set 18 Wisps temporarily cover a shop option.  Each entry is the OCR'd
+    # Wisp title for that slot (None = ordinary champion/empty).  Keeping this
+    # separate prevents the roster tracker from treating a covered card as a
+    # purchase; after the Wisp disappears the champion underneath is visible.
+    shop_wisps: list[Optional[str]] = Field(default_factory=list)
+
     # The comp the player clicked to lock as their direction (matched
     # against suggestion names / TFT Academy names). Set by the server
     # from the frontend's pin_comp message.

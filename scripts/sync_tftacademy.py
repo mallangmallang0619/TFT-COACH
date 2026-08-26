@@ -107,14 +107,14 @@ def print_detail(slug: str, detail: dict) -> None:
     print()
 
 
-def print_augments_note() -> None:
+def print_augments_note(cache: dict | None = None) -> None:
     """Explain where augment ratings come from."""
     print("-" * 70)
     print("Augment tier list")
     print("-" * 70)
     print(
         "Augment ratings sync from TFT Academy's JSON API:"
-        f"\n    {AUGMENTS_API_URL_TEMPLATE.format(set_number=current_set_number())}"
+        f"\n    {AUGMENTS_API_URL_TEMPLATE.format(set_number=current_set_number(cache))}"
         "\nRun with --write to refresh them alongside the comp tier list."
         "\nHand-curated tips in backend/game_data.py AUGMENT_RATINGS are kept"
         "\nand overlaid with the live ratings."
@@ -255,7 +255,7 @@ def main() -> int:
     print("Re-run with --write to update assets/tftacademy_cache.json,")
     print("or --write --details to also fetch per-comp units/items.")
     print()
-    print_augments_note()
+    print_augments_note({"comps": scraped})
     return 0
 
 

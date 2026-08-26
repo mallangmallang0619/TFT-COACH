@@ -134,7 +134,7 @@ def capture_reference(capture: ScreenCapture) -> Optional[np.ndarray]:
     """Step 1: locate the game window + grab a single full-window frame."""
     print("\n[1/3] Locating game window...")
     if not capture.locate_game():
-        print("  ✗ Could not find the TFT/League window.")
+        print("  ✗ Could not find the TFT.exe game window.")
         print("    Make sure TFT is running and not minimized.")
         return None
     w = capture.window

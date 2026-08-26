@@ -1,7 +1,7 @@
 """
 Training-Data Pack / Merge
 
-The bench-crop harvester saves labeled unit crops to backend/_training/
+The bench-crop harvester saves labeled unit crops to backend/_training/set18/
 on whatever machine runs live mode. Raw crops stay local (gitignored) —
 only the trained model ships in the repo. When several machines collect
 crops, this script moves data between them without any cloud setup:
@@ -22,7 +22,10 @@ import zipfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-TRAINING_DIR = REPO_ROOT / "backend" / "_training"
+sys.path.insert(0, str(REPO_ROOT / "backend"))
+from set18_data import SET_NUMBER  # noqa: E402
+
+TRAINING_DIR = REPO_ROOT / "backend" / "_training" / f"set{SET_NUMBER}"
 
 
 def stats() -> int:

@@ -76,6 +76,18 @@ class UnitClassifier:
 
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            from game_data import ACTIVE_ENGINE, ACTIVE_SET_NUMBER
+
+            model_set = meta.get("set_number")
+            model_engine = meta.get("engine")
+            if model_set != ACTIVE_SET_NUMBER or model_engine != ACTIVE_ENGINE:
+                logger.warning(
+                    "Ignoring stale unit classifier "
+                    f"(model set={model_set}, engine={model_engine}; "
+                    f"runtime set={ACTIVE_SET_NUMBER}, engine={ACTIVE_ENGINE}). "
+                    "Collect Unreal crops and retrain for the current set."
+                )
+                return
             self.labels = meta["labels"]
             self.input_size = int(meta["input_size"])
             self._mean = np.array(meta["mean"], dtype=np.float32).reshape(3, 1, 1)
@@ -93,11 +105,14 @@ class UnitClassifier:
         # Miss_Fortune) — resolve them to canonical champion names once.
         # Background classes (leading underscore, e.g. _empty) resolve to
         # None and are reported as "no unit".
-        from game_data import find_champion_name
+        from game_data import canonical_training_label, find_champion_name
 
         self.display_names = [
             None if lbl.startswith("_")
-            else (find_champion_name(lbl.replace("_", " ")) or lbl.replace("_", " "))
+            else (
+                find_champion_name(canonical_training_label(lbl.replace("_", " ")))
+                or canonical_training_label(lbl.replace("_", " "))
+            )
             for lbl in self.labels
         ]
         self.available = True

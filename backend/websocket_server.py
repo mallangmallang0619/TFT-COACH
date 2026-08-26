@@ -24,7 +24,16 @@ from coach import Coach
 from harvest import BenchHarvester, training_stats
 from roster import RosterTracker
 from game_state import GameState, GamePhase
-from game_data import ITEM_RECIPES, COMPONENT_IDS, COMPONENT_NAMES, SHRED_ITEMS, BURN_ITEMS
+from game_data import (
+    ACTIVE_ENGINE,
+    ACTIVE_SET_NAME,
+    ACTIVE_SET_NUMBER,
+    ITEM_RECIPES,
+    COMPONENT_IDS,
+    COMPONENT_NAMES,
+    SHRED_ITEMS,
+    BURN_ITEMS,
+)
 import tftacademy_live
 import tactics_live
 
@@ -134,8 +143,14 @@ class TFTCoachServer:
         return json.dumps({
             "type": "game_data",
             "protocol": PROTOCOL_VERSION,
+            "set": {
+                "number": ACTIVE_SET_NUMBER,
+                "name": ACTIVE_SET_NAME,
+                "engine": ACTIVE_ENGINE,
+            },
             "classifier_status": {
                 "active": self.detector.unit_classifier.available,
+                "dataset": f"set{ACTIVE_SET_NUMBER}",
                 "crops": crop_count,
                 "champions": champion_count,
                 "ready_classes": ready_count,
