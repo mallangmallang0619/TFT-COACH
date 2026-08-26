@@ -131,9 +131,12 @@ def _merge_lobby_reads(masked: list[int], raw: list[int], own_hp: Optional[int])
         return masked
 
     if own_hp not in masked:
-        # The mask missed our row, so its values above our HP are the same
-        # portrait/frame artifacts that caused the false 98 late-game read.
-        masked = [value for value in masked if value <= own_hp]
+        # The geometric mask missed our known row, so it is not aligned to
+        # the standings for this frame. Do not splice its apparent lower HP
+        # values/zeros into the clean raw read: real fixtures showed those
+        # were portrait and frame artifacts (98, 18, 17, 0...) rather than
+        # additional players.
+        masked = []
 
     merged: list[int] = []
     for value in sorted(set(masked + raw), reverse=True):

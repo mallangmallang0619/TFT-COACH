@@ -1558,7 +1558,7 @@ def test_lobby_hp_real_frames():
     ) == [100, 96, 95, 93, 93, 81, 78]
     assert _merge_lobby_reads(
         [98, 18, 17, 0, 0, 0], [69, 41, 28], 28
-    ) == [69, 41, 28, 18, 17, 0, 0, 0]
+    ) == [69, 41, 28]
 
     debug_dir = Path(__file__).parent / "_debug"
     # Unreadable rows remain explicit -1 slots so the frontend always
