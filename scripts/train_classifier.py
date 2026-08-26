@@ -3,7 +3,7 @@ Unit Classifier Training — bench/board 3D-model crops -> ONNX.
 
 Live TFT renders units as 3D models that portrait template matching can't
 identify. The bench harvester (backend/harvest.py) auto-collects labeled
-crops of those models into backend/_training/<champion>/ while the player
+crops of those models into backend/_training/set18/<champion>/ while the player
 plays. This script turns those crops into the classifier that ships in
 the repo — users never train, they just get assets/models/.
 
@@ -42,7 +42,16 @@ for _stream in (sys.stdout, sys.stderr):
         _stream.reconfigure(encoding="utf-8", errors="replace")
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-TRAINING_DIR = REPO_ROOT / "backend" / "_training"
+sys.path.insert(0, str(REPO_ROOT / "backend"))
+
+from set18_data import (  # noqa: E402
+    SET_NUMBER,
+    SET_NAME,
+    ENGINE,
+    canonical_training_label,
+)
+
+TRAINING_DIR = REPO_ROOT / "backend" / "_training" / f"set{SET_NUMBER}"
 MODELS_DIR = REPO_ROOT / "assets" / "models"
 
 # Preprocessing contract — written into unit_classifier.json and read back
@@ -77,17 +86,25 @@ def discover_dataset(
         if not champ_dir.is_dir():
             continue
         files = sorted(champ_dir.glob("*.png"))
-        if len(files) >= min_crops:
-            usable[champ_dir.name] = files
-        elif files:
-            skipped[champ_dir.name] = len(files)
+        if not files:
+            continue
+        # Pool manually imported form folders (Lux_Coven, Lux_Solar, etc.)
+        # into one visual class. The live trait HUD remains origin truth.
+        label = canonical_training_label(champ_dir.name)
+        usable.setdefault(label, []).extend(files)
+
+    # Apply readiness after aliases/forms have been pooled.
+    for label, files in list(usable.items()):
+        if len(files) < min_crops:
+            skipped[label] = len(files)
+            del usable[label]
     return usable, skipped
 
 
 def split_dataset(
     usable: dict[str, list[Path]],
     val_fraction: float = VAL_FRACTION,
-    seed: int = 17,
+    seed: int = SET_NUMBER,
 ) -> tuple[list[tuple[Path, int]], list[tuple[Path, int]], list[str]]:
     """
     Stratified train/val split. Returns (train, val, labels) where train
@@ -178,7 +195,15 @@ def train(args: argparse.Namespace) -> int:
                         INPUT_SIZE, scale=(0.7, 1.0), ratio=(0.75, 1.33), antialias=True
                     ),
                     transforms.RandomHorizontalFlip(),
+                    # UE arenas/cameras vary, and Lux forms only differ in
+                    # small details. Learn the model silhouette across modest
+                    # viewpoint and focus changes instead of one highlight.
+                    transforms.RandomAffine(
+                        degrees=8, translate=(0.06, 0.06), scale=(0.92, 1.08)
+                    ),
+                    transforms.RandomPerspective(distortion_scale=0.12, p=0.25),
                     transforms.ColorJitter(0.25, 0.25, 0.25, 0.04),
+                    transforms.RandomApply([transforms.GaussianBlur(3)], p=0.12),
                 ])
                 if augment
                 else transforms.Resize((INPUT_SIZE, INPUT_SIZE), antialias=True)
@@ -317,6 +342,9 @@ def train(args: argparse.Namespace) -> int:
         opset_version=18,
     )
     meta = {
+        "set_number": SET_NUMBER,
+        "set_name": SET_NAME,
+        "engine": ENGINE,
         "labels": labels,
         "input_size": INPUT_SIZE,
         "mean": IMAGENET_MEAN,
@@ -325,6 +353,7 @@ def train(args: argparse.Namespace) -> int:
         "min_confidence": round(min_confidence, 3),
         "val_accuracy": round(best_acc, 4),
         "num_train_crops": len(train_items),
+        "lux_forms_collapsed": True,
         "trained_at": datetime.datetime.now().isoformat(timespec="seconds"),
     }
     meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")

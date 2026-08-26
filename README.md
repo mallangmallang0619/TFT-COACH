@@ -104,7 +104,7 @@ Hotkeys (global — they work while the game has focus):
 |------|--------|
 | `Ctrl+Shift+G` | **Ghost lock** — overlay never captures the mouse, even on hover. Use while scouting: TFT's player list sits underneath the panel, and this lets your clicks reach it. Press again to unlock. |
 | `Ctrl+Shift+H` | Show / hide the overlay (e.g. before alt-tabbing — the overlay floats above other apps). |
-| `Ctrl+Shift+R` | **Share Mode** — make the overlay visible in Discord streams and screenshots. The backend uses direct League-window capture so the overlay does not contaminate detection. |
+| `Ctrl+Shift+R` | **Share Mode** — make the overlay visible in Discord streams and screenshots. The backend uses direct `TFT.exe` window capture so the overlay does not contaminate detection. |
 | `Ctrl+Shift+T` | Manual click-through toggle (also clears ghost lock). |
 | `Ctrl+Shift+Q` | Quit TFT Coach. |
 
@@ -187,7 +187,7 @@ python scripts/sync_tftacademy.py            # dry-run preview
 ### Augment tier list
 
 Augment ratings sync from TFT Academy's JSON API
-(`/api/tierlist/augments?set=17` — the same endpoint their own page uses),
+(`/api/tierlist/augments?set=18` — the same endpoint their own page uses),
 covering every augment in the set with S/A/B/C ratings per pick stage
 (2-1 / 3-2 / 4-2) and slot (silver / gold / prismatic). Display names are
 resolved via Data Dragon's `tft-augments.json`.
@@ -201,6 +201,43 @@ Augment lookups from OCR go exact → normalized → fuzzy
 still resolve.
 
 ## How Detection Works
+
+### Set 18 / Unreal migration
+
+The active data profile is **Set 18: Enchanted Wilds** on Riot's Unreal
+client. Riot's launch data is split across services: Data Dragon exposes the
+new `DA_*` shop identities and all nine Avatar Lux rows, while CommunityDragon
+currently exposes reliable trait breakpoints but an incomplete shop roster.
+`backend/set18_data.py` is the reviewed join used at runtime.
+
+Validate that snapshot against the latest Riot payloads with:
+
+```bash
+python scripts/sync_set_data.py
+```
+
+Set 18's temporary shop effects are **Wisps** (the updated Charms mechanic).
+The detector keeps Wisp titles separate from champion slots, and purchase
+tracking will wait until the covered champion is visible again. This prevents a
+Wisp purchase from becoming a false champion purchase or a poisoned ML label.
+
+Lux's nine Avatar origins remain distinct gameplay identities because the
+chosen origin contributes two trait points. For vision training, all nine are
+intentionally pooled into the single `Lux` class: their Unreal models differ
+only slightly, while the live trait HUD supplies the exact origin.
+
+The Unreal unit classifier dataset is isolated at
+`backend/_training/set18/`. A Set 17/Hextech ONNX model is rejected at load time
+rather than silently producing bad predictions. Check collection readiness with:
+
+```bash
+python scripts/train_classifier.py --check
+python scripts/training_data.py --stats
+```
+
+The core Unreal HUD/board ROIs were calibrated from a live 2560×1440 Set 18
+frame. Re-run `python backend/diagnose_capture.py --dump-hexes` after changing
+resolution or in-game UI scale.
 
 ### Component Detection
 Template matching against cropped regions of the item bench area. Each component icon is matched against stored templates with confidence scoring.
@@ -227,7 +264,10 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] WebSocket communication
 - [x] Electron overlay shell (click-through, hotkeys)
 - [x] Template fetching from Riot CDNs (`fetch_templates.py`)
-- [x] Champion portrait database (63 champions, set 17)
+- [x] Set 18 roster (65 unique units) and trait breakpoints
+- [x] Avatar Lux gameplay forms (+2 origin) pooled into one visual ML class
+- [x] Wisp-covered shop slots excluded from purchase tracking
+- [x] Unreal-scoped training/model metadata rejects stale Hextech models
 - [x] Comp detection from active synergies
 - [x] Multi-resolution support (ROIs are resolution-relative)
 - [x] Auto-update tier list for new patches (TFT Academy sync)
@@ -244,7 +284,8 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] Shop-card reading (name-banner OCR + fuzzy roster matching — skin-proof, no art templates)
 - [x] Purchase-tracking roster — shop diffs between frames reveal buys; owned units (with 3-copy star-ups) feed comp direction as held units
 - [x] Auto-labeling training-data harvester — every purchase saves the bench crop it lands in, labeled by the shop card name, to `backend/_training/` (gitignored). Just play games and the classifier dataset builds itself. Raw crops stay local; only the trained model will ship in the repo (`assets/models/`), so users never collect or train. Pool crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
-- [ ] Live unit identification — a small per-hex CNN classifier trained on the harvested crops (needs a few games of collected data first)
+- [ ] Live unit identification — retrain on Set 18 Unreal crops (currently needs a few live games of collected data first)
 - [ ] Player-HP row tracking — the right-side player list reorders by standing, so the fixed HP ROI reads the wrong row late-game
 - [ ] Opponent scouting + positioning prediction (read enemy boards during combat, suggest counter-positioning)
-- [ ] New-set data migration — `game_data.py` CHAMPIONS/TRAITS/META_COMPS seeds are still hand-written per set; templates need a `--force` re-fetch
+- [x] Set 18 data migration — current roster/traits, TFT Academy Set 18 cache, and `DA_*` identifiers
+- [x] Set 18 Unreal core ROI calibration from a live 2560×1440 frame

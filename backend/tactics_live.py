@@ -44,6 +44,11 @@ def _norm(value: str) -> str:
 
 
 def _champion_name_for_api(api_name: str) -> Optional[str]:
+    # Set 18's Unreal data uses DA_* identifiers instead of a consistent
+    # TFT18_ prefix. Match reviewed Riot ids before using legacy suffix logic.
+    for name, data in CHAMPIONS.items():
+        if str(data.get("api_name", "")).lower() == api_name.lower():
+            return name
     suffix = _API_PREFIX_RE.sub("", api_name)
     wanted = _norm(suffix)
     aliases = {

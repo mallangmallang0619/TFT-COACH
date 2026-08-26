@@ -1,6 +1,6 @@
 """
 Patch-Specific Game Data
-Set 17: Space Gods  |  Patch 17.2b  (current as of May 2026)
+Set 18: Enchanted Wilds  |  Patch 18.1  (launch data)
 
 
 """
@@ -470,6 +470,26 @@ TRAITS: dict[str, dict] = {
 }
 
 
+# Set 18 shipped with TFT's Unreal migration.  CommunityDragon's traditional
+# set roster is incomplete for the new ``DA_*`` data layout, so the validated
+# launch snapshot replaces the legacy Set 17 seed above.  Keeping the old seed
+# in this file for the moment preserves historical fixture readability while
+# all runtime lookups use these current dictionaries.
+from set18_data import (  # noqa: E402
+    SET_NUMBER as ACTIVE_SET_NUMBER,
+    SET_NAME as ACTIVE_SET_NAME,
+    ENGINE as ACTIVE_ENGINE,
+    CHAMPIONS as _CURRENT_CHAMPIONS,
+    TRAITS as _CURRENT_TRAITS,
+    COMPS as _CURRENT_COMPS,
+    LUX_FORMS,
+    canonical_training_label,
+)
+
+CHAMPIONS = _CURRENT_CHAMPIONS
+TRAITS = _CURRENT_TRAITS
+
+
 # ── Comp Templates  (Set 17: Space Gods) ─────────────────────────────────────
 # Each comp lists the traits it wants and the key champions that fill it.
 # `target_traits` are (trait_name, target_count) — the headline breakpoint
@@ -577,6 +597,10 @@ COMPS: list[dict] = [
         "items": ["Spear of Shojin", "Guinsoo's Rageblade", "Last Whisper"],
     },
 ]
+
+# The live comp sync replaces this list with TFT Academy details when online;
+# these Set 18 seeds keep offline coaching relevant on first launch.
+COMPS = _CURRENT_COMPS
 
 
 # ── TFT Academy Tier Data  (Set 17: Space Gods, Patch 17.2b) ─────────────────
@@ -714,6 +738,12 @@ AUGMENT_RATINGS: dict[str, dict] = {
     "Reach for the Stars":  {"rating": "B", "tip": "Carry augment — Jax becomes a primary carry. Situational X-tier on TFT Academy."},
     "Heat Death":           {"rating": "B", "tip": "Carry augment — Mordekaiser carry. Situational X-tier on TFT Academy."},
 }
+
+# Set-specific curated ratings from Space Gods must not leak into Enchanted
+# Wilds.  The tracked TFT Academy cache seeds the complete Set 18 pool at
+# startup and live refreshes keep it current.
+if ACTIVE_SET_NUMBER >= 18:
+    AUGMENT_RATINGS.clear()
 
 
 # ── Augment lookup ────────────────────────────────────────────────────────────

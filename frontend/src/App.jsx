@@ -140,7 +140,7 @@ const ACCENT2 = "#7c5cfc";
 // Backend payload schema version this overlay is built for. Must match
 // backend config.PROTOCOL_VERSION — a red header badge appears when the
 // running backend disagrees (stale process or unmerged code).
-const BACKEND_PROTOCOL_EXPECTED = 3;
+const BACKEND_PROTOCOL_EXPECTED = 4;
 
 // TFT cost-tier colors used to outline unit chips and cells
 const COST_COLORS = {

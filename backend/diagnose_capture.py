@@ -33,7 +33,14 @@ import cv2
 import numpy as np
 
 from capture import ScreenCapture, WindowFinder
-from config import BOARD_HEX_GRID, GameROIs, ShopGeometry, TraitPanel
+from config import (
+    BOARD_HEX_GRID,
+    GAME_PROCESS_NAME,
+    GAME_PROCESS_NAMES,
+    GameROIs,
+    ShopGeometry,
+    TraitPanel,
+)
 from detector import Detector, TemplateStore
 
 logger = logging.getLogger("diagnose")
@@ -54,18 +61,26 @@ ROI_COLORS = {
 
 
 def list_candidate_windows() -> list[str]:
-    """Report every visible window that looks League/TFT related."""
+    """Report TFT.exe plus visible windows that look League/TFT related."""
     lines = []
     try:
         import pygetwindow as gw
         for w in gw.getAllWindows():
             title = (w.title or "").strip()
-            if not title:
-                continue
+            process_name = WindowFinder._process_name_windows(int(w._hWnd))
             lowered = title.lower()
-            if any(k in lowered for k in ("league", "tft", "riot", "teamfight")):
+            is_game = bool(
+                process_name
+                and process_name.casefold() in {
+                    name.casefold() for name in GAME_PROCESS_NAMES
+                }
+            )
+            if is_game or any(
+                k in lowered for k in ("league", "tft", "riot", "teamfight")
+            ):
                 lines.append(
-                    f"    {title!r}  {w.width}x{w.height} at ({w.left},{w.top})"
+                    f"    {title!r} [{process_name or 'unknown process'}]  "
+                    f"{w.width}x{w.height} at ({w.left},{w.top})"
                     f"{'  [minimized]' if w.isMinimized else ''}"
                 )
     except Exception as e:
@@ -86,8 +101,11 @@ def acquire_frame(args) -> tuple[np.ndarray | None, str]:
         return frame, f"game window: {w.width}x{w.height} at ({w.x},{w.y})"
 
     if not args.fullscreen:
-        print("!! Game window not found — capturing the full monitor instead.")
-        print("   League/TFT-related windows currently visible:")
+        print(
+            f"!! {GAME_PROCESS_NAME} window not found — "
+            "capturing the full monitor instead."
+        )
+        print("   TFT/League-related windows currently visible:")
         for line in list_candidate_windows() or ["    (none)"]:
             print(line)
     frame = cap.grab_full_screen()

@@ -1,7 +1,7 @@
 """
 TFT Coach — Screen Capture Module
 
-Locates the TFT/League game window, captures frames at the configured FPS,
+Locates the TFT game window, captures frames at the configured FPS,
 and provides cropped ROI images to the detection pipeline.
 """
 
@@ -42,6 +42,7 @@ except ImportError:
     _WindowsCapture = None
 
 from config import (
+    GAME_PROCESS_NAMES,
     GAME_WINDOW_TITLE,
     CAPTURE_FPS,
     GameROIs,
@@ -77,7 +78,7 @@ class WindowRect:
 class WindowFinder:
     """
     Cross-platform game window locator.
-    Finds the TFT/League window and returns its bounding rect.
+    Finds the TFT window and returns its bounding rect.
     """
 
     @staticmethod
@@ -96,33 +97,86 @@ class WindowFinder:
             logger.warning(f"Window detection failed: {e}")
             return None
 
-    # Exact window titles we will capture, most preferred first. The game
-    # renders in "League of Legends (TM) Client"; the launcher/lobby is
-    # titled just "League of Legends". Substring matching is NOT safe here:
-    # it latched onto any window mentioning the game — editors and terminals
-    # with this "TFT-COACH" project open, browser tabs about League — and
-    # the detector then OCR'd garbage out of them.
-    _GAME_WINDOW_TITLE = "league of legends (tm) client"
+    # The Unreal game is owned by TFT.exe. Window titles are not a stable
+    # identifier (and may be localized), so Windows capture resolves each
+    # HWND's owning executable. The launcher remains title-based because it is
+    # only requested explicitly by the template diagnostic flow.
     _LAUNCHER_WINDOW_TITLE = "league of legends"
 
     @staticmethod
-    def _pick_game_window(windows, include_launcher: bool = False) -> Optional[object]:
-        """Choose the game window from candidates with (title, isMinimized,
-        width, height) attributes. Exact title match only. The launcher is
-        diagnostic-only because capturing it before a match prevents the
-        backend from noticing when the actual game window opens."""
+    def _pick_game_window(
+        windows,
+        include_launcher: bool = False,
+        process_name_getter=None,
+    ) -> Optional[object]:
+        """Choose the visible window owned by a configured TFT executable.
+
+        ``process_name_getter`` receives a candidate window and returns its
+        executable basename. Keeping this injected makes selection testable
+        without opening real processes. The title-based launcher fallback is
+        diagnostic-only; normal capture must never attach to the lobby.
+        """
         usable = [
             w for w in windows
             if not w.isMinimized and w.width > 200 and w.height > 200
         ]
-        wanted_titles = [WindowFinder._GAME_WINDOW_TITLE]
+        if process_name_getter is None:
+            process_name_getter = lambda w: getattr(w, "process_name", None)
+
+        wanted_processes = {name.casefold() for name in GAME_PROCESS_NAMES}
+        game_windows = []
+        for window in usable:
+            try:
+                process_name = process_name_getter(window)
+            except Exception:
+                continue
+            if process_name and process_name.casefold() in wanted_processes:
+                game_windows.append(window)
+
+        if game_windows:
+            # TFT.exe can briefly expose helper windows during startup. Prefer
+            # the largest usable surface, which is the rendered game client.
+            return max(game_windows, key=lambda w: w.width * w.height)
+
         if include_launcher:
-            wanted_titles.append(WindowFinder._LAUNCHER_WINDOW_TITLE)
-        for wanted in wanted_titles:
-            for w in usable:
-                if w.title.strip().lower() == wanted:
-                    return w
+            for window in usable:
+                if window.title.strip().casefold() == WindowFinder._LAUNCHER_WINDOW_TITLE:
+                    return window
         return None
+
+    @staticmethod
+    def _process_name_windows(hwnd: int) -> Optional[str]:
+        """Return the executable basename owning an HWND via Win32 APIs."""
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            process_id = wintypes.DWORD()
+            if not ctypes.windll.user32.GetWindowThreadProcessId(
+                wintypes.HWND(hwnd), ctypes.byref(process_id)
+            ):
+                return None
+
+            process = ctypes.windll.kernel32.OpenProcess(
+                0x1000,  # PROCESS_QUERY_LIMITED_INFORMATION
+                False,
+                process_id.value,
+            )
+            if not process:
+                return None
+            try:
+                size = wintypes.DWORD(32768)
+                path = ctypes.create_unicode_buffer(size.value)
+                if not ctypes.windll.kernel32.QueryFullProcessImageNameW(
+                    process, 0, path, ctypes.byref(size)
+                ):
+                    return None
+                return path.value.rsplit("\\", 1)[-1]
+            finally:
+                ctypes.windll.kernel32.CloseHandle(process)
+        except Exception as error:
+            logger.debug(f"Process-name lookup failed for HWND {hwnd}: {error}")
+            return None
 
     @staticmethod
     def _find_windows(include_launcher: bool = False) -> Optional[WindowRect]:
@@ -134,7 +188,11 @@ class WindowFinder:
             return None
 
         win = WindowFinder._pick_game_window(
-            gw.getAllWindows(), include_launcher=include_launcher
+            gw.getAllWindows(),
+            include_launcher=include_launcher,
+            process_name_getter=lambda window: WindowFinder._process_name_windows(
+                int(window._hWnd)
+            ),
         )
         if win is None:
             return None
@@ -477,7 +535,7 @@ class ScreenCapture:
         if self.window_capture.start(self.window.hwnd):
             self._window_capture_failures = 0
             self._window_capture_retry_at = 0.0
-            logger.info("Direct League window capture active (overlay-safe)")
+            logger.info("Direct TFT.exe window capture active (overlay-safe)")
             return True
         self._window_capture_retry_at = now + 30.0
         if self.window_capture.available:

@@ -54,7 +54,7 @@ CDRAGON_TFT_DATA = "https://raw.communitydragon.org/latest/cdragon/tft/en_us.jso
 CDRAGON_GAME_BASE = "https://raw.communitydragon.org/latest/game/"
 # Fallback TFT set (matches the "set-17-…" comp slugs and TFT17_ apiNames)
 # used only when auto-detection against the CDragon payload fails.
-CURRENT_SET = "17"
+CURRENT_SET = "18"
 
 
 def detect_current_set(cdragon: dict) -> str:
@@ -179,6 +179,11 @@ def build_champion_index(version: str) -> dict[str, dict]:
         if not nm:
             continue
         index[normalize(nm)] = entry
+        # Set 18 has nine Lux rows with closely related display names and a
+        # new DA_* id family.  Index the stable Riot id as well so callers do
+        # not depend on duplicate-name ordering.
+        if entry.get("id"):
+            index[normalize(entry["id"])] = entry
     return index
 
 
@@ -329,7 +334,9 @@ def fetch_champions(
         norm = normalize(champ_name)
 
         # Build search keys: canonical name + aliases
-        search_keys = [norm] + [normalize(a) for a in _champion_aliases(champ_name)]
+        api_name = CHAMPIONS.get(champ_name, {}).get("api_name", "")
+        search_keys = ([normalize(api_name)] if api_name else []) + [norm]
+        search_keys.extend(normalize(a) for a in _champion_aliases(champ_name))
 
         # Prefer TFT-specific portrait
         entry: Optional[dict] = None

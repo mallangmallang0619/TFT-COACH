@@ -63,7 +63,7 @@ from config import (
     ShopGeometry,
     TraitPanel,
 )
-from game_data import find_champion_name, find_augment_rating
+from game_data import TRAITS, find_champion_name, find_augment_rating
 from unit_classifier import UnitClassifier
 from game_state import (
     GameState,
@@ -207,6 +207,11 @@ class TemplateStore:
         if not TRAIT_TEMPLATE_DIR.exists():
             return
         for img_path in TRAIT_TEMPLATE_DIR.glob("*.png"):
+            # Set migrations leave old icon files behind. Loading them lets a
+            # stale glyph win template matching and produces impossible live
+            # synergies (for example a Set 17 trait during Set 18).
+            if img_path.stem not in TRAITS:
+                continue
             img = cv2.imread(str(img_path), cv2.IMREAD_UNCHANGED)
             if img is None:
                 continue
@@ -379,7 +384,9 @@ class Detector:
             # Shop card names — feeds the purchase-tracking roster, which
             # is the reliable source of "what units does the player own"
             # while board/bench unit ID isn't viable on live frames.
-            state.shop_units = self._detect_shop(frame)
+            state.shop_units, state.shop_wisps = self._detect_shop(
+                frame, include_wisps=True
+            )
 
         # 5. Augment options (only during augment selection)
         if state.phase == GamePhase.AUGMENT_SELECT:
@@ -1029,7 +1036,9 @@ class Detector:
             logger.debug(f"OCR error: {e}")
             return ""
 
-    def _detect_shop(self, frame: np.ndarray) -> list[Optional[str]]:
+    def _detect_shop(
+        self, frame: np.ndarray, *, include_wisps: bool = False
+    ) -> list[Optional[str]] | tuple[list[Optional[str]], list[Optional[str]]]:
         """
         Read the five shop card names.
 
@@ -1038,17 +1047,22 @@ class Detector:
         banner band (each call spawns a process — five separate calls cost
         ~0.5s), then words are assigned to card slots by x position and
         resolved against the champion roster (fuzzy, like augment names).
-        Empty or unreadable slots come back as None.
+        Empty or unreadable slots come back as None.  In Set 18, readable
+        non-champion titles are Wisps covering the underlying option.  When
+        ``include_wisps`` is true a parallel five-slot Wisp-title list is
+        returned so purchase tracking can ignore those temporary covers.
         """
         if pytesseract is None:
-            return [None] * 5
+            empty = [None] * 5
+            return (empty, empty.copy()) if include_wisps else empty
         h, w = frame.shape[:2]
         g = ShopGeometry()
         x0 = int(g.cards_x0 * w)
         band = frame[int(g.name_y0 * h):int(g.name_y1 * h),
                      x0:int((g.cards_x0 + 5 * g.card_pitch) * w)]
         if band.size == 0:
-            return [None] * 5
+            empty = [None] * 5
+            return (empty, empty.copy()) if include_wisps else empty
 
         scale = 2
         gray = cv2.cvtColor(band, cv2.COLOR_BGR2GRAY)
@@ -1065,7 +1079,8 @@ class Detector:
             )
         except Exception as e:
             logger.debug(f"shop OCR failed: {e}")
-            return [None] * 5
+            empty = [None] * 5
+            return (empty, empty.copy()) if include_wisps else empty
 
         pitch_px = g.card_pitch * w * scale
         slot_words: list[list[tuple[int, str]]] = [[] for _ in range(5)]
@@ -1078,10 +1093,20 @@ class Detector:
             if 0 <= slot < 5:
                 slot_words[slot].append((data["left"][i], txt))
 
-        return [
-            find_champion_name(" ".join(t for _, t in sorted(words)))
-            for words in slot_words
-        ]
+        units: list[Optional[str]] = []
+        wisps: list[Optional[str]] = []
+        for words in slot_words:
+            raw_title = " ".join(t for _, t in sorted(words)).strip()
+            champion = find_champion_name(raw_title)
+            units.append(champion)
+            # A title is only classified as a Wisp when OCR saw meaningful
+            # text but it is not any current-set champion.  This deliberately
+            # favors missing one roster transition over poisoning training
+            # labels with a false purchase after a UE shop overlay.
+            letters = sum(c.isalpha() for c in raw_title)
+            wisps.append(raw_title if champion is None and letters >= 3 else None)
+
+        return (units, wisps) if include_wisps else units
 
     # ── Component Detection ───────────────────────────────────────────────────
 

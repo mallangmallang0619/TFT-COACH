@@ -54,22 +54,26 @@ def compute_active_synergies(
     duplicate of the same unit (1-star + 2-star) does not double a
     trait. Bench units do NOT contribute — only board units do.
     """
-    # Collect unique champion names actually placed on the board
-    unique_names: set[str] = set()
+    # Collect unique champion identities actually placed on the board.  Lux's
+    # nine Avatar forms share one unique group, just like duplicate copies of
+    # an ordinary champion only contribute once.
+    unique_names: dict[str, str] = {}
     for champ in board_champions:
         if champ.board_row is None or champ.board_col is None:
             # Skip anything without a board slot — those are bench-side
             continue
-        unique_names.add(champ.name)
+        data = CHAMPIONS.get(champ.name, {})
+        unique_names.setdefault(data.get("unique_group", champ.name), champ.name)
 
     # Tally trait contributions across unique champions
     counts: dict[str, int] = {}
-    for name in unique_names:
+    for name in unique_names.values():
         data = CHAMPIONS.get(name)
         if not data:
             continue
         for trait in data.get("traits", []):
-            counts[trait] = counts.get(trait, 0) + 1
+            points = data.get("trait_points", {}).get(trait, 1)
+            counts[trait] = counts.get(trait, 0) + int(points)
 
     return synergies_from_counts(counts)
 
@@ -165,7 +169,8 @@ def _derive_target_traits(unit_names: list[str]) -> list[tuple[str, int]]:
         if not data:
             continue
         for trait in data.get("traits", []):
-            counts[trait] = counts.get(trait, 0) + 1
+            points = data.get("trait_points", {}).get(trait, 1)
+            counts[trait] = counts.get(trait, 0) + int(points)
     ranked = sorted(counts.items(), key=lambda kv: -kv[1])
     return [(t, c) for t, c in ranked if c >= 2][:3]
 

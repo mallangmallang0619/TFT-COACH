@@ -11,7 +11,7 @@ player plays:
   2. A bought unit always lands on the leftmost empty bench slot, so the
      bench slot that flips empty → occupied between the frames around a
      purchase is a picture OF that champion.
-  3. Save the crop to _training/<champion>/<timestamp>.png.
+  3. Save the crop to _training/set18/<champion>/<timestamp>.png.
   4. While that slot stays visually stable (the unit is still standing
      there), keep saving crops of it every few frames — idle-animation
      poses multiply one purchase into a dozen labeled samples. Any abrupt
@@ -36,10 +36,11 @@ import cv2
 import numpy as np
 
 from config import GameROIs
+from game_data import ACTIVE_SET_NUMBER
 
 logger = logging.getLogger(__name__)
 
-TRAINING_DIR = Path(__file__).parent / "_training"
+TRAINING_DIR = Path(__file__).parent / "_training" / f"set{ACTIVE_SET_NUMBER}"
 BENCH_SLOTS = 9
 
 # Bench slots are compared frame-to-frame as small grayscale thumbnails:
@@ -124,6 +125,8 @@ class BenchHarvester:
         self._pending_landings: list[_PendingLanding] = []
         self._tracked: dict[int, _TrackedSlot] = {}
         self._history: deque[_BenchFrame] = deque(maxlen=_LANDING_HISTORY_FRAMES)
+        self._last_landing_diagnostic = "no bench transitions inspected"
+        self._last_transition_diagnostic = "no transition"
         self.saved_count = 0
 
     def process(
@@ -178,6 +181,8 @@ class BenchHarvester:
         self._pending_landings.clear()
         self._tracked.clear()
         self._history.clear()
+        self._last_landing_diagnostic = "no bench transitions inspected"
+        self._last_transition_diagnostic = "no transition"
 
     # ── Internals ─────────────────────────────────────────────────────────────
 
@@ -257,7 +262,8 @@ class BenchHarvester:
         if len(landings) != len(names):
             logger.info(
                 f"Holding purchase labels but no clean landing: {len(names)} pending vs "
-                f"{len(landings)} recoverable bench slots"
+                f"{len(landings)} recoverable bench slots "
+                f"({self._last_landing_diagnostic})"
             )
             return
         self._pending_landings = landings
@@ -305,7 +311,8 @@ class BenchHarvester:
         if len(landings) != len(purchases):
             logger.info(
                 f"Skipping harvest: {len(purchases)} purchases vs "
-                f"{len(landings)} recoverable bench slots"
+                f"{len(landings)} recoverable bench slots "
+                f"({self._last_landing_diagnostic})"
             )
             return 0
 
@@ -330,13 +337,24 @@ class BenchHarvester:
         current_frame: _BenchFrame,
     ) -> list[_PendingLanding]:
         frames = [*self._history, current_frame]
+        mismatches: list[str] = []
         for index in range(len(frames) - 1, 0, -1):
             before = frames[index - 1]
             after = frames[index]
             slots = self._newly_occupied_slots(after.thumbs, before.thumbs)
             if not slots:
+                mismatches.append(
+                    f"-{len(frames) - index}: "
+                    f"{self._last_transition_diagnostic}"
+                )
                 continue
             if len(slots) != len(names):
+                # Do not jump past an ambiguous newer transition and attach
+                # the purchase label to an unrelated older unit movement.
+                self._last_landing_diagnostic = (
+                    f"history offset {len(frames) - index}: "
+                    f"slots={slots}, wanted={len(names)}"
+                )
                 return []
             landings: list[_PendingLanding] = []
             for name, slot in zip(names, slots):
@@ -353,7 +371,15 @@ class BenchHarvester:
                     empty_thumb=empty.copy(),
                 ))
             if landings:
+                self._last_landing_diagnostic = (
+                    f"matched slots {slots} at history offset "
+                    f"{len(frames) - index}"
+                )
                 return landings
+        self._last_landing_diagnostic = (
+            f"searched {max(0, len(frames) - 1)} transitions; "
+            + ", ".join(mismatches[:2])
+        )
         return []
 
     def _newly_occupied_slots(
@@ -383,6 +409,15 @@ class BenchHarvester:
                 change_evidence=diffs[i] >= threshold,
             )
         ]
+        before_stds = [
+            round(self._crop_metrics(thumb)[0], 1) if thumb is not None else None
+            for thumb in baseline
+        ]
+        self._last_transition_diagnostic = (
+            f"diffs={[round(d, 1) for d in diffs]}, "
+            f"threshold={threshold:.1f}, changed={changed}, "
+            f"accepted={occupied}, before_std={before_stds}"
+        )
         logger.debug(
             f"bench diffs={[f'{d:.0f}' for d in diffs]} "
             f"threshold={threshold:.0f} changed={changed} occupied={occupied}"
@@ -443,13 +478,20 @@ class BenchHarvester:
                 baseline_laplacian * 1.18,
             )
         )
-        # `change_evidence` is supplied only by _newly_occupied_slots after
-        # the candidate has beaten the frame-relative outlier threshold.
-        # Requiring contrast/edge gain as well rejected legitimate champions
-        # whose model replaces bench detail instead of adding more of it.
-        return baseline_looks_empty and (
-            contrast_gain or edge_gain or change_evidence
+        if baseline_looks_empty and (contrast_gain or edge_gain or change_evidence):
+            return True
+
+        # `change_evidence` is supplied only after this slot beats the
+        # frame-relative outlier threshold. Empty platforms are not
+        # consistently low-contrast across arenas (real empty slots range
+        # well above _EMPTY_STD_MAX), so a high-detail baseline cannot be an
+        # automatic veto. Reject only a *large loss* of both contrast and
+        # edges, which is strong evidence that a unit vacated the slot.
+        clearly_vacated = (
+            current_std < baseline_std * 0.72
+            and current_laplacian < baseline_laplacian * 0.72
         )
+        return change_evidence and not clearly_vacated
 
     def _save(self, crop: np.ndarray, name: str, slot: int) -> bool:
         if crop.size == 0:
