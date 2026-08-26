@@ -1203,7 +1203,12 @@ def test_direct_window_capture():
     from types import SimpleNamespace
     import numpy as np
     import capture as capture_module
-    from capture import ScreenCapture, WindowRect, WindowSurfaceCapture
+    from capture import (
+        ScreenCapture,
+        WindowRect,
+        WindowSurfaceCapture,
+        _WINDOW_CAPTURE_START_RETRY_SECONDS,
+    )
 
     class FakeControl:
         def __init__(self):
@@ -1273,7 +1278,42 @@ def test_direct_window_capture():
     assert normalized.shape == (50, 100, 3)
     assert int(normalized.mean()) == 91
 
-    return "exact HWND, copied BGR frame, client-area normalization OK"
+    # UE5 can expose TFT's HWND before its GraphicsCaptureItem exists. A
+    # failed first attempt must retry quickly instead of locking direct
+    # capture out for the old 30-second interval.
+    class StartupRaceCapture:
+        def __init__(self):
+            self.available = True
+            self.active = False
+            self.last_error = (
+                "Capture session threw an exception: Failed to convert item "
+                "to `GraphicsCaptureItem`"
+            )
+            self.attempts = 0
+
+        def start(self, _hwnd):
+            self.attempts += 1
+            self.active = self.attempts > 1
+            return self.active
+
+    retrying = object.__new__(ScreenCapture)
+    retrying.window = WindowRect(0, 0, 2560, 1440, hwnd=12345)
+    retrying.window_capture = StartupRaceCapture()
+    retrying._window_capture_failures = 0
+    retrying._window_capture_retry_at = 0.0
+    retrying._window_capture_error_reported = None
+    before = capture_module.time.monotonic()
+    assert retrying._ensure_window_capture() is False
+    assert retrying.window_capture.attempts == 1
+    delay = retrying._window_capture_retry_at - before
+    assert 0 < delay <= _WINDOW_CAPTURE_START_RETRY_SECONDS + 0.1
+    assert retrying._ensure_window_capture() is False
+    assert retrying.window_capture.attempts == 1, "retry gate was bypassed"
+    retrying._window_capture_retry_at = 0.0
+    assert retrying._ensure_window_capture() is True
+    assert retrying.window_capture.attempts == 2
+
+    return "exact HWND, copied BGR frame, client normalization + UE5 retry OK"
 
 
 def test_classifier_data_pipeline():

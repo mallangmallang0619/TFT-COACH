@@ -51,6 +51,9 @@ from config import (
 
 logger = logging.getLogger(__name__)
 
+_WINDOW_CAPTURE_START_RETRY_SECONDS = 2.0
+_WINDOW_CAPTURE_FRAME_RETRY_SECONDS = 5.0
+
 
 @dataclass
 class WindowRect:
@@ -450,6 +453,7 @@ class ScreenCapture:
         self._frame_interval = 1.0 / CAPTURE_FPS
         self._window_capture_failures = 0
         self._window_capture_retry_at = 0.0
+        self._window_capture_error_reported: Optional[str] = None
 
     @property
     def capture_method(self) -> str:
@@ -505,10 +509,13 @@ class ScreenCapture:
                 if self._window_capture_failures >= 3:
                     logger.warning(
                         "Direct window capture stopped after 3 missing or invalid frames; "
-                        "using screen fallback"
+                        f"retrying in {_WINDOW_CAPTURE_FRAME_RETRY_SECONDS:g}s "
+                        "with screen fallback"
                     )
                     self.window_capture.stop()
-                    self._window_capture_retry_at = time.monotonic() + 30.0
+                    self._window_capture_retry_at = (
+                        time.monotonic() + _WINDOW_CAPTURE_FRAME_RETRY_SECONDS
+                    )
 
             screenshot = self.sct.grab(self.window.monitor_dict)
             self._last_capture_time = time.time()
@@ -535,14 +542,29 @@ class ScreenCapture:
         if self.window_capture.start(self.window.hwnd):
             self._window_capture_failures = 0
             self._window_capture_retry_at = 0.0
+            self._window_capture_error_reported = None
             logger.info("Direct TFT.exe window capture active (overlay-safe)")
             return True
-        self._window_capture_retry_at = now + 30.0
+        self._window_capture_retry_at = now + _WINDOW_CAPTURE_START_RETRY_SECONDS
         if self.window_capture.available:
-            logger.warning(
-                "Direct window capture unavailable for this window; "
-                f"using screen fallback ({self.window_capture.last_error})"
-            )
+            error = self.window_capture.last_error or "unknown capture error"
+            if error != self._window_capture_error_reported:
+                if "Failed to convert item to `GraphicsCaptureItem`" in error:
+                    # UE5 publishes its HWND slightly before the graphics
+                    # surface becomes capturable. This normally succeeds on
+                    # the next attempt and should not look like a fatal error.
+                    logger.info(
+                        "Direct TFT capture is not ready yet; "
+                        f"retrying in {_WINDOW_CAPTURE_START_RETRY_SECONDS:g}s "
+                        "with screen fallback"
+                    )
+                else:
+                    logger.warning(
+                        "Direct window capture unavailable; "
+                        f"retrying in {_WINDOW_CAPTURE_START_RETRY_SECONDS:g}s "
+                        f"with screen fallback ({error})"
+                    )
+                self._window_capture_error_reported = error
         return False
 
     def close(self) -> None:
