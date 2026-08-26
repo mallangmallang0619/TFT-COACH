@@ -52,6 +52,17 @@ class RosterTracker:
         self._reset_pending = False
         self._pending_buys = []
 
+    def suspend_observation(self) -> None:
+        """Drop screen-derived baselines without forgetting owned units.
+
+        Desktop fallback frames are useful for keeping the overlay alive, but
+        they are not trustworthy enough to infer purchases or ML labels. The
+        first direct TFT frame after a fallback establishes a fresh baseline.
+        """
+        self._prev_shop = None
+        self._prev_gold = None
+        self._pending_buys = []
+
     def update(self, state: GameState) -> list[str]:
         """
         Diff this frame's shop against the previous one.
@@ -88,9 +99,11 @@ class RosterTracker:
         # new cards, the ≥2-replaced guard treats it as a refresh.
         if len(shop) == 5 and any(shop):
             if self._prev_shop is not None:
-                # 1. Resolve last frame's pending vanishes: still gone (or
-                #    replaced by a refresh) → confirmed buy; the same card
-                #    back in its slot → transient occlusion, cancel.
+                # 1. Resolve last frame's pending vanishes. Only a slot that
+                #    remains visibly empty is safe enough to become an ML
+                #    label. A replacement card means the shop refreshed before
+                #    confirmation; counting it would attach the old card name
+                #    to whichever unrelated bench transition happened nearby.
                 still_pending: list[tuple[int, str]] = []
                 for slot, name in self._pending_buys:
                     if shop_wisps[slot]:
@@ -101,6 +114,12 @@ class RosterTracker:
                     if shop[slot] == name:
                         logger.debug(
                             f"Vanish of {name} reverted — occlusion, not a buy"
+                        )
+                        continue
+                    if shop[slot] is not None:
+                        logger.debug(
+                            f"Vanish of {name} followed by a replacement card — "
+                            "ambiguous refresh, not a confirmed buy"
                         )
                         continue
                     purchases.append(name)

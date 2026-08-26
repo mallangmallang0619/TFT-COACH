@@ -946,6 +946,23 @@ def test_roster_tracker():
     w.update(state("2-1", base, 18))
     assert w.total_purchases == 0, "Wisp-covered shop card counted as a purchase"
 
+    # A card replacement before the empty slot is confirmed is an ambiguous
+    # refresh, not a safe purchase/ML label.
+    strict = RosterTracker()
+    strict.update(state("2-1", base, 20))
+    strict.update(state("2-1", ["Akali", None, "Karma", "Kobuko", "Leona"], 17))
+    strict.update(state(
+        "2-1", ["Akali", "Vi", "Karma", "Kobuko", "Leona"], 15
+    ))
+    assert strict.total_purchases == 0, "shop refresh confirmed a poisoned label"
+
+    # Screen fallback invalidates pending/baseline observations but keeps the
+    # already-confirmed roster intact.
+    strict.update(state("2-1", ["Akali", None, "Karma", "Kobuko", "Leona"], 12))
+    strict.suspend_observation()
+    strict.update(state("2-1", ["Akali", None, "Karma", "Kobuko", "Leona"], 12))
+    assert strict.total_purchases == 0
+
     # A single backwards-stage frame (OCR misread) must NOT reset...
     r.update(state("1-5", ["Poppy", "Gnar", "Lulu", "Sona", "Shen"], 30))
     assert r.total_purchases == 3, "single stage misread must not wipe the roster"
@@ -966,7 +983,7 @@ def test_roster_tracker():
     r.update(state("2-1", ["Gwen", None, "Poppy", "Lulu", "Gnar"], -1))
     assert r.total_purchases == 1, "unreadable gold must not veto a real buy"
 
-    return ("pending-confirm buys, hover cancel, occlusion/gold guards, "
+    return ("strict pending buys, refresh/fallback guards, Wisp handling, "
             "unreadable-gold buy, star-up, debounced reset OK")
 
 
@@ -1064,6 +1081,17 @@ def test_bench_harvester():
         checker, occupied_thumb, change_evidence=True
     ) is False
 
+    # Animated portal/platform backgrounds can have high contrast but remain
+    # smooth. They must not become a saved unit or start continuous tracking.
+    smooth = np.tile(
+        np.linspace(20, 180, 160, dtype=np.uint8), (194, 1)
+    )
+    smooth_crop = np.dstack([smooth, smooth, smooth])
+    with tempfile.TemporaryDirectory() as tmp:
+        quality = BenchHarvester(out_dir=Path(tmp))
+        assert quality._save(smooth_crop, "Portal", 8) is False
+        assert not list(Path(tmp).rglob("*.png"))
+
     # A unit can be moved or sold in the same capture window as a purchase.
     # Filter the vacated slot before deciding whether pairing is ambiguous.
     with tempfile.TemporaryDirectory() as tmp:
@@ -1073,20 +1101,17 @@ def test_bench_harvester():
         saved = list(Path(tmp).rglob("*.png"))
         assert len(saved) == 1 and saved[0].parent.name == "Gwen"
 
-    # Preserve the exact landing frame while the roster waits one readable
-    # frame to confirm the shop-card vanish. Confirmation can arrive after
-    # the unit has already been moved without losing the labeled crop.
+    # If the unit moved before shop confirmation, skip the cached landing
+    # frame. High-precision labels matter more than recovering every buy.
     with tempfile.TemporaryDirectory() as tmp:
         hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
         assert hv.process(frame([]), []) == 0
         assert hv.process(frame([0]), [], ["Gwen"]) == 0
-        assert hv.process(frame([]), ["Gwen"], []) == 1
-        saved = list(Path(tmp).rglob("*.png"))
-        assert len(saved) == 1 and saved[0].parent.name == "Gwen"
+        assert hv.process(frame([]), ["Gwen"], []) == 0
+        assert not list(Path(tmp).rglob("*.png"))
 
-    # OCR can expose the pending purchase several capture cycles after the
-    # actual landing. Recover that exact historical crop instead of requiring
-    # the transition to remain inside the old two-frame window.
+    # Likewise, a delayed confirmation after the slot is empty must not revive
+    # and label an old historical crop.
     with tempfile.TemporaryDirectory() as tmp:
         hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
         assert hv.process(frame([]), []) == 0
@@ -1094,9 +1119,8 @@ def test_bench_harvester():
         assert hv.process(frame([0]), []) == 0
         assert hv.process(frame([0]), []) == 0
         assert hv.process(frame([0]), [], ["Gwen"]) == 0
-        assert hv.process(frame([]), ["Gwen"], []) == 1
-        saved = list(Path(tmp).rglob("*.png"))
-        assert len(saved) == 1 and saved[0].parent.name == "Gwen"
+        assert hv.process(frame([]), ["Gwen"], []) == 0
+        assert not list(Path(tmp).rglob("*.png"))
 
     # Continuous tracking: a confirmed slot keeps yielding crops while it
     # stays visually stable, up to the cap; any abrupt change stops it.

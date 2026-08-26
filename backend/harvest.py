@@ -63,7 +63,9 @@ _TRACK_MAX_SAVES = 50           # crops per purchase, landing crop included
 _TRACK_CHANGE_LIMIT = 18.0      # tolerate idle poses and brief spell glows
 _CROP_MIN_STD = 18.0
 _CROP_MIN_LAPLACIAN = 500.0
-_CROP_MIN_FULL_LAPLACIAN = 80.0
+# Real Set 18 unit crops measured 210-3200; empty portal/platform crops that
+# previously slipped through measured 125-140. Keep a margin between them.
+_CROP_MIN_FULL_LAPLACIAN = 180.0
 
 
 @dataclass
@@ -287,15 +289,20 @@ class BenchHarvester:
 
         saved = 0
         for landing in pending:
-            did_save = self._save(landing.crop, landing.label, landing.slot)
-            saved += int(did_save)
             current = thumbs[landing.slot]
-            if self._became_occupied(current, landing.empty_thumb):
+            if not self._became_occupied(current, landing.empty_thumb):
+                continue
+            # Confirmation arrives after the initial landing transition. Save
+            # this later frame, where the UE5 model has finished materializing,
+            # rather than the cached dust/shadow animation.
+            did_save = self._save(crops[landing.slot], landing.label, landing.slot)
+            saved += int(did_save)
+            if did_save:
                 self._tracked[landing.slot] = _TrackedSlot(
                     label=landing.label,
                     reference=current.copy(),
                     empty_reference=landing.empty_thumb,
-                    saves=int(did_save),
+                    saves=1,
                 )
                 just_confirmed.add(landing.slot)
         return True, saved
@@ -318,15 +325,19 @@ class BenchHarvester:
 
         saved = 0
         for landing in landings:
-            did_save = self._save(landing.crop, landing.label, landing.slot)
-            saved += int(did_save)
             current = thumbs[landing.slot]
-            if self._became_occupied(current, landing.empty_thumb):
+            if not self._became_occupied(current, landing.empty_thumb):
+                continue
+            did_save = self._save(
+                current_frame.crops[landing.slot], landing.label, landing.slot
+            )
+            saved += int(did_save)
+            if did_save:
                 self._tracked[landing.slot] = _TrackedSlot(
                     label=landing.label,
                     reference=current.copy(),
                     empty_reference=landing.empty_thumb,
-                    saves=int(did_save),
+                    saves=1,
                 )
                 just_confirmed.add(landing.slot)
         return saved

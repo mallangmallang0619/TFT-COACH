@@ -375,12 +375,20 @@ class TFTCoachServer:
                 # gold look readable-but-unchanged, which vetoed every
                 # purchase on frames where gold OCR failed — and with it all
                 # harvester training crops.
-                purchases = self.roster.update(state)
-                self.harvester.process(
-                    frame,
-                    purchases,
-                    self.roster.pending_purchase_names,
-                )
+                if state.capture_method == "window":
+                    purchases = self.roster.update(state)
+                    self.harvester.process(
+                        frame,
+                        purchases,
+                        self.roster.pending_purchase_names,
+                    )
+                else:
+                    # A desktop fallback can contain the overlay, another app,
+                    # or a stale TFT frame. Never let it create purchase labels
+                    # or training crops. Preserve confirmed owned units, but
+                    # require a fresh direct-window shop baseline afterward.
+                    self.roster.suspend_observation()
+                    self.harvester.reset()
 
                 # A single frame's OCR can fail while the region is obscured
                 # (combat effects, transitions) — hold the last good reading
