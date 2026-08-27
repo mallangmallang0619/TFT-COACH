@@ -140,7 +140,7 @@ const ACCENT2 = "#7c5cfc";
 // Backend payload schema version this overlay is built for. Must match
 // backend config.PROTOCOL_VERSION — a red header badge appears when the
 // running backend disagrees (stale process or unmerged code).
-const BACKEND_PROTOCOL_EXPECTED = 4;
+const BACKEND_PROTOCOL_EXPECTED = 5;
 
 // TFT cost-tier colors used to outline unit chips and cells
 const COST_COLORS = {
@@ -1256,7 +1256,11 @@ export default function App() {
   const lobbyHp = isLive ? (gameState?.lobby_hp || []) : [];
   const heldItems = isLive ? (gameState?.held_items || []) : [];
   const activeSynergies = isLive ? (gameState?.active_synergies || []) : [];
-  const captureMethod = isLive ? (gameState?.capture_method || "screen") : "screen";
+  const collectionStatus = isConnected ? (gameState?.collection_status || null) : null;
+  const captureMethod = isConnected && gameState
+    ? (gameState.capture_method || "screen_untrusted")
+    : "screen_untrusted";
+  const captureTrusted = collectionStatus?.capture_trusted ?? captureMethod === "window";
 
   // Champion data for the Comp/Position tabs
   const boardChampions = isLive ? (gameState?.board_champions || []) : [];
@@ -1353,7 +1357,10 @@ export default function App() {
         padding: "14px 16px", display: "flex", alignItems: "center",
         justifyContent: "space-between", position: "sticky", top: 0, zIndex: 10,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap",
+          minWidth: 0, flex: 1,
+        }}>
           <div style={{
             fontFamily: "'Orbitron', sans-serif", fontSize: "16px", fontWeight: 900,
             background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`,
@@ -1376,6 +1383,30 @@ export default function App() {
             </span>
           )}
           <ConnectionBadge isConnected={isConnected} isDemo={isDemo} />
+          {isConnected && !isDemo && collectionStatus && (
+            <span
+              title={collectionStatus.reason || "Training-data collection status"}
+              style={{
+                fontFamily: "var(--mono)", fontSize: "9px", fontWeight: 700,
+                letterSpacing: "1px", padding: "3px 8px", borderRadius: "5px",
+                color: collectionStatus.state === "paused"
+                  ? "#ff6348"
+                  : collectionStatus.state === "collecting" ? "#2ed573" : "#ffa502",
+                border: `1px solid ${collectionStatus.state === "paused"
+                  ? "#ff634866"
+                  : collectionStatus.state === "collecting" ? "#2ed57355" : "#ffa50255"}`,
+                background: collectionStatus.state === "paused"
+                  ? "#ff634812"
+                  : collectionStatus.state === "collecting" ? "#2ed57310" : "#ffa50210",
+              }}
+            >
+              {collectionStatus.state === "paused"
+                ? "⏸ DATA PAUSED"
+                : collectionStatus.state === "collecting"
+                  ? `● DATA +${collectionStatus.session_crops_saved || 0}`
+                  : "◌ DATA WAITING"}
+            </span>
+          )}
           {inElectron && (
             <span
               title={hoverLocked
@@ -1394,7 +1425,7 @@ export default function App() {
             </span>
           )}
         </div>
-        <div style={{ display: "flex", gap: "6px" }}>
+        <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
           {inElectron && (
             <button
               onClick={() => window.electronAPI.setShareMode?.(!shareMode)}
@@ -1498,14 +1529,16 @@ export default function App() {
           {shareMode && isLive && (
             <div style={{
               padding: "7px 16px",
-              background: captureMethod === "window" ? "#2ed5730b" : "#ff63480d",
-              borderBottom: `1px solid ${captureMethod === "window" ? "#2ed5732b" : "#ff634833"}`,
-              color: captureMethod === "window" ? "#2ed573" : "#ff8a75",
+              background: captureTrusted ? "#2ed5730b" : "#ff63480d",
+              borderBottom: `1px solid ${captureTrusted ? "#2ed5732b" : "#ff634833"}`,
+              color: captureTrusted ? "#2ed573" : "#ff8a75",
               fontFamily: "var(--mono)", fontSize: "9px", letterSpacing: "0.5px",
             }}>
               {captureMethod === "window"
                 ? "● SHARE MODE · Direct League capture active · detection remains overlay-safe"
-                : "⚠ SHARE MODE · Screen fallback active · overlay may affect covered detection regions"}
+                : captureTrusted
+                  ? "● SHARE MODE · Trusted foreground fallback active"
+                  : "⚠ SHARE MODE · Untrusted screen fallback · data collection paused"}
             </div>
           )}
 
@@ -2228,12 +2261,13 @@ export default function App() {
             fontSize: "9px", color: "#2a2d35", fontFamily: "var(--mono)",
           }}>
             <span>v0.1</span>
-            {gameData?.classifier_status && (
-              <span title={gameData.classifier_status.active
+            {(collectionStatus || gameData?.classifier_status) && (
+              <span title={collectionStatus?.reason || (gameData.classifier_status.active
                 ? "Unit classifier model is active"
-                : "No model is installed yet; collecting labeled bench crops for later training"}>
-                ML {gameData.classifier_status.active ? "ON" : "COLLECTING"}
-                {` · ${gameData.classifier_status.crops} crops · ${gameData.classifier_status.ready_classes} ready`}
+                : "No model is installed yet; collecting labeled bench crops for later training")}>
+                {collectionStatus
+                  ? `DATA ${collectionStatus.state.toUpperCase()} · ${collectionStatus.recognized_shop_slots || 0}/5 shop · ${collectionStatus.total_clean_crops || 0} crops · ${collectionStatus.rejected_crops || 0} rejected`
+                  : `ML ${gameData.classifier_status.active ? "ON" : "COLLECTING"} · ${gameData.classifier_status.crops} crops · ${gameData.classifier_status.ready_classes} ready`}
               </span>
             )}
             {serverStats && (

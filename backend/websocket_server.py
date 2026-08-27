@@ -9,11 +9,14 @@ Async WebSocket server that:
 
 from __future__ import annotations
 import asyncio
+import datetime
 import json
 import logging
 import time
+from pathlib import Path
 from typing import Set
 
+import cv2
 import websockets
 from websockets.server import WebSocketServerProtocol
 
@@ -23,7 +26,7 @@ from detector import Detector, TemplateStore
 from coach import Coach
 from harvest import BenchHarvester, training_stats
 from roster import RosterTracker
-from game_state import GameState, GamePhase
+from game_state import GameState, GamePhase, TrainingCollectionStatus
 from game_data import (
     ACTIVE_ENGINE,
     ACTIVE_SET_NAME,
@@ -38,6 +41,11 @@ import tftacademy_live
 import tactics_live
 
 logger = logging.getLogger(__name__)
+
+_COLLECTION_DIAGNOSTIC_INTERVAL_SECONDS = 120.0
+_COLLECTION_DIAGNOSTIC_MIN_EVENT_GAP_SECONDS = 10.0
+_COLLECTION_DIAGNOSTIC_KEEP = 12
+_COLLECTION_DIAGNOSTIC_DIR = Path(__file__).parent / "_debug" / "session"
 
 
 class TFTCoachServer:
@@ -73,6 +81,10 @@ class TFTCoachServer:
         self._selected_augments: list[str] = []
         # Comp the player locked via the UI (None = follow suggestions).
         self._pinned_comp: str | None = None
+        self._initial_clean_crop_count = 0
+        self._last_capture_method: str | None = None
+        self._last_diagnostic_at = 0.0
+        self._last_diagnostic_path: str | None = None
 
     def _reset_tracking_session(self) -> None:
         """Drop frame-to-frame state when the game window changes or closes."""
@@ -91,6 +103,7 @@ class TFTCoachServer:
         logger.info("Loading template images...")
         self.templates.load()
         crop_count, champion_count, ready_count = training_stats()
+        self._initial_clean_crop_count = crop_count
         if self.detector.unit_classifier.available:
             logger.info(
                 f"Unit classifier active ({len(self.detector.unit_classifier.labels)} classes)"
@@ -303,6 +316,137 @@ class TFTCoachServer:
 
         self.clients -= dead
 
+    def _collection_status(
+        self,
+        state: GameState,
+        purchases: list[str],
+    ) -> TrainingCollectionStatus:
+        telemetry = self.harvester.telemetry()
+        trusted = self.capture.is_training_capture_trusted
+        readable_shop = sum(bool(name) for name in state.shop_units)
+
+        if not trusted:
+            collection_state = "paused"
+            reason = self.capture.capture_trust_reason
+        elif state.phase not in {GamePhase.PLANNING, GamePhase.COMBAT, GamePhase.PVE}:
+            collection_state = "waiting"
+            reason = f"Waiting during {state.phase.value.replace('_', ' ')}"
+        elif readable_shop == 0:
+            collection_state = "waiting"
+            reason = "Capture is trusted, but no champion names are readable in the shop"
+        elif purchases:
+            collection_state = "collecting"
+            reason = f"Confirmed purchase: {', '.join(purchases)}"
+        elif self.roster.pending_purchase_names:
+            collection_state = "collecting"
+            reason = (
+                "Confirming purchase: "
+                + ", ".join(self.roster.pending_purchase_names)
+            )
+        else:
+            collection_state = "collecting"
+            reason = f"Watching {readable_shop}/5 readable shop slots"
+
+        return TrainingCollectionStatus(
+            state=collection_state,
+            reason=reason,
+            capture_trusted=trusted,
+            recognized_shop_slots=readable_shop,
+            shop_units=list(state.shop_units),
+            detected_purchases=list(purchases),
+            pending_purchases=list(self.roster.pending_purchase_names),
+            session_crops_saved=telemetry["session_crops_saved"],
+            total_clean_crops=(
+                self._initial_clean_crop_count + telemetry["session_crops_saved"]
+            ),
+            rejected_crops=telemetry["rejected_crops"],
+            rejection_reasons=telemetry["rejection_reasons"],
+            skipped_events=telemetry["skipped_events"],
+            tracked_slots=telemetry["tracked_slots"],
+            last_event=telemetry["last_event"],
+            last_save_at=telemetry["last_save_at"],
+            last_saved_label=telemetry["last_saved_label"],
+            last_diagnostic_path=self._last_diagnostic_path,
+        )
+
+    def _maybe_save_collection_diagnostic(
+        self,
+        frame,
+        state: GameState,
+        *,
+        capture_changed: bool = False,
+    ) -> None:
+        """Persist a bounded stream of annotated frames for capture debugging."""
+        now = time.monotonic()
+        elapsed = now - self._last_diagnostic_at
+        if elapsed < _COLLECTION_DIAGNOSTIC_INTERVAL_SECONDS and not (
+            capture_changed
+            and elapsed >= _COLLECTION_DIAGNOSTIC_MIN_EVENT_GAP_SECONDS
+        ):
+            return
+
+        annotated = frame.copy()
+        height, width = annotated.shape[:2]
+        for label, roi, color in (
+            ("BENCH", self.detector.rois.champion_bench, (255, 180, 0)),
+            ("SHOP", self.detector.rois.shop, (0, 220, 255)),
+        ):
+            x, y, rw, rh = roi.to_pixels(width, height)
+            cv2.rectangle(annotated, (x, y), (x + rw, y + rh), color, 3)
+            cv2.putText(
+                annotated,
+                label,
+                (x + 4, max(24, y - 6)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                color,
+                2,
+            )
+
+        status = state.collection_status
+        lines = [
+            f"capture={state.capture_method} trusted={status.capture_trusted}",
+            f"shop={status.recognized_shop_slots}/5 purchases={status.detected_purchases}",
+            f"saved={status.session_crops_saved} rejected={status.rejected_crops}",
+        ]
+        for index, line in enumerate(lines):
+            cv2.putText(
+                annotated,
+                line,
+                (24, 36 + index * 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.72,
+                (255, 255, 255),
+                2,
+            )
+
+        try:
+            _COLLECTION_DIAGNOSTIC_DIR.mkdir(parents=True, exist_ok=True)
+            stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            path = _COLLECTION_DIAGNOSTIC_DIR / (
+                f"capture_{stamp}_{state.capture_method}.jpg"
+            )
+            if not cv2.imwrite(str(path), annotated, [cv2.IMWRITE_JPEG_QUALITY, 82]):
+                logger.warning(f"Could not save collection diagnostic: {path}")
+                return
+            self._last_diagnostic_at = now
+            self._last_diagnostic_path = str(path)
+            state.collection_status.last_diagnostic_path = str(path)
+            logger.info(f"Collection diagnostic saved: {path}")
+
+            files = sorted(
+                _COLLECTION_DIAGNOSTIC_DIR.glob("capture_*.jpg"),
+                key=lambda item: item.stat().st_mtime,
+                reverse=True,
+            )
+            for old in files[_COLLECTION_DIAGNOSTIC_KEEP:]:
+                try:
+                    old.unlink()
+                except OSError:
+                    pass
+        except OSError as error:
+            logger.warning(f"Could not save collection diagnostic: {error}")
+
     # ── Capture Loop ──────────────────────────────────────────────────────────
 
     async def _capture_loop(self):
@@ -339,7 +483,10 @@ class TFTCoachServer:
                 # Capture frame
                 frame = self.capture.grab_frame()
                 if frame is None:
-                    self._reset_tracking_session()
+                    self.roster.suspend_observation()
+                    self.harvester.suspend_observation(
+                        self.capture.capture_trust_reason
+                    )
                     await asyncio.sleep(0.5)
                     continue
 
@@ -349,6 +496,13 @@ class TFTCoachServer:
                     None, self.detector.detect, frame
                 )
                 state.capture_method = self.capture.capture_method
+                capture_changed = state.capture_method != self._last_capture_method
+                if capture_changed:
+                    logger.info(
+                        f"Capture mode: {state.capture_method} "
+                        f"({self.capture.capture_trust_reason})"
+                    )
+                    self._last_capture_method = state.capture_method
 
                 # Never let launcher/loading/closed-window frames poison the
                 # roster or harvester baselines. Two consecutive misses force
@@ -375,20 +529,40 @@ class TFTCoachServer:
                 # gold look readable-but-unchanged, which vetoed every
                 # purchase on frames where gold OCR failed — and with it all
                 # harvester training crops.
-                if state.capture_method == "window":
+                purchases: list[str] = []
+                if self.capture.is_training_capture_trusted:
                     purchases = self.roster.update(state)
-                    self.harvester.process(
+                    saved = self.harvester.process(
                         frame,
                         purchases,
                         self.roster.pending_purchase_names,
                     )
+                    if purchases:
+                        logger.info(
+                            f"Confirmed shop purchase(s): {purchases}; "
+                            f"shop={state.shop_units}"
+                        )
+                    if saved:
+                        logger.info(
+                            f"Saved {saved} training crop(s) this frame; "
+                            f"session total={self.harvester.saved_count}"
+                        )
                 else:
                     # A desktop fallback can contain the overlay, another app,
                     # or a stale TFT frame. Never let it create purchase labels
                     # or training crops. Preserve confirmed owned units, but
                     # require a fresh direct-window shop baseline afterward.
                     self.roster.suspend_observation()
-                    self.harvester.reset()
+                    self.harvester.suspend_observation(
+                        self.capture.capture_trust_reason
+                    )
+
+                state.collection_status = self._collection_status(state, purchases)
+                self._maybe_save_collection_diagnostic(
+                    frame,
+                    state,
+                    capture_changed=capture_changed,
+                )
 
                 # A single frame's OCR can fail while the region is obscured
                 # (combat effects, transitions) — hold the last good reading
@@ -449,6 +623,11 @@ class TFTCoachServer:
                         f"Frame {self._frames_processed}: "
                         f"stage={state.stage} hp={state.player_hp} "
                         f"gold={state.gold} components={len(state.component_ids)} "
+                        f"capture={state.capture_method} "
+                        f"shop={state.collection_status.recognized_shop_slots}/5 "
+                        f"purchases={state.collection_status.detected_purchases} "
+                        f"crops=+{state.collection_status.session_crops_saved} "
+                        f"rejected={state.collection_status.rejected_crops} "
                         f"detection={state.detection_ms:.1f}ms (avg {avg_ms:.1f}ms)"
                     )
 

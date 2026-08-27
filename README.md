@@ -88,6 +88,9 @@ npm run dev
 npm run dev:sim
 
 # Live mode — capture the actual game (TFT must be running):
+npm run dev:live
+
+# Equivalent three-terminal setup:
 python backend/main.py        # terminal 1
 npm run dev:frontend          # terminal 2
 npm start                     # terminal 3 (Electron overlay)
@@ -104,7 +107,7 @@ Hotkeys (global — they work while the game has focus):
 |------|--------|
 | `Ctrl+Shift+G` | **Ghost lock** — overlay never captures the mouse, even on hover. Use while scouting: TFT's player list sits underneath the panel, and this lets your clicks reach it. Press again to unlock. |
 | `Ctrl+Shift+H` | Show / hide the overlay (e.g. before alt-tabbing — the overlay floats above other apps). |
-| `Ctrl+Shift+R` | **Share Mode** — make the overlay visible in Discord streams and screenshots. The backend uses direct `TFT.exe` window capture so the overlay does not contaminate detection. |
+| `Ctrl+Shift+R` | **Share Mode** — make the overlay visible in Discord streams and screenshots. The backend prefers direct `TFT.exe` capture and reports when it must use the foreground screen fallback. |
 | `Ctrl+Shift+T` | Manual click-through toggle (also clears ghost lock). |
 | `Ctrl+Shift+Q` | Quit TFT Coach. |
 
@@ -124,6 +127,12 @@ frame and prints what the detector read. Each labeled box should sit exactly
 on its UI element — if they're all shifted, the capture grabbed the wrong
 window or region; if one box is off, that ROI needs recalibrating in
 `config.GameROIs`.
+
+The overlay header also reports `DATA COLLECTING`, `DATA WAITING`, or
+`DATA PAUSED`. Direct UE5 window capture may be unavailable; the collector
+automatically uses a trusted screen fallback while `TFT.exe` is foreground.
+Recent annotated session frames are kept in `backend/_debug/session/`, and
+the persistent backend log is `backend/_logs/tft-coach.log`.
 
 **Known limitation — unit identification:** board and bench units render as
 3D models, which the CDN portrait templates cannot match, so unit names are

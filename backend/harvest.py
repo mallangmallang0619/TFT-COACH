@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from collections import deque
+from collections import Counter, deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -185,6 +185,12 @@ class BenchHarvester:
         self._saved_thumbs: dict[str, list[np.ndarray]] = {}
         self._loaded_thumb_labels: set[str] = set()
         self.saved_count = 0
+        self.rejection_counts: Counter[str] = Counter()
+        self.skip_counts: Counter[str] = Counter()
+        self.last_event = "Waiting for a readable shop and bench baseline"
+        self.last_save_at: Optional[float] = None
+        self.last_saved_label: Optional[str] = None
+        self._suspended = False
 
     def process(
         self,
@@ -200,6 +206,37 @@ class BenchHarvester:
             thumbs=thumbs,
         )
         pending_purchases = list(pending_purchases or [])
+
+        if self._suspended:
+            # The first trusted frame after a capture gap is a new baseline,
+            # never a training example. Preserve a tracked label only when
+            # the slot still resembles the same occupied unit; otherwise
+            # discard it instead of risking a stale label.
+            kept = 0
+            for slot in list(self._tracked):
+                tracked = self._tracked[slot]
+                current = thumbs[slot]
+                if current is None or not self._became_occupied(
+                    current, tracked.empty_reference
+                ):
+                    del self._tracked[slot]
+                    continue
+                drift = float(np.mean(cv2.absdiff(current, tracked.reference)))
+                if drift >= self.track_change_limit:
+                    del self._tracked[slot]
+                    continue
+                tracked.reference = current.copy()
+                tracked.frames_since = 0
+                tracked.change_frames = 0
+                tracked.occupancy_misses = 0
+                kept += 1
+            self._suspended = False
+            self._history.append(current_frame)
+            self.last_event = (
+                f"Trusted capture resumed; rebased {kept} tracked bench slot(s)"
+            )
+            logger.info(self.last_event)
+            return 0
 
         saved = 0
         just_confirmed: set[int] = set()
@@ -240,6 +277,41 @@ class BenchHarvester:
         self._history.clear()
         self._last_landing_diagnostic = "no bench transitions inspected"
         self._last_transition_diagnostic = "no transition"
+        self._suspended = False
+
+    def suspend_observation(self, reason: str = "capture is not trusted") -> None:
+        """Pause labeling without throwing away confirmed tracked identities.
+
+        Pending purchases and transition history cannot cross an untrusted
+        frame, but a confirmed slot label can survive a brief direct-capture
+        outage. The next trusted frame is used only to validate/rebase it.
+        """
+        if not self._suspended:
+            self.skip_counts["capture_untrusted"] += 1
+            self.last_event = f"Collection paused: {reason}"
+            logger.info(self.last_event)
+        self._suspended = True
+        self._pending_landings.clear()
+        self._history.clear()
+
+    def telemetry(self) -> dict:
+        """Small JSON-safe snapshot for logs and the live overlay."""
+        return {
+            "session_crops_saved": self.saved_count,
+            "rejected_crops": sum(self.rejection_counts.values()),
+            "rejection_reasons": dict(self.rejection_counts),
+            "skipped_events": dict(self.skip_counts),
+            "tracked_slots": len(self._tracked),
+            "last_event": self.last_event,
+            "last_save_at": self.last_save_at,
+            "last_saved_label": self.last_saved_label,
+        }
+
+    def _record_rejection(self, reason: str, name: str, slot: int) -> None:
+        self.rejection_counts[reason] += 1
+        self.last_event = (
+            f"Rejected {name} slot {slot}: {reason.replace('_', ' ')}"
+        )
 
     # ── Internals ─────────────────────────────────────────────────────────────
 
@@ -339,6 +411,11 @@ class BenchHarvester:
         self._pending_landings.clear()
         landings = self._find_recent_landings(names, current_frame)
         if len(landings) != len(names):
+            self.skip_counts["no_clean_landing"] += 1
+            self.last_event = (
+                f"No clean bench landing for {', '.join(names)}: "
+                f"{self._last_landing_diagnostic}"
+            )
             logger.info(
                 f"Holding purchase labels but no clean landing: {len(names)} pending vs "
                 f"{len(landings)} recoverable bench slots "
@@ -361,6 +438,8 @@ class BenchHarvester:
         pending = self._pending_landings
         self._pending_landings = []
         if [p.label for p in pending] != purchases:
+            self.skip_counts["pending_mismatch"] += 1
+            self.last_event = "Pending bench landing did not match confirmed purchases"
             logger.info("Pending bench landing did not match confirmed purchases")
             return False, 0
 
@@ -399,6 +478,11 @@ class BenchHarvester:
     ) -> int:
         landings = self._find_recent_landings(purchases, current_frame)
         if len(landings) != len(purchases):
+            self.skip_counts["no_clean_landing"] += 1
+            self.last_event = (
+                f"No clean bench landing for {', '.join(purchases)}: "
+                f"{self._last_landing_diagnostic}"
+            )
             logger.info(
                 f"Skipping harvest: {len(purchases)} purchases vs "
                 f"{len(landings)} recoverable bench slots "
@@ -614,22 +698,29 @@ class BenchHarvester:
 
     def _save(self, crop: np.ndarray, name: str, slot: int) -> bool:
         if crop.size == 0:
+            self._record_rejection("unreadable", name, slot)
             return False
         reason = self.training_crop_rejection_reason(crop)
         if reason:
+            self._record_rejection(reason, name, slot)
             logger.info(
                 f"Skipping {reason.replace('_', '-')} training crop: "
                 f"{name} (bench slot {slot})"
             )
             return False
         if self._is_near_duplicate(crop, name):
+            self._record_rejection("duplicate", name, slot)
             logger.debug(f"Skipping near-duplicate training crop: {name} (slot {slot})")
             return False
         return self._write_crop(crop, name, slot)
 
     def _save_empty(self, crop: np.ndarray, slot: int) -> bool:
         reason = self.training_crop_rejection_reason(crop, background=True)
-        if reason or self._is_near_duplicate(crop, "_empty"):
+        if reason:
+            self._record_rejection(reason, "_empty", slot)
+            return False
+        if self._is_near_duplicate(crop, "_empty"):
+            self._record_rejection("duplicate", "_empty", slot)
             return False
         return self._write_crop(crop, "_empty", slot)
 
@@ -664,12 +755,17 @@ class BenchHarvester:
             out.parent.mkdir(parents=True, exist_ok=True)
             # imwrite reports failure by returning False, not raising.
             if not cv2.imwrite(str(out), crop):
+                self._record_rejection("write_failed", name, slot)
                 logger.warning(f"Could not save training crop: imwrite failed for {out}")
                 return False
         except OSError as e:
+            self._record_rejection("write_failed", name, slot)
             logger.warning(f"Could not save training crop: {e}")
             return False
         self.saved_count += 1
+        self.last_save_at = datetime.datetime.now().timestamp()
+        self.last_saved_label = name
+        self.last_event = f"Saved {name} from bench slot {slot}"
         thumb = self._thumb(crop)
         if thumb is not None:
             self._saved_thumbs.setdefault(safe, []).append(thumb)

@@ -182,6 +182,41 @@ class WindowFinder:
             return None
 
     @staticmethod
+    def is_foreground_windows(hwnd: Optional[int]) -> bool:
+        """Return whether ``hwnd`` owns the current foreground surface.
+
+        Desktop fallback pixels are trustworthy enough for collection only
+        while TFT is the foreground top-level window.  This rejects frames
+        captured while another application or the interactive overlay is on
+        top, without depending on TFT's localized window title.
+        """
+        if platform.system() != "Windows" or not hwnd:
+            return False
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            user32 = ctypes.windll.user32
+            get_foreground_window = user32.GetForegroundWindow
+            get_foreground_window.argtypes = []
+            get_foreground_window.restype = wintypes.HWND
+            foreground = get_foreground_window()
+            if not foreground:
+                return False
+            # Compare root windows as well as the exact HWND. Some games hand
+            # focus to a child/owned render surface inside the selected frame.
+            get_ancestor = user32.GetAncestor
+            get_ancestor.argtypes = [wintypes.HWND, wintypes.UINT]
+            get_ancestor.restype = wintypes.HWND
+            ga_root = 2
+            foreground_root = get_ancestor(foreground, ga_root) or foreground
+            target_root = get_ancestor(int(hwnd), ga_root) or int(hwnd)
+            return int(foreground_root) == int(target_root)
+        except Exception as error:
+            logger.debug(f"Foreground-window check failed for HWND {hwnd}: {error}")
+            return False
+
+    @staticmethod
     def _find_windows(include_launcher: bool = False) -> Optional[WindowRect]:
         """Find the game window on Windows using pygetwindow."""
         try:
@@ -454,10 +489,21 @@ class ScreenCapture:
         self._window_capture_failures = 0
         self._window_capture_retry_at = 0.0
         self._window_capture_error_reported: Optional[str] = None
+        self._last_capture_method = "screen_untrusted"
+        self._capture_trust_reason = "No frame captured yet"
 
     @property
     def capture_method(self) -> str:
-        return "window" if self.window_capture.active else "screen"
+        return self._last_capture_method
+
+    @property
+    def is_training_capture_trusted(self) -> bool:
+        """Whether the most recent frame is safe for purchase auto-labeling."""
+        return self._last_capture_method in {"window", "screen_foreground"}
+
+    @property
+    def capture_trust_reason(self) -> str:
+        return self._capture_trust_reason
 
     def locate_game(self) -> bool:
         """
@@ -504,6 +550,8 @@ class ScreenCapture:
                 if normalized is not None:
                     self._window_capture_failures = 0
                     self._last_capture_time = time.time()
+                    self._last_capture_method = "window"
+                    self._capture_trust_reason = "Direct TFT window capture"
                     return normalized
                 self._window_capture_failures += 1
                 if self._window_capture_failures >= 3:
@@ -523,10 +571,22 @@ class ScreenCapture:
             # Convert to numpy array (BGRA → BGR)
             frame = np.array(screenshot)
             frame = frame[:, :, :3]  # Drop alpha channel
+            if WindowFinder.is_foreground_windows(self.window.hwnd):
+                self._last_capture_method = "screen_foreground"
+                self._capture_trust_reason = (
+                    "Direct capture unavailable; TFT is the foreground window"
+                )
+            else:
+                self._last_capture_method = "screen_untrusted"
+                self._capture_trust_reason = (
+                    "Direct capture unavailable and TFT is not the foreground window"
+                )
             return frame
 
         except Exception as e:
             logger.warning(f"Frame capture failed: {e}")
+            self._last_capture_method = "screen_untrusted"
+            self._capture_trust_reason = f"Frame capture failed: {e}"
             # Window may have moved — try relocating next cycle
             self.window = None
             return None
@@ -550,11 +610,11 @@ class ScreenCapture:
             error = self.window_capture.last_error or "unknown capture error"
             if error != self._window_capture_error_reported:
                 if "Failed to convert item to `GraphicsCaptureItem`" in error:
-                    # UE5 publishes its HWND slightly before the graphics
-                    # surface becomes capturable. This normally succeeds on
-                    # the next attempt and should not look like a fatal error.
+                    # UE5 can expose an HWND that Windows Graphics Capture
+                    # cannot convert. Keep retrying in case the render surface
+                    # is recreated, while the foreground-gated fallback runs.
                     logger.info(
-                        "Direct TFT capture is not ready yet; "
+                        "Direct TFT capture is unavailable for this UE5 window; "
                         f"retrying in {_WINDOW_CAPTURE_START_RETRY_SECONDS:g}s "
                         "with screen fallback"
                     )

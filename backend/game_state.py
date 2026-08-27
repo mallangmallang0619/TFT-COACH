@@ -70,6 +70,27 @@ class ActiveSynergy(BaseModel):
     is_active: bool = False
 
 
+class TrainingCollectionStatus(BaseModel):
+    """Live visibility into auto-labeled classifier data collection."""
+    state: str = "waiting"                    # collecting / waiting / paused
+    reason: str = "Waiting for TFT"
+    capture_trusted: bool = False
+    recognized_shop_slots: int = 0
+    shop_units: list[Optional[str]] = Field(default_factory=list)
+    detected_purchases: list[str] = Field(default_factory=list)
+    pending_purchases: list[str] = Field(default_factory=list)
+    session_crops_saved: int = 0
+    total_clean_crops: int = 0
+    rejected_crops: int = 0
+    rejection_reasons: dict[str, int] = Field(default_factory=dict)
+    skipped_events: dict[str, int] = Field(default_factory=dict)
+    tracked_slots: int = 0
+    last_event: str = ""
+    last_save_at: Optional[float] = None
+    last_saved_label: Optional[str] = None
+    last_diagnostic_path: Optional[str] = None
+
+
 # ── Coaching Output ───────────────────────────────────────────────────────────
 
 class SlamRecommendation(BaseModel):
@@ -195,6 +216,9 @@ class GameState(BaseModel):
     frame_number: int = 0
     detection_ms: float = 0.0                  # How long detection took
     capture_method: str = "screen"
+    collection_status: TrainingCollectionStatus = Field(
+        default_factory=TrainingCollectionStatus
+    )
 
     # Game phase
     phase: GamePhase = GamePhase.NOT_IN_GAME

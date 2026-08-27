@@ -11,6 +11,7 @@
     "start:demo": "python backend/main.py --demo",
     "start:sim": "python backend/main.py --sim",
     "dev": "concurrently \"npm run dev:frontend\" \"npm run start:demo\" \"npm run start:delayed\"",
+    "dev:live": "concurrently \"npm run dev:frontend\" \"npm run start:backend\" \"npm run start:delayed\"",
     "dev:sim": "concurrently \"npm run dev:frontend\" \"npm run start:sim\" \"npm run start:delayed\"",
     "start:delayed": "node -e \"setTimeout(()=>process.exit(0),3000)\" && npm start",
     "package": "electron-builder"

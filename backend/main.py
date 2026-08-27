@@ -12,6 +12,7 @@ Usage:
 import asyncio
 import argparse
 import logging
+from logging.handlers import RotatingFileHandler
 import sys
 from pathlib import Path
 
@@ -22,14 +23,26 @@ from config import LOG_LEVEL, LogLevel
 
 
 def setup_logging(debug: bool = False):
-    """Configure logging output."""
+    """Configure console output plus a persistent, bounded session log."""
     level = logging.DEBUG if debug else getattr(logging, LOG_LEVEL.value, logging.INFO)
-
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%H:%M:%S",
+    formatter = logging.Formatter(
+        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
+    console = logging.StreamHandler()
+    console.setFormatter(formatter)
+
+    log_dir = Path(__file__).parent / "_logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    session_log = RotatingFileHandler(
+        log_dir / "tft-coach.log",
+        maxBytes=2 * 1024 * 1024,
+        backupCount=3,
+        encoding="utf-8",
+    )
+    session_log.setFormatter(formatter)
+
+    logging.basicConfig(level=level, handlers=[console, session_log], force=True)
 
     # Quiet down noisy libraries
     logging.getLogger("websockets").setLevel(logging.WARNING)

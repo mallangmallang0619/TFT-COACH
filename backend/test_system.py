@@ -68,6 +68,8 @@ def test_game_state():
     data = state.to_frontend_json()
     assert isinstance(data, dict)
     assert data["stage"] == "3-2"
+    assert data["collection_status"]["state"] == "waiting"
+    assert data["collection_status"]["session_crops_saved"] == 0
 
     # Test history
     history = GameStateHistory(max_size=5)
@@ -1209,6 +1211,21 @@ def test_bench_harvester():
         assert got == [0, 0, 0, 0], f"untracked slot kept saving: {got}"
         assert len(list(Path(tmp).rglob("*.png"))) == 1
 
+    # An untrusted screen interval drops pending transitions but preserves a
+    # confirmed label. The first trusted frame only validates/rebases the
+    # slot; collection can resume on the next stable frame without inventing
+    # a purchase across the capture gap.
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=1, track_max_saves=3)
+        hv.process(frame([]), [])
+        hv.process(pose(0), [])
+        assert hv.process(pose(0), ["Gwen"]) == 1
+        hv.suspend_observation("TFT is not foreground")
+        assert hv.telemetry()["skipped_events"]["capture_untrusted"] == 1
+        assert hv.process(pose(1), []) == 0, "resume frame became a label"
+        assert hv.process(pose(2), []) == 1, "stable tracking did not resume"
+        assert len(list(Path(tmp).rglob("*.png"))) == 2
+
     # A transient write/quality failure must not consume the tracking cap;
     # retry the next stable frame instead of silently losing the sample.
     with tempfile.TemporaryDirectory() as tmp:
@@ -1250,7 +1267,7 @@ def test_bench_harvester():
 
     return ("pairing guards + six-frame landing recovery OK, vacated-slot filtering "
             "OK, imwrite-fail OK, tracking: interval+cap+retry+animation recovery OK, "
-            "stop-on-change OK")
+            "capture suspend/resume + stop-on-change OK")
 
 
 def test_window_picker():
@@ -1403,7 +1420,45 @@ def test_direct_window_capture():
     assert retrying._ensure_window_capture() is True
     assert retrying.window_capture.attempts == 2
 
-    return "exact HWND, copied BGR frame, client normalization + UE5 retry OK"
+    # When UE5 refuses GraphicsCaptureItem, an mss frame is safe for training
+    # only while the resolved TFT HWND owns the foreground window.
+    class ScreenOnlyCapture:
+        active = False
+
+    class FakeMss:
+        def grab(self, _monitor):
+            return np.full((50, 100, 4), 64, dtype=np.uint8)
+
+    fallback = object.__new__(ScreenCapture)
+    fallback.window = WindowRect(0, 0, 100, 50, hwnd=67890)
+    fallback.window_capture = ScreenOnlyCapture()
+    fallback.sct = FakeMss()
+    fallback._last_capture_time = 0.0
+    fallback._frame_interval = 0.0
+    fallback._last_capture_method = "screen_untrusted"
+    fallback._capture_trust_reason = "No frame captured yet"
+    fallback._ensure_window_capture = lambda force=False: False
+
+    original_foreground = capture_module.WindowFinder.is_foreground_windows
+    try:
+        capture_module.WindowFinder.is_foreground_windows = staticmethod(
+            lambda hwnd: hwnd == 67890
+        )
+        assert fallback.grab_frame() is not None
+        assert fallback.capture_method == "screen_foreground"
+        assert fallback.is_training_capture_trusted
+
+        capture_module.WindowFinder.is_foreground_windows = staticmethod(
+            lambda _hwnd: False
+        )
+        assert fallback.grab_frame() is not None
+        assert fallback.capture_method == "screen_untrusted"
+        assert not fallback.is_training_capture_trusted
+    finally:
+        capture_module.WindowFinder.is_foreground_windows = original_foreground
+
+    return ("exact HWND, copied BGR frame, client normalization + UE5 retry "
+            "+ trusted foreground fallback OK")
 
 
 def test_classifier_data_pipeline():
