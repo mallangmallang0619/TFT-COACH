@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -45,6 +46,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "backend"))
 
 from set18_data import (  # noqa: E402
+    CHAMPIONS,
     SET_NUMBER,
     SET_NAME,
     ENGINE,
@@ -60,11 +62,33 @@ INPUT_SIZE = 128
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
-MIN_CROPS_DEFAULT = 20      # skip champions with fewer crops than this
+MIN_CROPS_DEFAULT = 50      # clean, diverse crops required per class
+MIN_ROSTER_COVERAGE_DEFAULT = 0.75
 VAL_FRACTION = 0.15
 
 
-# ── Dataset discovery (stdlib only — importable without torch) ────────────────
+# ── Dataset discovery (torch-free) ──────────────────────────────────
+
+def audit_dataset(
+    train_dir: Path = TRAINING_DIR,
+) -> tuple[dict[str, list[Path]], dict[str, dict[str, int]]]:
+    """Return clean, diverse crops and non-destructive rejection counts."""
+    from harvest import audit_training_crops
+
+    return audit_training_crops(train_dir)
+
+
+def _apply_minimum(
+    audited: dict[str, list[Path]], min_crops: int
+) -> tuple[dict[str, list[Path]], dict[str, int]]:
+    usable = {name: list(paths) for name, paths in audited.items()}
+    skipped: dict[str, int] = {}
+    for label, files in list(usable.items()):
+        if len(files) < min_crops:
+            skipped[label] = len(files)
+            del usable[label]
+    return usable, skipped
+
 
 def discover_dataset(
     train_dir: Path = TRAINING_DIR,
@@ -78,27 +102,8 @@ def discover_dataset(
     for the rest. Class names are the folder names (background classes
     keep their leading underscore).
     """
-    usable: dict[str, list[Path]] = {}
-    skipped: dict[str, int] = {}
-    if not train_dir.exists():
-        return usable, skipped
-    for champ_dir in sorted(train_dir.iterdir()):
-        if not champ_dir.is_dir():
-            continue
-        files = sorted(champ_dir.glob("*.png"))
-        if not files:
-            continue
-        # Pool manually imported form folders (Lux_Coven, Lux_Solar, etc.)
-        # into one visual class. The live trait HUD remains origin truth.
-        label = canonical_training_label(champ_dir.name)
-        usable.setdefault(label, []).extend(files)
-
-    # Apply readiness after aliases/forms have been pooled.
-    for label, files in list(usable.items()):
-        if len(files) < min_crops:
-            skipped[label] = len(files)
-            del usable[label]
-    return usable, skipped
+    audited, _rejected = audit_dataset(train_dir)
+    return _apply_minimum(audited, min_crops)
 
 
 def split_dataset(
@@ -126,9 +131,14 @@ def split_dataset(
     return train, val, labels
 
 
-def print_readiness(min_crops: int, train_dir: Path = TRAINING_DIR) -> bool:
+def print_readiness(
+    min_crops: int,
+    train_dir: Path = TRAINING_DIR,
+    min_coverage: float = MIN_ROSTER_COVERAGE_DEFAULT,
+) -> bool:
     """Report per-class readiness; returns True when training can proceed."""
-    usable, skipped = discover_dataset(train_dir, min_crops)
+    audited, rejected = audit_dataset(train_dir)
+    usable, skipped = _apply_minimum(audited, min_crops)
     if not usable and not skipped:
         print(f"No training data in {train_dir} — play games with live mode running.")
         return False
@@ -137,13 +147,41 @@ def print_readiness(min_crops: int, train_dir: Path = TRAINING_DIR) -> bool:
         print(f"  READY    {name:<20} {len(usable[name])}")
     for name in sorted(skipped, key=lambda n: -skipped[n]):
         print(f"  waiting  {name:<20} {skipped[name]}")
-    total = sum(len(v) for v in usable.values())
+    rejected_total = sum(sum(reasons.values()) for reasons in rejected.values())
+    if rejected_total:
+        by_reason: dict[str, int] = {}
+        for reasons in rejected.values():
+            for reason, count in reasons.items():
+                by_reason[reason] = by_reason.get(reason, 0) + count
+        details = ", ".join(
+            f"{name}={count}" for name, count in sorted(by_reason.items())
+        )
+        print(
+            f"  excluded {rejected_total:<12} "
+            f"({details}; raw files preserved)"
+        )
+    ready_crop_total = sum(len(v) for v in usable.values())
+    clean_crop_total = sum(len(v) for v in audited.values())
     real_classes = [n for n in usable if not n.startswith("_")]
-    print(f"\n{len(real_classes)} champion(s) ready, {total} usable crops.")
-    if len(real_classes) < 2:
-        print("Need at least 2 ready champions to train a classifier.")
-        return False
-    return True
+    roster_labels = {canonical_training_label(name) for name in CHAMPIONS}
+    required_classes = math.ceil(len(roster_labels) * min_coverage)
+    coverage = len(real_classes) / max(1, len(roster_labels))
+    print(
+        f"\n{len(real_classes)}/{len(roster_labels)} champions ready "
+        f"({coverage:.0%} coverage), {clean_crop_total} clean crops "
+        f"({ready_crop_total} in ready classes)."
+    )
+    ready = True
+    if "_empty" not in usable:
+        print(f"Need _empty with at least {min_crops} clean, diverse crops.")
+        ready = False
+    if len(real_classes) < required_classes:
+        print(
+            f"Need at least {required_classes}/{len(roster_labels)} champions "
+            f"ready ({min_coverage:.0%} coverage) before exporting a model."
+        )
+        ready = False
+    return ready
 
 
 # ── Training (torch imported lazily) ──────────────────────────────────────────
@@ -165,7 +203,7 @@ def _require_torch():
 
 
 def train(args: argparse.Namespace) -> int:
-    if not print_readiness(args.min_crops, args.data_dir):
+    if not print_readiness(args.min_crops, args.data_dir, args.min_coverage):
         return 1
     _require_torch()
 
@@ -353,6 +391,11 @@ def train(args: argparse.Namespace) -> int:
         "min_confidence": round(min_confidence, 3),
         "val_accuracy": round(best_acc, 4),
         "num_train_crops": len(train_items),
+        "roster_coverage": round(
+            len([label for label in labels if not label.startswith("_")])
+            / len({canonical_training_label(name) for name in CHAMPIONS}),
+            4,
+        ),
         "lux_forms_collapsed": True,
         "trained_at": datetime.datetime.now().isoformat(timespec="seconds"),
     }
@@ -387,6 +430,15 @@ def main() -> int:
                     help="Report data readiness and exit (no torch needed)")
     ap.add_argument("--min-crops", type=int, default=MIN_CROPS_DEFAULT,
                     help=f"Skip champions with fewer crops (default {MIN_CROPS_DEFAULT})")
+    ap.add_argument(
+        "--min-coverage",
+        type=float,
+        default=MIN_ROSTER_COVERAGE_DEFAULT,
+        help=(
+            "Minimum active-roster coverage required before export "
+            f"(default {MIN_ROSTER_COVERAGE_DEFAULT:.2f})"
+        ),
+    )
     ap.add_argument("--data-dir", type=Path, default=TRAINING_DIR,
                     help=f"Crop directory (default {TRAINING_DIR})")
     ap.add_argument("--out-dir", type=Path, default=MODELS_DIR,
@@ -399,7 +451,9 @@ def main() -> int:
     args = ap.parse_args()
 
     if args.check:
-        return 0 if print_readiness(args.min_crops, args.data_dir) else 1
+        return 0 if print_readiness(
+            args.min_crops, args.data_dir, args.min_coverage
+        ) else 1
     return train(args)
 
 

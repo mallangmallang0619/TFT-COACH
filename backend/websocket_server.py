@@ -99,7 +99,7 @@ class TFTCoachServer:
             logger.info(
                 "Unit classifier inactive (no trained model); "
                 f"collector has {crop_count} crops across {champion_count} champions, "
-                f"{ready_count} ready at 20+"
+                f"{ready_count} ready at 50+ clean crops"
             )
 
         # Background refresh of the TFT Academy tier list (cache-checked,

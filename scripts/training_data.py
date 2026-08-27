@@ -23,7 +23,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "backend"))
-from set18_data import SET_NUMBER  # noqa: E402
+from harvest import READY_CROPS_PER_CLASS, audit_training_crops  # noqa: E402
+from set18_data import SET_NUMBER, canonical_training_label  # noqa: E402
 
 TRAINING_DIR = REPO_ROOT / "backend" / "_training" / f"set{SET_NUMBER}"
 
@@ -32,21 +33,39 @@ def stats() -> int:
     if not TRAINING_DIR.exists():
         print("No training data collected yet — play games with live mode running.")
         return 0
-    total = 0
-    rows = []
+    raw_by_label: dict[str, int] = {}
     for champ_dir in sorted(TRAINING_DIR.iterdir()):
         if not champ_dir.is_dir():
             continue
         n = sum(1 for _ in champ_dir.glob("*.png"))
-        total += n
-        rows.append((champ_dir.name, n))
-    print(f"Training crops: {total} across {len(rows)} champions")
-    for name, n in sorted(rows, key=lambda r: -r[1]):
-        print(f"  {name:<20} {n}")
-    if total:
+        if n:
+            label = canonical_training_label(champ_dir.name)
+            raw_by_label[label] = raw_by_label.get(label, 0) + n
+    accepted, rejected = audit_training_crops(TRAINING_DIR)
+    raw_total = sum(raw_by_label.values())
+    clean_total = sum(len(paths) for paths in accepted.values())
+    print(
+        f"Training crops: {raw_total} raw / {clean_total} clean+diverse "
+        f"across {len(raw_by_label)} classes"
+    )
+    for name in sorted(raw_by_label, key=lambda n: -raw_by_label[n]):
+        clean = len(accepted.get(name, []))
+        status = "READY" if clean >= READY_CROPS_PER_CLASS else "waiting"
+        reason_text = ", ".join(
+            f"{reason}={count}"
+            for reason, count in sorted(rejected.get(name, {}).items())
+        )
+        suffix = f"; excluded {reason_text}" if reason_text else ""
+        print(
+            f"  {status:<7} {name:<18} {clean:>3}/{raw_by_label[name]:<3}{suffix}"
+        )
+    if raw_total:
         print()
-        print("Rule of thumb: ~50+ crops per champion trains a usable classifier;")
-        print("more is better. Share with: python scripts/training_data.py --pack crops.zip")
+        print("Training uses 50+ clean, diverse crops per champion plus _empty;")
+        print(
+            "effects/duplicates are excluded. Share with: "
+            "python scripts/training_data.py --pack crops.zip"
+        )
         print("Check readiness / train:    python scripts/train_classifier.py --check")
     return 0
 

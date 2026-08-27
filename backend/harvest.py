@@ -36,7 +36,7 @@ import cv2
 import numpy as np
 
 from config import GameROIs
-from game_data import ACTIVE_SET_NUMBER
+from game_data import ACTIVE_SET_NUMBER, canonical_training_label
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +61,8 @@ _OCCUPIED_STD_MIN = 19.5
 _TRACK_SAVE_INTERVAL = 1        # every processed frame while stable
 _TRACK_MAX_SAVES = 50           # crops per purchase, landing crop included
 _TRACK_CHANGE_LIMIT = 18.0      # tolerate idle poses and brief spell glows
+READY_CROPS_PER_CLASS = 50
+_DUPLICATE_THUMB_MAD = 1.0      # <= this is effectively the same pose/frame
 _CROP_MIN_STD = 18.0
 _CROP_MIN_LAPLACIAN = 500.0
 # Real Set 18 unit crops measured 210-3200; empty portal/platform crops that
@@ -79,6 +81,7 @@ class _PendingLanding:
     label: str
     slot: int
     crop: np.ndarray
+    empty_crop: np.ndarray
     occupied_thumb: np.ndarray
     empty_thumb: np.ndarray
 
@@ -101,15 +104,59 @@ class _BenchFrame:
 
 
 def training_stats(out_dir: Path = TRAINING_DIR) -> tuple[int, int, int]:
-    """Return ``(total crops, champion folders, classes ready at 20+)``."""
-    if not out_dir.exists():
-        return 0, 0, 0
-    counts = [
-        len(list(folder.glob("*.png")))
-        for folder in out_dir.iterdir()
-        if folder.is_dir()
+    """Return ``(clean crops, champion classes, champions ready at 50+)``."""
+    accepted, _rejected = audit_training_crops(out_dir)
+    champion_counts = [
+        len(files) for name, files in accepted.items() if not name.startswith("_")
     ]
-    return sum(counts), len(counts), sum(count >= 20 for count in counts)
+    return (
+        sum(len(files) for files in accepted.values()),
+        len(champion_counts),
+        sum(count >= READY_CROPS_PER_CLASS for count in champion_counts),
+    )
+
+
+def audit_training_crops(
+    train_dir: Path = TRAINING_DIR,
+) -> tuple[dict[str, list[Path]], dict[str, dict[str, int]]]:
+    """Audit raw crops without moving/deleting them; pool Lux form labels."""
+    accepted: dict[str, list[Path]] = {}
+    rejected: dict[str, dict[str, int]] = {}
+    thumbs: dict[str, list[np.ndarray]] = {}
+    if not train_dir.exists():
+        return accepted, rejected
+
+    for champ_dir in sorted(train_dir.iterdir()):
+        if not champ_dir.is_dir():
+            continue
+        label = canonical_training_label(champ_dir.name)
+        accepted.setdefault(label, [])
+        rejected.setdefault(label, {})
+        thumbs.setdefault(label, [])
+        for path in sorted(champ_dir.glob("*.png")):
+            image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+            reason = BenchHarvester.training_crop_rejection_reason(
+                image,
+                background=label.startswith("_"),
+            )
+            thumb = BenchHarvester._thumb(image) if image is not None else None
+            if reason is None and thumb is not None:
+                if any(
+                    float(np.mean(cv2.absdiff(thumb, prior)))
+                    <= _DUPLICATE_THUMB_MAD
+                    for prior in thumbs[label]
+                ):
+                    reason = "duplicate"
+            if reason:
+                counts = rejected[label]
+                counts[reason] = counts.get(reason, 0) + 1
+                continue
+            accepted[label].append(path)
+            thumbs[label].append(thumb)
+
+    accepted = {name: paths for name, paths in accepted.items() if paths}
+    rejected = {name: reasons for name, reasons in rejected.items() if reasons}
+    return accepted, rejected
 
 
 class BenchHarvester:
@@ -135,6 +182,8 @@ class BenchHarvester:
         self._history: deque[_BenchFrame] = deque(maxlen=_LANDING_HISTORY_FRAMES)
         self._last_landing_diagnostic = "no bench transitions inspected"
         self._last_transition_diagnostic = "no transition"
+        self._saved_thumbs: dict[str, list[np.ndarray]] = {}
+        self._loaded_thumb_labels: set[str] = set()
         self.saved_count = 0
 
     def process(
@@ -220,6 +269,7 @@ class BenchHarvester:
                     thumbs[slot], tracked.empty_reference
                 )))
                 if empty_distance < 4.0 or tracked.occupancy_misses >= 1:
+                    self._save_empty(crops[slot], slot)
                     logger.debug(
                         f"Slot {slot} became empty — stop tracking {tracked.label}"
                     )
@@ -319,6 +369,10 @@ class BenchHarvester:
             current = thumbs[landing.slot]
             if not self._became_occupied(current, landing.empty_thumb):
                 continue
+            # The pre-purchase frame is a trustworthy empty-slot label. Keep
+            # it as classifier background; deduplication prevents the same
+            # arena plank from flooding the dataset.
+            self._save_empty(landing.empty_crop, landing.slot)
             # Confirmation arrives after the initial landing transition. Save
             # this later frame, where the UE5 model has finished materializing,
             # rather than the cached dust/shadow animation.
@@ -357,6 +411,7 @@ class BenchHarvester:
             current = thumbs[landing.slot]
             if not self._became_occupied(current, landing.empty_thumb):
                 continue
+            self._save_empty(landing.empty_crop, landing.slot)
             did_save = self._save(
                 current_frame.crops[landing.slot], landing.label, landing.slot
             )
@@ -406,6 +461,7 @@ class BenchHarvester:
                     label=name,
                     slot=slot,
                     crop=after.crops[slot].copy(),
+                    empty_crop=before.crops[slot].copy(),
                     occupied_thumb=occupied.copy(),
                     empty_thumb=empty.copy(),
                 ))
@@ -532,24 +588,76 @@ class BenchHarvester:
         )
         return change_evidence and not clearly_vacated
 
+    @classmethod
+    def training_crop_rejection_reason(
+        cls, crop: Optional[np.ndarray], *, background: bool = False
+    ) -> Optional[str]:
+        """Explain why a crop must not enter training, or return ``None``."""
+        if crop is None or crop.size == 0:
+            return "unreadable"
+        if cls._has_materialization_effect(crop):
+            return "materialization"
+        gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+        full_laplacian = float(cv2.Laplacian(gray, cv2.CV_64F).var())
+        if background:
+            # Empty arena slots are naturally much smoother than champions,
+            # but a completely flat/black crop indicates a bad capture.
+            if float(np.std(gray)) < 4.0 and full_laplacian < 10.0:
+                return "low_detail"
+            return None
+        if (
+            not cls._is_viable_crop(cls._thumb(crop))
+            or full_laplacian < _CROP_MIN_FULL_LAPLACIAN
+        ):
+            return "low_detail"
+        return None
+
     def _save(self, crop: np.ndarray, name: str, slot: int) -> bool:
         if crop.size == 0:
             return False
-        gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
-        full_laplacian = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-        if (
-            not self._is_viable_crop(self._thumb(crop))
-            or full_laplacian < _CROP_MIN_FULL_LAPLACIAN
-        ):
-            logger.info(f"Skipping low-detail training crop: {name} (bench slot {slot})")
-            return False
-        if self._has_materialization_effect(crop):
+        reason = self.training_crop_rejection_reason(crop)
+        if reason:
             logger.info(
-                f"Skipping materialization-effect training crop: "
+                f"Skipping {reason.replace('_', '-')} training crop: "
                 f"{name} (bench slot {slot})"
             )
             return False
-        safe = name.replace("'", "").replace(" ", "_").replace(".", "")
+        if self._is_near_duplicate(crop, name):
+            logger.debug(f"Skipping near-duplicate training crop: {name} (slot {slot})")
+            return False
+        return self._write_crop(crop, name, slot)
+
+    def _save_empty(self, crop: np.ndarray, slot: int) -> bool:
+        reason = self.training_crop_rejection_reason(crop, background=True)
+        if reason or self._is_near_duplicate(crop, "_empty"):
+            return False
+        return self._write_crop(crop, "_empty", slot)
+
+    @staticmethod
+    def _safe_label(name: str) -> str:
+        return name.replace("'", "").replace(" ", "_").replace(".", "")
+
+    def _is_near_duplicate(self, crop: np.ndarray, name: str) -> bool:
+        safe = self._safe_label(name)
+        if safe not in self._loaded_thumb_labels:
+            remembered: list[np.ndarray] = []
+            for path in sorted((self.out_dir / safe).glob("*.png")):
+                image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+                thumb = self._thumb(image) if image is not None else None
+                if thumb is not None:
+                    remembered.append(thumb)
+            self._saved_thumbs[safe] = remembered
+            self._loaded_thumb_labels.add(safe)
+        thumb = self._thumb(crop)
+        if thumb is None:
+            return True
+        return any(
+            float(np.mean(cv2.absdiff(thumb, prior))) <= _DUPLICATE_THUMB_MAD
+            for prior in self._saved_thumbs.get(safe, [])
+        )
+
+    def _write_crop(self, crop: np.ndarray, name: str, slot: int) -> bool:
+        safe = self._safe_label(name)
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         out = self.out_dir / safe / f"{ts}_slot{slot}.png"
         try:
@@ -562,6 +670,10 @@ class BenchHarvester:
             logger.warning(f"Could not save training crop: {e}")
             return False
         self.saved_count += 1
+        thumb = self._thumb(crop)
+        if thumb is not None:
+            self._saved_thumbs.setdefault(safe, []).append(thumb)
+            self._loaded_thumb_labels.add(safe)
         logger.info(f"Training crop saved: {name} (bench slot {slot}) → {out.name}")
         return True
 

@@ -1019,6 +1019,15 @@ def test_bench_harvester():
             f[by:by + bh, bx + s * slot_w: bx + (s + 1) * slot_w] = noise
         return f
 
+    def pose(delta=0):
+        """Same unit/pose with a small lighting change (diverse but stable)."""
+        f = frame([0])
+        crop = f[by:by + bh, bx:bx + slot_w].astype(np.int16)
+        f[by:by + bh, bx:bx + slot_w] = np.clip(
+            crop + delta, 0, 255
+        ).astype(np.uint8)
+        return f
+
     with tempfile.TemporaryDirectory() as tmp:
         # Tracking disabled here — this section tests purchase pairing.
         hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
@@ -1103,6 +1112,28 @@ def test_bench_harvester():
         assert quality._save(smooth_crop, "Portal", 8) is False
         assert not list(Path(tmp).rglob("*.png"))
 
+    # The slot immediately before a confirmed landing is a trustworthy empty
+    # example. Save it once as _empty and suppress an identical repeat.
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        empty = frame([])
+        yy, xx = np.indices((bh, slot_w))
+        texture = ((yy // 5 + xx // 5) % 2 * 18 + 55).astype(np.uint8)
+        empty[by:by + bh, bx:bx + slot_w] = np.dstack(
+            [texture, texture + 5, texture + 10]
+        )
+        landed = empty.copy()
+        landed[by:by + bh, bx:bx + slot_w] = frame([0])[
+            by:by + bh, bx:bx + slot_w
+        ]
+        assert hv.process(empty, []) == 0
+        assert hv.process(landed, ["Gwen"]) == 1
+        empties = list((Path(tmp) / "_empty").glob("*.png"))
+        assert len(empties) == 1
+        assert hv._save_empty(
+            empty[by:by + bh, bx:bx + slot_w], 0
+        ) is False
+
     # UE5 renders a newly bought champion as a sharp blue hologram. It has
     # plenty of edge detail, so the generic quality gate used to save it as a
     # mislabeled champion crop. Reject it, retain the trusted slot label, and
@@ -1161,11 +1192,11 @@ def test_bench_harvester():
     with tempfile.TemporaryDirectory() as tmp:
         hv = BenchHarvester(out_dir=Path(tmp), track_interval=2, track_max_saves=4)
         assert hv.process(frame([]), []) == 0           # baseline
-        assert hv.process(frame([0]), []) == 0          # unit lands
-        assert hv.process(frame([0]), ["Gwen"]) == 1    # confirm → crop 1, tracked
-        got = [hv.process(frame([0]), []) for _ in range(6)]
+        assert hv.process(pose(0), []) == 0             # unit lands
+        assert hv.process(pose(0), ["Gwen"]) == 1      # confirm → crop 1, tracked
+        got = [hv.process(pose(delta), []) for delta in range(1, 7)]
         assert got == [0, 1, 0, 1, 0, 1], got           # every 2nd frame until cap
-        assert hv.process(frame([0]), []) == 0          # cap (4) reached → untracked
+        assert hv.process(pose(8), []) == 0             # cap (4) reached → untracked
         assert len(list(Path(tmp).rglob("*.png"))) == 4
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -1183,8 +1214,8 @@ def test_bench_harvester():
     with tempfile.TemporaryDirectory() as tmp:
         hv = BenchHarvester(out_dir=Path(tmp), track_interval=1, track_max_saves=2)
         hv.process(frame([]), [])
-        hv.process(frame([0]), [])
-        assert hv.process(frame([0]), ["Gwen"]) == 1
+        hv.process(pose(0), [])
+        assert hv.process(pose(0), ["Gwen"]) == 1
         original_save = hv._save
         attempts = 0
 
@@ -1194,8 +1225,8 @@ def test_bench_harvester():
             return attempts > 1 and original_save(crop, name, slot)
 
         hv._save = fail_once
-        assert hv.process(frame([0]), []) == 0
-        assert hv.process(frame([0]), []) == 1
+        assert hv.process(pose(2), []) == 0
+        assert hv.process(pose(3), []) == 1
         assert len(list(Path(tmp).rglob("*.png"))) == 2
 
     # Idle animations and spell glows can produce two very different frames.
@@ -1206,14 +1237,15 @@ def test_bench_harvester():
             out_dir=Path(tmp),
             track_interval=1,
             track_max_saves=3,
-            track_change_limit=1,
+            track_change_limit=3,
         )
         hv.process(frame([]), [])
         hv.process(frame([0]), [])
         assert hv.process(frame([0]), ["Gwen"]) == 1
         assert hv.process(frame([0], seed=8), []) == 0
         assert hv.process(frame([0], seed=9), []) == 0
-        assert hv.process(frame([0]), []) == 1
+        assert hv.process(pose(0), []) == 0  # same pose is deduplicated
+        assert hv.process(pose(2), []) == 1  # stable new lighting is retained
         assert len(list(Path(tmp).rglob("*.png"))) == 2
 
     return ("pairing guards + six-frame landing recovery OK, vacated-slot filtering "
@@ -1377,15 +1409,23 @@ def test_direct_window_capture():
 def test_classifier_data_pipeline():
     """Training-data discovery and stratified split (no torch required)."""
     import tempfile
+    import cv2
+    import numpy as np
     from pathlib import Path
 
     sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
-    from train_classifier import discover_dataset, split_dataset
+    from train_classifier import (
+        audit_dataset,
+        discover_dataset,
+        print_readiness,
+        split_dataset,
+    )
 
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         # Gwen and the _empty background class have enough crops; Zed
         # doesn't; stray files are ignored.
+        seed = 100
         for name, n in [
             ("Gwen", 25), ("_empty", 30), ("Zed", 3),
             ("Lux_Coven", 12), ("Lux_Solar", 12),
@@ -1393,12 +1433,31 @@ def test_classifier_data_pipeline():
             d = root / name
             d.mkdir()
             for i in range(n):
-                (d / f"crop_{i}.png").write_bytes(b"png")
+                image = np.random.default_rng(seed).integers(
+                    0, 256, (96, 64, 3), dtype=np.uint8
+                )
+                seed += 1
+                assert cv2.imwrite(str(d / f"crop_{i}.png"), image)
+        # Old collectors may have left duplicates and blue purchase effects.
+        # Audit excludes them without deleting the raw files.
+        first_gwen = cv2.imread(str(root / "Gwen" / "crop_0.png"))
+        assert cv2.imwrite(str(root / "Gwen" / "duplicate.png"), first_gwen)
+        effect = np.empty((96, 64, 3), dtype=np.uint8)
+        yy, xx = np.indices(effect.shape[:2])
+        checker = ((yy // 6 + xx // 6) % 2).astype(bool)
+        effect[checker] = (235, 190, 25)
+        effect[~checker] = (180, 145, 20)
+        assert cv2.imwrite(str(root / "Gwen" / "hologram.png"), effect)
         (root / "notes.txt").write_text("ignore me")
 
+        audited, rejected = audit_dataset(root)
+        assert len(audited["Gwen"]) == 25
+        assert rejected["Gwen"] == {"duplicate": 1, "materialization": 1}
         usable, skipped = discover_dataset(root, min_crops=20)
         assert set(usable) == {"Gwen", "Lux", "_empty"}, usable.keys()
         assert skipped == {"Zed": 3}, skipped
+        assert print_readiness(20, root, min_coverage=0.0) is True
+        assert print_readiness(20, root) is False
 
         train, val, labels = split_dataset(usable, val_fraction=0.15)
         assert labels == ["Gwen", "Lux", "_empty"]  # forms pooled, background kept
