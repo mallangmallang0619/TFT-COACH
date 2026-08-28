@@ -413,7 +413,8 @@ class TFTCoachServer:
         annotated = frame.copy()
         height, width = annotated.shape[:2]
         for label, roi, color in (
-            ("BENCH", self.detector.rois.champion_bench, (255, 180, 0)),
+            ("BENCH CROP", self.detector.rois.champion_bench_capture, (255, 120, 0)),
+            ("LANDING STRIP", self.detector.rois.champion_bench, (255, 180, 0)),
             ("SHOP", self.detector.rois.shop, (0, 220, 255)),
         ):
             x, y, rw, rh = roi.to_pixels(width, height)

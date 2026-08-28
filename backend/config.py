@@ -134,6 +134,10 @@ GAME_PROCESS_NAME = "TFT.exe"
 # binary, while TFT.exe may be the bootstrap process. Accept both exact names.
 GAME_PROCESS_NAMES = (GAME_PROCESS_NAME, "TFTClient-Win64-Shipping.exe")
 GAME_WINDOW_TITLE = "Teamfight Tactics"  # macOS/Linux fallback only
+# The ninth bench slot sits against the animated arena portal in Set 18.
+# Until its geometry can be isolated reliably, treating motion there as a
+# purchase is more likely to create a wrong label than useful training data.
+UNSAFE_BENCH_SLOTS = frozenset({8})
 
 
 # ── Detection Thresholds ──────────────────────────────────────────────────────
@@ -246,6 +250,15 @@ class GameROIs:
     # let an empty platform pass as the purchased unit.
     champion_bench: RegionOfInterest = field(
         default_factory=lambda: RegionOfInterest(0.183, 0.635, 0.565, 0.135)
+    )
+
+    # Full-model crop used for classifier training and inference. Landing
+    # detection intentionally keeps using the lower champion_bench strip:
+    # extending that detector upward would include moving board units, while
+    # extending only the saved crop captures heads and spell silhouettes that
+    # rise above the bench platform. Both regions share the same bottom edge.
+    champion_bench_capture: RegionOfInterest = field(
+        default_factory=lambda: RegionOfInterest(0.183, 0.470, 0.565, 0.300)
     )
 
     # Board area — the hex grid where champions are placed. Calibrated

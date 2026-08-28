@@ -35,7 +35,7 @@ from typing import Optional
 import cv2
 import numpy as np
 
-from config import GameROIs
+from config import GameROIs, UNSAFE_BENCH_SLOTS
 from game_data import ACTIVE_SET_NUMBER, canonical_training_label
 
 logger = logging.getLogger(__name__)
@@ -61,8 +61,9 @@ _OCCUPIED_STD_MIN = 19.5
 # slot's thumbnail stays within _TRACK_CHANGE_LIMIT of the last saved one
 # (idle animation drifts a little; moves/sells/combines jump far past it).
 _TRACK_SAVE_INTERVAL = 1        # every processed frame while stable
-_TRACK_MAX_SAVES = 50           # crops per purchase, landing crop included
+_TRACK_MAX_SAVES = 12           # diverse poses without one purchase dominating
 _TRACK_CHANGE_LIMIT = 18.0      # tolerate idle poses and brief spell glows
+_EMPTY_RETURN_MAX_MAD = 4.0     # must closely match the known empty baseline
 READY_CROPS_PER_CLASS = 50
 _DUPLICATE_THUMB_MAD = 1.0      # <= this is effectively the same pose/frame
 _CROP_MIN_STD = 18.0
@@ -92,6 +93,7 @@ class _PendingLanding:
 class _TrackedSlot:
     label: str
     reference: np.ndarray
+    crop_reference: np.ndarray
     empty_reference: np.ndarray
     frames_since: int = 0
     saves: int = 0
@@ -201,8 +203,12 @@ class BenchHarvester:
         pending_purchases: Optional[list[str]] = None,
     ) -> int:
         """Returns how many labeled crops were saved this frame."""
+        # Compare only the stable lower bench strip, but retain a taller crop
+        # for training so the full UE5 model is visible. Using the tall crop
+        # for motion detection would mix in board units above the bench.
         crops = self._bench_slot_crops(frame)
-        thumbs = [self._thumb(c) for c in crops]
+        anchor_crops = self._bench_anchor_slot_crops(frame)
+        thumbs = [self._thumb(c) for c in anchor_crops]
         current_frame = _BenchFrame(
             crops=[crop.copy() for crop in crops],
             thumbs=thumbs,
@@ -218,7 +224,8 @@ class BenchHarvester:
             for slot in list(self._tracked):
                 tracked = self._tracked[slot]
                 current = thumbs[slot]
-                if current is None or not self._became_occupied(
+                crop_current = self._thumb(crops[slot])
+                if current is None or crop_current is None or not self._became_occupied(
                     current, tracked.empty_reference
                 ):
                     del self._tracked[slot]
@@ -228,6 +235,7 @@ class BenchHarvester:
                     del self._tracked[slot]
                     continue
                 tracked.reference = current.copy()
+                tracked.crop_reference = crop_current.copy()
                 tracked.frames_since = 0
                 tracked.change_frames = 0
                 tracked.occupancy_misses = 0
@@ -332,20 +340,34 @@ class BenchHarvester:
         """
         saved = 0
         for slot in list(self._tracked):
+            if slot in UNSAFE_BENCH_SLOTS:
+                del self._tracked[slot]
+                continue
             if slot in just_confirmed:
                 continue    # landing crop already saved this frame
             tracked = self._tracked[slot]
-            if thumbs[slot] is None:
+            crop_thumb = self._thumb(crops[slot])
+            if thumbs[slot] is None or crop_thumb is None:
                 del self._tracked[slot]
                 continue
             if not self._became_occupied(thumbs[slot], tracked.empty_reference):
                 empty_distance = float(np.mean(cv2.absdiff(
                     thumbs[slot], tracked.empty_reference
                 )))
-                if empty_distance < 4.0 or tracked.occupancy_misses >= 1:
+                if empty_distance <= _EMPTY_RETURN_MAX_MAD:
                     self._save_empty(crops[slot], slot)
                     logger.debug(
                         f"Slot {slot} became empty — stop tracking {tracked.label}"
+                    )
+                    del self._tracked[slot]
+                elif tracked.occupancy_misses >= 1:
+                    # The old occupant disappeared, but this does not look
+                    # like the known empty platform. It may be a replacement
+                    # champion or the movable Little Legend; stop tracking
+                    # without poisoning the background class.
+                    logger.debug(
+                        f"Slot {slot} changed without returning to its empty "
+                        f"baseline — stop tracking {tracked.label}"
                     )
                     del self._tracked[slot]
                 else:
@@ -353,6 +375,9 @@ class BenchHarvester:
                 continue
             tracked.occupancy_misses = 0
             drift = float(np.mean(cv2.absdiff(thumbs[slot], tracked.reference)))
+            crop_drift = float(np.mean(cv2.absdiff(
+                crop_thumb, tracked.crop_reference
+            )))
 
             # The first confirmation frame can still be the UE5 purchase
             # hologram.  If it failed the quality gate, keep the trusted slot
@@ -360,8 +385,12 @@ class BenchHarvester:
             # on large visual changes instead of treating the hologram ->
             # champion transition as the unit leaving.
             if tracked.saves == 0:
-                if drift >= self.track_change_limit:
+                if (
+                    drift >= self.track_change_limit
+                    or crop_drift >= self.track_change_limit
+                ):
                     tracked.reference = thumbs[slot].copy()
+                    tracked.crop_reference = crop_thumb.copy()
                     tracked.frames_since = 0
                     tracked.change_frames = 0
                     continue
@@ -372,16 +401,21 @@ class BenchHarvester:
                         tracked.saves = 1
                         tracked.frames_since = 0
                         tracked.reference = thumbs[slot].copy()
+                        tracked.crop_reference = crop_thumb.copy()
                 continue
 
-            if drift >= self.track_change_limit:
+            if (
+                drift >= self.track_change_limit
+                or crop_drift >= self.track_change_limit
+            ):
                 # Empty/low-detail means the unit definitely left. A single
                 # viable high-drift frame may just be an idle animation or
                 # spell glow, so require it to repeat before abandoning the
                 # label without ever saving the uncertain frame.
                 if tracked.change_frames >= 2:
                     logger.debug(
-                        f"Slot {slot} changed (drift {drift:.0f}) — "
+                        f"Slot {slot} changed (anchor drift {drift:.0f}, "
+                        f"crop drift {crop_drift:.0f}) — "
                         f"stop tracking {tracked.label}"
                     )
                     del self._tracked[slot]
@@ -396,6 +430,7 @@ class BenchHarvester:
                     tracked.saves += 1
                     tracked.frames_since = 0
                     tracked.reference = thumbs[slot]
+                    tracked.crop_reference = crop_thumb
                     if tracked.saves >= self.track_max_saves:
                         logger.info(
                             f"Harvest complete: {tracked.label} reached "
@@ -470,6 +505,7 @@ class BenchHarvester:
             self._tracked[landing.slot] = _TrackedSlot(
                 label=landing.label,
                 reference=current.copy(),
+                crop_reference=self._thumb(crops[landing.slot]),
                 empty_reference=landing.empty_thumb,
                 saves=int(did_save),
             )
@@ -515,6 +551,7 @@ class BenchHarvester:
             self._tracked[landing.slot] = _TrackedSlot(
                 label=landing.label,
                 reference=current.copy(),
+                crop_reference=self._thumb(current_frame.crops[landing.slot]),
                 empty_reference=landing.empty_thumb,
                 saves=int(did_save),
             )
@@ -698,12 +735,19 @@ class BenchHarvester:
             return []
         diffs = [
             float(np.mean(cv2.absdiff(thumbs[i], baseline[i])))
-            if thumbs[i] is not None and baseline[i] is not None else 0.0
+            if (
+                i not in UNSAFE_BENCH_SLOTS
+                and thumbs[i] is not None
+                and baseline[i] is not None
+            ) else 0.0
             for i in range(BENCH_SLOTS)
         ]
         typical = float(np.median(diffs)) if diffs else 0.0
         threshold = max(_CHANGE_FLOOR, typical * _CHANGE_OUTLIER_FACTOR)
-        changed = [i for i in range(BENCH_SLOTS) if diffs[i] >= threshold]
+        changed = [
+            i for i in range(BENCH_SLOTS)
+            if i not in UNSAFE_BENCH_SLOTS and diffs[i] >= threshold
+        ]
         occupied = [
             i for i in changed
             if self._became_occupied(
@@ -732,8 +776,17 @@ class BenchHarvester:
         return occupied
 
     def _bench_slot_crops(self, frame: np.ndarray) -> list[np.ndarray]:
+        """Return tall, full-model crops used for saving and inference."""
+        return self._split_bench_roi(frame, self.rois.champion_bench_capture)
+
+    def _bench_anchor_slot_crops(self, frame: np.ndarray) -> list[np.ndarray]:
+        """Return the lower, stable strip used only for landing motion."""
+        return self._split_bench_roi(frame, self.rois.champion_bench)
+
+    @staticmethod
+    def _split_bench_roi(frame: np.ndarray, roi) -> list[np.ndarray]:
         h, w = frame.shape[:2]
-        bx, by, bw, bh = self.rois.champion_bench.to_pixels(w, h)
+        bx, by, bw, bh = roi.to_pixels(w, h)
         slot_w = max(1, bw // BENCH_SLOTS)
         return [
             frame[by:by + bh, bx + i * slot_w: bx + (i + 1) * slot_w]

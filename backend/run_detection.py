@@ -90,7 +90,8 @@ def draw_overlay(frame: np.ndarray) -> np.ndarray:
         name: getattr(rois, name)
         for name in (
             "stage", "player_hp", "gold", "level",
-            "item_bench", "champion_bench", "board", "augment_panel", "shop",
+            "item_bench", "champion_bench", "champion_bench_capture",
+            "board", "augment_panel", "shop",
         )
     }
 
@@ -119,7 +120,8 @@ def dump_roi_crops(frame: np.ndarray) -> None:
     rois = GameROIs()
     for name in (
         "stage", "player_hp", "gold", "level",
-        "item_bench", "champion_bench", "board", "augment_panel", "shop",
+        "item_bench", "champion_bench", "champion_bench_capture",
+        "board", "augment_panel", "shop",
     ):
         roi = getattr(rois, name)
         x, y, rw, rh = roi.to_pixels(w, h)

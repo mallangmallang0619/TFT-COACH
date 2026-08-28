@@ -694,6 +694,9 @@ class ScreenCapture:
             "level": self.crop_roi(frame, self.rois.level),
             "item_bench": self.crop_roi(frame, self.rois.item_bench),
             "champion_bench": self.crop_roi(frame, self.rois.champion_bench),
+            "champion_bench_capture": self.crop_roi(
+                frame, self.rois.champion_bench_capture
+            ),
             "board": self.crop_roi(frame, self.rois.board),
             "augment_panel": self.crop_roi(frame, self.rois.augment_panel),
             "shop": self.crop_roi(frame, self.rois.shop),

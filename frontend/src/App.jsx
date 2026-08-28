@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useCoachSocket } from "./useCoachSocket";
+import { getBoardStrengthPresentation } from "./boardStrength";
 
 //frontend made in help using ai
 
@@ -712,8 +713,37 @@ function formatMetaAge(epochSeconds) {
 }
 
 function BoardStrengthCard({ score, breakdown, stage }) {
-  if (!breakdown || breakdown.source === "none") return null;
-  const isPartial = breakdown.source === "traits_only";
+  const presentation = getBoardStrengthPresentation(score, breakdown);
+  if (!presentation.available) {
+    return (
+      <div className="card" style={{
+        marginBottom: "14px", borderColor: `${ACCENT2}44`,
+        background: `linear-gradient(135deg, ${ACCENT2}0d, rgba(21,22,28,0.95))`,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{
+            fontFamily: "var(--mono)", fontSize: "30px", fontWeight: 800,
+            lineHeight: 1, color: ACCENT2,
+          }}>
+            —<span style={{ fontSize: "11px", color: "#666" }}>/100</span>
+          </div>
+          <div>
+            <div style={{
+              fontFamily: "var(--mono)", fontSize: "10px", color: ACCENT2,
+              fontWeight: 700, letterSpacing: "1px",
+            }}>
+              {presentation.status}
+            </div>
+            <div style={{ marginTop: "5px", color: "#8b8fa3", fontSize: "10px", lineHeight: 1.45 }}>
+              Board Strength activates after the Set 18 unit model is trained.
+              Trait OCR remains a supporting signal, but is not shown as a combat score.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  const isPartial = false;
   const color = breakdown.label === "Strong"
     ? "#2ed573"
     : breakdown.label === "Weak" ? "#ff6348" : isPartial ? ACCENT2 : "#ffa502";
@@ -1274,6 +1304,9 @@ export default function App() {
   const shopActions = backendAdvice?.shop_actions || [];
   const boardPower = backendAdvice?.board_power ?? null;
   const boardPowerBreakdown = backendAdvice?.board_power_breakdown ?? null;
+  const boardStrengthPresentation = getBoardStrengthPresentation(
+    boardPower, boardPowerBreakdown
+  );
   const lobbyHp = isLive ? (gameState?.lobby_hp || []) : [];
   const heldItems = isLive ? (gameState?.held_items || []) : [];
   const activeSynergies = isLive ? (gameState?.active_synergies || []) : [];
@@ -1579,13 +1612,9 @@ export default function App() {
 
           <div style={{ padding: "10px 16px", display: "flex", gap: "6px", borderBottom: "1px solid #1e2028", flexWrap: "wrap" }}>
             <TabBtn active={tab === "items"} onClick={() => setTab("items")}>⚔️ Items</TabBtn>
-            {boardPowerBreakdown?.source !== "none" && (
-              <TabBtn active={tab === "strength"} onClick={() => setTab("strength")}>
-                {boardPowerBreakdown?.source === "traits_only"
-                  ? "📈 Traits (partial)"
-                  : `📈 Strength ${Math.round(boardPower || 0)}`}
-              </TabBtn>
-            )}
+            <TabBtn active={tab === "strength"} onClick={() => setTab("strength")}>
+              {boardStrengthPresentation.tabLabel}
+            </TabBtn>
             <TabBtn active={tab === "comp"} onClick={() => setTab("comp")}>
               🎯 Comp{compSuggestions.length > 0 && ` (${compSuggestions.length})`}
             </TabBtn>
@@ -1607,10 +1636,9 @@ export default function App() {
                   stage={stage}
                 />
                 <div className="card" style={{ color: "#8b8fa3", fontSize: "10px", lineHeight: 1.55 }}>
-                  The score updates every detected frame. Unit strength is compared with
-                  same-cost champions on the latest tactics.tools patch; stars, active
-                  traits, TFT Academy comp fit, equipped items, and marked augments add
-                  the remaining combat value.
+                  {boardStrengthPresentation.available
+                    ? "The score updates every detected frame. Unit strength is compared with same-cost champions on the latest tactics.tools patch; stars, active traits, TFT Academy comp fit, equipped items, and marked augments add the remaining combat value."
+                    : "Keep collecting clean Set 18 unit crops. Once the classifier is trained and board units are observed directly, this panel will enable the live /100 score automatically."}
                 </div>
               </div>
             )}

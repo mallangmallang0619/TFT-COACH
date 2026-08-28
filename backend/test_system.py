@@ -1035,6 +1035,7 @@ def test_bench_harvester():
     h, w = 720, 1280
     rois = GameROIs()
     bx, by, bw, bh = rois.champion_bench.to_pixels(w, h)
+    cx, cy, cw, ch = rois.champion_bench_capture.to_pixels(w, h)
     slot_w = bw // 9
 
     def frame(occupied_slots, seed=7):
@@ -1048,8 +1049,8 @@ def test_bench_harvester():
     def pose(delta=0):
         """Same unit/pose with a small lighting change (diverse but stable)."""
         f = frame([0])
-        crop = f[by:by + bh, bx:bx + slot_w].astype(np.int16)
-        f[by:by + bh, bx:bx + slot_w] = np.clip(
+        crop = f[cy:cy + ch, cx:cx + slot_w].astype(np.int16)
+        f[cy:cy + ch, cx:cx + slot_w] = np.clip(
             crop + delta, 0, 255
         ).astype(np.uint8)
         return f
@@ -1214,9 +1215,7 @@ def test_bench_harvester():
         assert hv.process(landed, ["Gwen"]) == 1
         empties = list((Path(tmp) / "_empty").glob("*.png"))
         assert len(empties) == 1
-        assert hv._save_empty(
-            empty[by:by + bh, bx:bx + slot_w], 0
-        ) is False
+        assert hv._save_empty(hv._bench_slot_crops(empty)[0], 0) is False
 
     # UE5 renders a newly bought champion as a sharp blue hologram. It has
     # plenty of edge detail, so the generic quality gate used to save it as a
@@ -1350,6 +1349,161 @@ def test_bench_harvester():
     return ("pairing guards + six-frame landing recovery OK, vacated-slot filtering "
             "OK, imwrite-fail OK, tracking: interval+cap+retry+animation recovery OK, "
             "capture suspend/resume + stop-on-change OK")
+
+
+def test_bench_crop_geometry():
+    """Training crops cover the full model while landing detection stays low."""
+    import numpy as np
+    from harvest import BENCH_SLOTS, BenchHarvester
+    from config import GameROIs
+
+    rois = GameROIs()
+    harvester = BenchHarvester()
+    for width, height in ((1280, 720), (1920, 1080), (2560, 1440), (3440, 1440)):
+        frame = np.zeros((height, width, 3), dtype=np.uint8)
+        anchor_x, anchor_y, anchor_w, anchor_h = rois.champion_bench.to_pixels(
+            width, height
+        )
+        capture_x, capture_y, capture_w, capture_h = (
+            rois.champion_bench_capture.to_pixels(width, height)
+        )
+
+        assert capture_x == anchor_x and capture_w == anchor_w
+        assert capture_y < anchor_y, "training crop still starts below the sprite"
+        assert capture_h >= anchor_h * 2.1, "training crop still clips tall UE5 models"
+        assert abs((capture_y + capture_h) - (anchor_y + anchor_h)) <= 1
+
+        # A marker above the landing detector must still be present in the
+        # returned model crop. This is where tall unit heads were cut off.
+        frame[capture_y:anchor_y, capture_x:capture_x + capture_w] = 255
+        crops = harvester._bench_slot_crops(frame)
+        assert len(crops) == BENCH_SLOTS
+        expected_width = capture_w // BENCH_SLOTS
+        assert all(c.shape == (capture_h, expected_width, 3) for c in crops)
+        assert all(float(c[:anchor_y - capture_y].mean()) == 255.0 for c in crops)
+
+    # Training and live inference must receive pixel-identical bench crops;
+    # otherwise a model can pass offline validation and fail in the overlay.
+    from detector import Detector
+
+    class RecordingClassifier:
+        def classify_batch(self, model_crops):
+            self.crops = model_crops
+            return [(None, 0.0)] * len(model_crops)
+
+    detector = object.__new__(Detector)
+    detector.rois = rois
+    detector.unit_classifier = RecordingClassifier()
+    detector._detect_units_cnn(frame)
+    inference_crops = detector.unit_classifier.crops[-BENCH_SLOTS:]
+    assert all(
+        np.array_equal(training_crop, inference_crop)
+        for training_crop, inference_crop in zip(crops[:8], inference_crops[:8])
+    )
+    assert inference_crops[8] is None, "unsafe portal slot reached inference"
+
+    return "full-height crops scale across four resolutions; train/inference pixels match"
+
+
+def test_bench_harvester_quality_invariants():
+    """Collector favors fewer trustworthy labels over ambiguous edge data."""
+    import tempfile
+    import numpy as np
+    from pathlib import Path
+    from harvest import BENCH_SLOTS, BenchHarvester
+    from config import GameROIs
+
+    height, width = 720, 1280
+    rois = GameROIs()
+    bx, by, bw, bh = rois.champion_bench.to_pixels(width, height)
+    slot_w = bw // BENCH_SLOTS
+
+    def frame(slot=None, seed=1):
+        result = np.full((height, width, 3), 45, dtype=np.uint8)
+        if slot is not None:
+            result[by:by + bh, bx + slot * slot_w:bx + (slot + 1) * slot_w] = (
+                np.random.default_rng(seed).integers(
+                    0, 256, (bh, slot_w, 3), dtype=np.uint8
+                )
+            )
+        return result
+
+    # The far-right slot overlaps the Set 18 portal in real frames. A strong
+    # animation there must not become a confident purchase label, while the
+    # adjacent safe slot remains harvestable.
+    with tempfile.TemporaryDirectory() as tmp:
+        unsafe = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        assert unsafe.process(frame(), []) == 0
+        assert unsafe.process(frame(8, 81), ["Gromp"]) == 0
+        assert not list(Path(tmp).rglob("*.png"))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        safe = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        assert safe.process(frame(), []) == 0
+        assert safe.process(frame(7, 71), ["Gromp"]) == 1
+        assert len(list((Path(tmp) / "Gromp").glob("*.png"))) == 1
+
+    # If a tracked champion is replaced by a different occupied model, that
+    # model must never be written to the background class merely because it
+    # does not resemble the original purchase.
+    with tempfile.TemporaryDirectory() as tmp:
+        collector = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        yy, xx = np.indices((bh, slot_w))
+        texture = ((yy // 4 + xx // 4) % 2 * 28 + 55).astype(np.uint8)
+        inverse = (138 - texture).astype(np.uint8)
+        baseline = frame()
+        baseline[by:by + bh, bx:bx + slot_w] = np.dstack(
+            [texture, texture, texture]
+        )
+        landed = baseline.copy()
+        landed[by:by + bh, bx:bx + slot_w] = frame(0, 101)[
+            by:by + bh, bx:bx + slot_w
+        ]
+        replacement = baseline.copy()
+        replacement[by:by + bh, bx:bx + slot_w] = np.dstack(
+            [inverse, inverse, inverse]
+        )
+
+        assert collector.process(baseline, []) == 0
+        assert collector.process(landed, ["Gwen"]) == 1
+        original_empty_count = len(list((Path(tmp) / "_empty").glob("*.png")))
+        assert original_empty_count == 1
+        collector.process(replacement, [])
+        collector.process(replacement, [])
+        assert len(list((Path(tmp) / "_empty").glob("*.png"))) == original_empty_count
+
+    # The landing strip can remain stable while combat effects or board units
+    # move through the newly added upper part of the full-model crop. Such a
+    # frame is not useful pose diversity and must be skipped until the entire
+    # crop settles again.
+    with tempfile.TemporaryDirectory() as tmp:
+        collector = BenchHarvester(
+            out_dir=Path(tmp), track_interval=1, track_max_saves=3
+        )
+        cx, cy, cw, ch = rois.champion_bench_capture.to_pixels(width, height)
+
+        def stable_pose(delta=0):
+            result = frame(0, 202)
+            lower = result[by:by + bh, bx:bx + slot_w].astype(np.int16)
+            result[by:by + bh, bx:bx + slot_w] = np.clip(
+                lower + delta, 0, 255
+            ).astype(np.uint8)
+            return result
+
+        collector.process(frame(), [])
+        assert collector.process(stable_pose(0), ["Gwen"]) == 1
+        contaminated = stable_pose(1)
+        contaminated[cy:by, cx:cx + slot_w] = np.random.default_rng(303).integers(
+            0, 256, (by - cy, slot_w, 3), dtype=np.uint8
+        )
+        assert collector.process(contaminated, []) == 0
+        assert collector.process(stable_pose(4), []) == 1
+
+    # A single purchase should provide pose diversity, not dominate a class
+    # with dozens of nearly identical frames.
+    assert BenchHarvester().track_max_saves <= 12
+
+    return "unsafe edge ignored, occupied replacement protected, default class balance capped"
 
 
 def test_window_picker():
@@ -2329,6 +2483,8 @@ def main():
     test("Pinned comp", test_pinned_comp)
     test("Roster tracker", test_roster_tracker)
     test("Bench harvester", test_bench_harvester)
+    test("Bench crop geometry", test_bench_crop_geometry)
+    test("Bench harvester quality invariants", test_bench_harvester_quality_invariants)
     test("Window picker", test_window_picker)
     test("Direct window capture", test_direct_window_capture)
     test("Collection diagnostic schedule", test_collection_diagnostic_schedule)

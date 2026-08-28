@@ -54,6 +54,7 @@ ROI_COLORS = {
     "level":          (255, 0, 255),   # magenta
     "item_bench":     (255, 128, 0),   # orange-blue
     "champion_bench": (255, 0, 0),     # blue
+    "champion_bench_capture": (255, 100, 0),
     "board":          (0, 255, 0),     # green
     "augment_panel":  (128, 0, 128),   # purple
     "shop":           (255, 255, 0),   # cyan
@@ -145,7 +146,7 @@ def annotate(frame: np.ndarray) -> np.ndarray:
                       (255, 255, 255), 1)
 
     # The harvester compares nine individual crops inside the broad bench ROI.
-    nx, ny, nw, nh = rois.champion_bench.to_pixels(w, h)
+    nx, ny, nw, nh = rois.champion_bench_capture.to_pixels(w, h)
     slot_w = nw // 9
     for slot in range(9):
         sx = nx + slot * slot_w
@@ -194,7 +195,7 @@ def dump_hex_crops(frame: np.ndarray, out_dir: Path) -> int:
             cv2.imwrite(str(out_dir / f"hex_r{hexpos.row}_c{hexpos.col}.png"), crop)
             count += 1
 
-    nx, ny, nw, nh = rois.champion_bench.to_pixels(w, h)
+    nx, ny, nw, nh = rois.champion_bench_capture.to_pixels(w, h)
     slot_w = nw // 9
     for i in range(9):
         crop = frame[ny:ny + nh, nx + i * slot_w:nx + (i + 1) * slot_w]

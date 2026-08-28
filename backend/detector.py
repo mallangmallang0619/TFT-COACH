@@ -62,6 +62,7 @@ from config import (
     GameROIs,
     ShopGeometry,
     TraitPanel,
+    UNSAFE_BENCH_SLOTS,
 )
 from game_data import CHAMPIONS, TRAITS, find_champion_name, find_augment_rating
 from unit_classifier import UnitClassifier
@@ -1463,6 +1464,8 @@ class Detector:
         slot_width = brw // 9
 
         for slot in range(9):
+            if slot in UNSAFE_BENCH_SLOTS:
+                continue
             sx = slot * slot_width
             slot_crop = bench_region[:, sx:sx+slot_width]
             if slot_crop.size == 0 or self._is_hex_empty(slot_crop):
@@ -1506,10 +1509,13 @@ class Detector:
 
         # Bench slots: identical cropping to the harvester, so inference
         # sees exactly what training saw.
-        nx, ny, nw, nh = self.rois.champion_bench.to_pixels(w, h)
+        nx, ny, nw, nh = self.rois.champion_bench_capture.to_pixels(w, h)
         slot_w = max(1, nw // 9)
         for slot in range(9):
-            crops.append(frame[ny:ny+nh, nx + slot * slot_w: nx + (slot + 1) * slot_w])
+            crops.append(
+                None if slot in UNSAFE_BENCH_SLOTS
+                else frame[ny:ny+nh, nx + slot * slot_w: nx + (slot + 1) * slot_w]
+            )
 
         results = self.unit_classifier.classify_batch(crops)
 
