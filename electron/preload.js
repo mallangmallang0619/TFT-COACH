@@ -19,6 +19,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   resizeOverlay: (width, height) =>
     ipcRenderer.send("resize-overlay", { width, height }),
 
+  // Switch between the full overlay and its compact toolbar.
+  setCompactMode: (compact) =>
+    ipcRenderer.send("set-overlay-compact", compact),
+
   // Move the overlay window
   moveOverlay: (x, y) =>
     ipcRenderer.send("move-overlay", { x, y }),

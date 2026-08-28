@@ -14,25 +14,25 @@
 
 const { app, BrowserWindow, globalShortcut, ipcMain, screen } = require("electron");
 const path = require("path");
+const { getOverlayBounds } = require("./windowSizing");
 
 let overlayWindow = null;
 let isInteractive = false;
 let isVisible = true;
 let isShareMode = process.env.TFT_COACH_SHARE_MODE === "1";
+let isCompact = false;
+let expandedBounds = null;
 // Ghost lock: while true the overlay never captures the mouse, even on
 // hover — needed when clicking game UI that sits underneath it (the
 // player list used for scouting other boards is right below the panel).
 let hoverLocked = false;
 
 function createOverlayWindow() {
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  const initialBounds = getOverlayBounds(screen.getPrimaryDisplay().workArea, false);
 
   overlayWindow = new BrowserWindow({
     // Full-screen overlay
-    width: 420,
-    height: height,
-    x: width - 420, // Right edge of screen
-    y: 0,
+    ...initialBounds,
 
     // Overlay behavior
     frame: false,
@@ -104,6 +104,26 @@ function createOverlayWindow() {
   console.log("  Ctrl+Shift+T  — Toggle click-through (interact with overlay)");
   console.log("  Ctrl+Shift+H  — Show/Hide overlay");
   console.log("  Ctrl+Shift+Q  — Quit TFT Coach");
+}
+
+function setCompactMode(compact) {
+  if (!overlayWindow) return;
+
+  const nextCompact = !!compact;
+  if (nextCompact === isCompact) return;
+
+  // Use the display containing the overlay so minimizing also behaves on
+  // secondary monitors and work areas with a non-zero origin/taskbar.
+  const display = screen.getDisplayMatching(overlayWindow.getBounds());
+  if (nextCompact) {
+    expandedBounds = overlayWindow.getBounds();
+  }
+  const bounds = nextCompact
+    ? getOverlayBounds(display.workArea, true)
+    : expandedBounds || getOverlayBounds(display.workArea, false);
+  overlayWindow.setBounds(bounds, true);
+  isCompact = nextCompact;
+  if (!isCompact) expandedBounds = null;
 }
 
 function setShareMode(enabled) {
@@ -269,6 +289,11 @@ ipcMain.on("resize-overlay", (event, { width, height }) => {
   if (overlayWindow) {
     overlayWindow.setSize(width, height);
   }
+});
+
+// Collapse the full-height overlay into a small, right-aligned toolbar.
+ipcMain.on("set-overlay-compact", (event, compact) => {
+  setCompactMode(compact);
 });
 
 // Frontend can request position change

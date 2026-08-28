@@ -1239,6 +1239,12 @@ export default function App() {
   const [selectedTemplate, setSelectedTemplate] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
 
+  // Hiding React content alone leaves the transparent BrowserWindow at full
+  // height. Tell Electron to resize the native window as the state changes.
+  useEffect(() => {
+    if (inElectron) window.electronAPI.setCompactMode?.(collapsed);
+  }, [collapsed, inElectron]);
+
   // Decide data source: live game state or manual input
   const isLive = isConnected && gameState && gameState.phase !== "not_in_game";
 
@@ -1369,7 +1375,7 @@ export default function App() {
       {/* ── HEADER ── */}
       <div style={{
         background: "rgba(13,14,18,0.98)", borderBottom: `1px solid ${ACCENT}15`,
-        padding: "14px 16px", display: "flex", alignItems: "center",
+        padding: collapsed ? "10px 12px" : "14px 16px", display: "flex", alignItems: "center",
         justifyContent: "space-between", position: "sticky", top: 0, zIndex: 10,
       }}>
         <div style={{
@@ -1377,14 +1383,25 @@ export default function App() {
           minWidth: 0, flex: 1,
         }}>
           <div style={{
-            fontFamily: "'Orbitron', sans-serif", fontSize: "16px", fontWeight: 900,
+            fontFamily: "'Orbitron', sans-serif", fontSize: collapsed ? "14px" : "16px", fontWeight: 900,
             background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT2})`,
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
             letterSpacing: "2px",
           }}>
             TFT COACH
           </div>
-          {isConnected && backendProtocol !== null && backendProtocol !== BACKEND_PROTOCOL_EXPECTED && (
+          {collapsed && (
+            <span style={{
+              display: "inline-flex", alignItems: "center", gap: "5px",
+              color: isConnected ? "#2ed573" : "#ff4757",
+              fontFamily: "var(--mono)", fontSize: "9px", fontWeight: 700,
+              letterSpacing: "1px",
+            }}>
+              <span style={{ fontSize: "8px" }}>●</span>
+              {isDemo ? "DEMO" : isConnected ? "LIVE" : "OFFLINE"}
+            </span>
+          )}
+          {!collapsed && isConnected && backendProtocol !== null && backendProtocol !== BACKEND_PROTOCOL_EXPECTED && (
             <span
               title={`The running backend speaks payload v${backendProtocol}, this overlay expects v${BACKEND_PROTOCOL_EXPECTED}. Pull the latest code and restart the backend (and this overlay) — data fields will be missing or wrong until then.`}
               style={{
@@ -1397,8 +1414,8 @@ export default function App() {
               ⚠ BACKEND OUTDATED (v{backendProtocol}≠v{BACKEND_PROTOCOL_EXPECTED})
             </span>
           )}
-          <ConnectionBadge isConnected={isConnected} isDemo={isDemo} />
-          {isConnected && !isDemo && collectionStatus && (
+          {!collapsed && <ConnectionBadge isConnected={isConnected} isDemo={isDemo} />}
+          {!collapsed && isConnected && !isDemo && collectionStatus && (
             <span
               title={collectionStatus.reason || "Training-data collection status"}
               style={{
@@ -1422,7 +1439,7 @@ export default function App() {
                   : "◌ DATA WAITING"}
             </span>
           )}
-          {inElectron && (
+          {!collapsed && inElectron && (
             <span
               title={hoverLocked
                 ? "Ghost lock — overlay never captures the mouse; scout and click the game freely. Ctrl+Shift+G to unlock."
@@ -1441,7 +1458,7 @@ export default function App() {
           )}
         </div>
         <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
-          {inElectron && (
+          {!collapsed && inElectron && (
             <button
               onClick={() => window.electronAPI.setShareMode?.(!shareMode)}
               title="Ctrl+Shift+R · Toggle visibility in Discord streams and screenshots"
@@ -1456,7 +1473,7 @@ export default function App() {
               {shareMode ? "📡 SHARE ON" : "SHARE"}
             </button>
           )}
-          {isDemo && (
+          {!collapsed && isDemo && (
             <button
               onClick={() => setDevOpen(!devOpen)}
               style={{
@@ -1474,6 +1491,7 @@ export default function App() {
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
+            title={collapsed ? "Restore the full coaching overlay" : "Shrink the overlay to a compact window"}
             style={{
               background: "none", border: "1px solid #2a2d35", borderRadius: "6px",
               color: "#8b8fa3", padding: "4px 10px", cursor: "pointer",
@@ -1485,7 +1503,7 @@ export default function App() {
         </div>
       </div>
 
-      {isDemo && (
+      {!collapsed && isDemo && (
         <DevPanel
           open={devOpen}
           onClose={() => setDevOpen(false)}

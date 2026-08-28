@@ -14,6 +14,7 @@
     "dev:live": "concurrently \"npm run dev:frontend\" \"npm run start:backend\" \"npm run start:delayed\"",
     "dev:sim": "concurrently \"npm run dev:frontend\" \"npm run start:sim\" \"npm run start:delayed\"",
     "start:delayed": "node -e \"setTimeout(()=>process.exit(0),3000)\" && npm start",
+    "test:electron": "node --test electron/windowSizing.test.js",
     "package": "electron-builder"
   },
   "devDependencies": {
