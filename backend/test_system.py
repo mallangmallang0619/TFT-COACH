@@ -613,7 +613,7 @@ def test_tactics_units_and_board_power():
     import json
     from coach import Coach
     from game_data import CHAMPIONS
-    from game_state import DetectedChampion, GamePhase, GameState
+    from game_state import ActiveSynergy, DetectedChampion, GamePhase, GameState
     import tactics_live
 
     rows = {}
@@ -685,6 +685,22 @@ def test_tactics_units_and_board_power():
         )
         estimated = score("Akali", board=False)
 
+        # Purchase tracking is useful for comp direction, but it cannot see
+        # sold units. It must not masquerade as a current board and keep an
+        # outdated strength score alive for the rest of the game. Current
+        # trait-panel data remains a valid low-confidence fallback.
+        purchase_roster = GameState(
+            phase=GamePhase.PLANNING,
+            stage="4-2",
+            level=8,
+            bench_champions=[DetectedChampion(name="Akali", star_level=2)],
+            active_synergies=[
+                ActiveSynergy(name="Executioner", count=2, is_active=True)
+            ],
+            unit_detection_source="purchase_roster",
+        )
+        purchase_estimate = coach.analyze(purchase_roster)
+
         assert strong.board_power_breakdown.meta_bonus > 0
         assert weak.board_power_breakdown.meta_bonus < 0
         assert strong.board_power > weak.board_power
@@ -693,6 +709,14 @@ def test_tactics_units_and_board_power():
         assert geared.board_power_breakdown.augment_bonus > 0
         assert estimated.board_power_breakdown.source == "roster_estimate"
         assert estimated.board_power_breakdown.confidence < 0.7
+        assert purchase_estimate.board_power_breakdown.source == "traits_only"
+        assert purchase_estimate.board_power_breakdown.champion_base == 0
+        assert purchase_estimate.board_power_breakdown.composition_bonus == 0
+        assert purchase_estimate.board_power_breakdown.label == "Partial"
+        assert purchase_estimate.board_power_breakdown.confidence < 0.5
+        assert any(
+            "current traits" in tip.lower() for tip in purchase_estimate.tips
+        )
         assert strong.board_power_breakdown.meta_patch == "18.1"
         assert strong.board_power_breakdown.meta_games_analyzed == 500_000
         assert strong.board_power_breakdown.meta_rank == "Diamond+"
@@ -1071,6 +1095,64 @@ def test_bench_harvester():
             assert hv.saved_count == before, "failed imwrite counted as saved"
         finally:
             harvest_mod.cv2.imwrite = orig_imwrite
+
+    # Real UE5 bench models animate between detector samples. A single new
+    # purchase can therefore arrive in the same transition as several
+    # already-occupied slots changing pose. Recover the one slot whose prior
+    # frames were stable and whose landing change is dominant; the old exact
+    # candidate-count guard dropped every purchase in the captured game.
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        existing_slots = (0, 2, 5)
+
+        def animated_bench(existing_delta: int, landed: bool) -> np.ndarray:
+            result = frame([])
+            for slot in existing_slots:
+                crop = np.random.default_rng(100 + slot).integers(
+                    20, 220, (bh, slot_w, 3), dtype=np.uint8
+                )
+                result[
+                    by:by + bh,
+                    bx + slot * slot_w:bx + (slot + 1) * slot_w,
+                ] = np.clip(
+                    crop.astype(np.int16) + existing_delta, 0, 255
+                ).astype(np.uint8)
+            if landed:
+                result[
+                    by:by + bh,
+                    bx + 4 * slot_w:bx + 5 * slot_w,
+                ] = np.random.default_rng(404).integers(
+                    0, 255, (bh, slot_w, 3), dtype=np.uint8
+                )
+            return result
+
+        assert hv.process(animated_bench(0, False), []) == 0
+        assert hv.process(animated_bench(3, False), []) == 0
+        assert hv.process(animated_bench(11, True), [], ["Gwen"]) == 0
+        assert hv.process(animated_bench(12, True), ["Gwen"], []) == 1
+        saved = list((Path(tmp) / "Gwen").glob("*.png"))
+        assert len(saved) == 1 and "slot4" in saved[0].name
+
+    # Several Set 18 arenas have a high-detail empty bench texture. Relative
+    # motion correctly stages the landing, but confirmation used to re-run an
+    # absolute "empty must be low contrast" check and silently throw it away.
+    with tempfile.TemporaryDirectory() as tmp:
+        hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        baseline = frame([])
+        landed = baseline.copy()
+        background = np.random.default_rng(700).integers(
+            30, 210, (bh, slot_w, 3), dtype=np.uint8
+        )
+        champion = np.random.default_rng(701).integers(
+            30, 210, (bh, slot_w, 3), dtype=np.uint8
+        )
+        baseline[by:by + bh, bx + 4 * slot_w:bx + 5 * slot_w] = background
+        landed[by:by + bh, bx + 4 * slot_w:bx + 5 * slot_w] = champion
+
+        assert hv.process(baseline, []) == 0
+        assert hv.process(landed, [], ["Gwen"]) == 0
+        assert hv.process(landed, ["Gwen"], []) == 1
+        assert len(list((Path(tmp) / "Gwen").glob("*.png"))) == 1
 
     # A vacated slot is a large visual change too, but must never be
     # labeled as the purchased champion (the corrupt empty Aatrox batch).
@@ -1459,6 +1541,18 @@ def test_direct_window_capture():
 
     return ("exact HWND, copied BGR frame, client normalization + UE5 retry "
             "+ trusted foreground fallback OK")
+
+
+def test_collection_diagnostic_schedule():
+    """Purchase evidence bypasses the slow periodic diagnostic interval."""
+    from websocket_server import _collection_diagnostic_due
+
+    assert not _collection_diagnostic_due(3.0, 0.0)
+    assert _collection_diagnostic_due(6.0, 0.0, purchase_event=True)
+    assert not _collection_diagnostic_due(2.0, 0.0, purchase_event=True)
+    assert _collection_diagnostic_due(11.0, 0.0, capture_changed=True)
+    assert _collection_diagnostic_due(120.0, 0.0)
+    return "periodic + capture-change + rate-limited purchase snapshots OK"
 
 
 def test_classifier_data_pipeline():
@@ -2237,6 +2331,7 @@ def main():
     test("Bench harvester", test_bench_harvester)
     test("Window picker", test_window_picker)
     test("Direct window capture", test_direct_window_capture)
+    test("Collection diagnostic schedule", test_collection_diagnostic_schedule)
     test("Classifier data pipeline", test_classifier_data_pipeline)
     test("Unit classifier fallback", test_unit_classifier_fallback)
     test("Augment OCR (real frame)", test_augment_ocr_real_frame)

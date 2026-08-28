@@ -140,7 +140,7 @@ const ACCENT2 = "#7c5cfc";
 // Backend payload schema version this overlay is built for. Must match
 // backend config.PROTOCOL_VERSION — a red header badge appears when the
 // running backend disagrees (stale process or unmerged code).
-const BACKEND_PROTOCOL_EXPECTED = 5;
+const BACKEND_PROTOCOL_EXPECTED = 6;
 
 // TFT cost-tier colors used to outline unit chips and cells
 const COST_COLORS = {
@@ -713,10 +713,11 @@ function formatMetaAge(epochSeconds) {
 
 function BoardStrengthCard({ score, breakdown, stage }) {
   if (!breakdown || breakdown.source === "none") return null;
+  const isPartial = breakdown.source === "traits_only";
   const color = breakdown.label === "Strong"
     ? "#2ed573"
-    : breakdown.label === "Weak" ? "#ff6348" : "#ffa502";
-  const rows = [
+    : breakdown.label === "Weak" ? "#ff6348" : isPartial ? ACCENT2 : "#ffa502";
+  const fullRows = [
     { label: "UNITS + STARS", value: breakdown.champion_base || 0, max: 45 },
     { label: "UNIT META", value: breakdown.meta_bonus || 0, max: 8, signed: true },
     { label: "ACTIVE TRAITS", value: breakdown.synergy_bonus || 0, max: 20 },
@@ -729,9 +730,12 @@ function BoardStrengthCard({ score, breakdown, stage }) {
     },
     { label: "AUGMENTS", value: breakdown.augment_bonus || 0, max: 10 },
   ];
+  const rows = isPartial
+    ? fullRows.filter((row) => row.label === "ACTIVE TRAITS" || row.label === "AUGMENTS")
+    : fullRows;
   const sourceLabel = breakdown.source === "detected_board"
     ? "live board"
-    : breakdown.source === "roster_estimate" ? "roster estimate" : "traits estimate";
+    : breakdown.source === "roster_estimate" ? "roster estimate" : "current traits only";
   const gamesLabel = formatMetaGames(breakdown.meta_games_analyzed);
   const ageLabel = formatMetaAge(breakdown.meta_updated_at);
 
@@ -747,13 +751,15 @@ function BoardStrengthCard({ score, breakdown, stage }) {
             lineHeight: 1, color,
           }}>
             {Math.round(score || 0)}
-            <span style={{ fontSize: "11px", color: "#666" }}>/100</span>
+            <span style={{ fontSize: "11px", color: "#666" }}>
+              {isPartial ? "/20 traits" : "/100"}
+            </span>
           </div>
           <div style={{
             marginTop: "5px", fontSize: "9px", fontFamily: "var(--mono)",
             color, fontWeight: 700, letterSpacing: "1px",
           }}>
-            {breakdown.label?.toUpperCase()} @ {stage}
+            {isPartial ? "PARTIAL" : breakdown.label?.toUpperCase()} @ {stage}
           </div>
         </div>
         <div style={{ flex: 1 }}>
@@ -790,19 +796,28 @@ function BoardStrengthCard({ score, breakdown, stage }) {
             ? ` · META ${breakdown.meta_bonus > 0 ? "+" : ""}${breakdown.meta_bonus.toFixed(1)}`
             : ""}
         </span>
-        <span>
-          <span style={{ color: "#2ed573" }}>● AUTO META</span>
-          {breakdown.meta_patch ? ` · PATCH ${breakdown.meta_patch}` : ""}
-          {breakdown.meta_rank ? ` · ${breakdown.meta_rank}` : ""}
-          {gamesLabel ? ` · ${gamesLabel}` : ""}
-          {` · ${ageLabel}`}
-          {" · "}<a href="https://tactics.tools/units/sett/latest" target="_blank" rel="noreferrer"
-            style={{ color: "#7a8090" }}>tactics.tools</a>
-        </span>
+        {isPartial ? (
+          <span style={{ color: ACCENT2 }}>UNIT MODEL NEEDED FOR FULL SCORE</span>
+        ) : (
+          <span>
+            <span style={{ color: "#2ed573" }}>● AUTO META</span>
+            {breakdown.meta_patch ? ` · PATCH ${breakdown.meta_patch}` : ""}
+            {breakdown.meta_rank ? ` · ${breakdown.meta_rank}` : ""}
+            {gamesLabel ? ` · ${gamesLabel}` : ""}
+            {` · ${ageLabel}`}
+            {" · "}<a href="https://tactics.tools/units/sett/latest" target="_blank" rel="noreferrer"
+              style={{ color: "#7a8090" }}>tactics.tools</a>
+          </span>
+        )}
       </div>
       {breakdown.source === "roster_estimate" && (
         <div style={{ marginTop: "6px", fontSize: "9px", color: "#8b8fa3", lineHeight: 1.4 }}>
           Uses your strongest level-sized roster subset until board classification is active.
+        </div>
+      )}
+      {isPartial && (
+        <div style={{ marginTop: "6px", fontSize: "9px", color: "#8b8fa3", lineHeight: 1.4 }}>
+          Purchase history is excluded because sold units cannot be observed. This stays current from the live trait panel.
         </div>
       )}
       {!breakdown.item_data_known && (
@@ -1495,7 +1510,9 @@ export default function App() {
             <StatBox label="LVL" value={level} color="#c8cad0" />
             <div style={{ width: "1px", height: "24px", background: "#2a2d35" }} />
             <StatBox label="STAGE" value={stage} color={ACCENT} />
-            {boardPower !== null && boardPowerBreakdown?.source !== "none" && (
+            {boardPower !== null
+              && boardPowerBreakdown?.source !== "none"
+              && boardPowerBreakdown?.source !== "traits_only" && (
               <>
                 <div style={{ width: "1px", height: "24px", background: "#2a2d35" }} />
                 <StatBox
@@ -1546,7 +1563,9 @@ export default function App() {
             <TabBtn active={tab === "items"} onClick={() => setTab("items")}>⚔️ Items</TabBtn>
             {boardPowerBreakdown?.source !== "none" && (
               <TabBtn active={tab === "strength"} onClick={() => setTab("strength")}>
-                📈 Strength {Math.round(boardPower || 0)}
+                {boardPowerBreakdown?.source === "traits_only"
+                  ? "📈 Traits (partial)"
+                  : `📈 Strength ${Math.round(boardPower || 0)}`}
               </TabBtn>
             )}
             <TabBtn active={tab === "comp"} onClick={() => setTab("comp")}>

@@ -372,12 +372,14 @@ class Detector:
             if self.match_board_units:
                 state.board_champions = self._detect_board_champions(frame)
                 state.bench_champions = self._detect_bench_champions(frame)
+                state.unit_detection_source = "templates"
             elif self.unit_classifier.available:
                 # Live mode with a trained model: identify the 3D unit
                 # models directly (one batched ONNX pass for board+bench).
                 state.board_champions, state.bench_champions = (
                     self._detect_units_cnn(frame)
                 )
+                state.unit_detection_source = "classifier"
             # Live frames render units as 3D models the portrait templates
             # can't identify — hex matching produces misses and false
             # positives. The HUD trait panel is 2D and matches reliably, so
@@ -1580,7 +1582,10 @@ class Detector:
     def _ocr_augment_title(band: np.ndarray) -> str:
         """OCR one card's title band; returns the cleaned best read."""
         gray = cv2.cvtColor(band, cv2.COLOR_BGR2GRAY)
-        gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        scale = 3
+        gray = cv2.resize(
+            gray, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC
+        )
         _, otsu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         if np.mean(otsu) > 128:
             otsu = cv2.bitwise_not(otsu)
@@ -1591,7 +1596,9 @@ class Detector:
         # Titles are white glyphs on the purple card gradient — a color
         # mask (bright AND near-gray) isolates them where the grayscale
         # thresholds smear into the art. Same trick as the HP row finder.
-        bgr = cv2.resize(band, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC).astype(np.int16)
+        bgr = cv2.resize(
+            band, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC
+        ).astype(np.int16)
         white = ((bgr.min(axis=2) > 165) & (bgr.max(axis=2) - bgr.min(axis=2) < 60))
         white_bin = (white.astype(np.uint8)) * 255
 
@@ -1599,11 +1606,21 @@ class Detector:
         # unresolvable one regardless of length — raw letter count rewards
         # exactly the debris we're trying to avoid. White mask first so it
         # wins ties among unresolvable reads.
-        best, best_score = "", (0, 0)
-        for binary in (white_bin, otsu, adaptive):
+        best, best_score = "", (0, 0, 0, 0, 0, 0)
+        # Sparse-text mode reads the isolated white title mask especially
+        # well on UE cards ("Heart of the Swarm" is exact there while psm 7
+        # changes Swarm → Swerm). Keep single-line mode as the fallback for
+        # masks where glyphs split into multiple components.
+        candidates = (
+            (white_bin, 11, 2),
+            (white_bin, 7, 1),
+            (otsu, 7, 0),
+            (adaptive, 7, 0),
+        )
+        for binary, psm, source_priority in candidates:
             try:
                 txt = pytesseract.image_to_string(
-                    binary, config="--psm 7 --oem 3"
+                    binary, config=f"--psm {psm} --oem 3"
                 ).strip()
             except Exception:
                 continue
@@ -1626,7 +1643,26 @@ class Detector:
             if not cand:
                 continue
             matched, _ = find_augment_rating(cand)
-            score = (1 if matched else 0, sum(c.isalpha() for c in cand))
+            connector_words = {"a", "an", "and", "of", "the", "to", "for"}
+            suspicious_lower = sum(
+                token.islower() and token.casefold() not in connector_words
+                for token in tokens
+            )
+            edge_caps = sum(
+                bool(token) and token[0].isupper()
+                for token in (tokens[0], tokens[-1])
+            )
+            # Resolvable names always win. For legacy/uncached augments,
+            # prefer title-shaped text (capitalized edges, only connector
+            # words lowercase) over a longer string of OCR art debris.
+            score = (
+                1 if matched else 0,
+                edge_caps,
+                -suspicious_lower,
+                source_priority,
+                -abs(len(tokens) - 3),
+                sum(c.isalpha() for c in cand),
+            )
             if score > best_score:
                 # Return the canonical database name when it resolves —
                 # the overlay then displays the real title, not the read.

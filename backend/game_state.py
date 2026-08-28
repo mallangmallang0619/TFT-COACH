@@ -216,6 +216,9 @@ class GameState(BaseModel):
     frame_number: int = 0
     detection_ms: float = 0.0                  # How long detection took
     capture_method: str = "screen"
+    # Provenance matters: a purchase roster cannot observe sells and must not
+    # be presented as a current detected board-strength reading.
+    unit_detection_source: str = "unknown"
     collection_status: TrainingCollectionStatus = Field(
         default_factory=TrainingCollectionStatus
     )

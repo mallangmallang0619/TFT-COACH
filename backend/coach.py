@@ -138,11 +138,12 @@ class Coach:
         against units of the same shop cost using current tactics.tools stats;
         TFT Academy remains the source for comp, item, and augment fit.
         """
+        purchase_roster_only = state.unit_detection_source == "purchase_roster"
         if state.board_champions:
             units = list(state.board_champions)
             source = "detected_board"
             confidence = 0.90
-        elif state.bench_champions:
+        elif state.bench_champions and not purchase_roster_only:
             # Until the classifier is trained, the purchase roster is the best
             # available estimate. Score the strongest level-sized subset so a
             # full bench does not look stronger than a fielded board.
@@ -206,7 +207,7 @@ class Coach:
             None,
         )
         composition_power = 0.0
-        if primary:
+        if primary and not purchase_roster_only:
             tier_factor = {
                 "S": 1.0, "A": 0.85, "B": 0.65,
                 "C": 0.45, "X": 0.30,
@@ -288,6 +289,8 @@ class Coach:
     def _board_power_label(total: float, stage: str, source: str) -> str:
         if source == "none":
             return "Unknown"
+        if source == "traits_only":
+            return "Partial"
         try:
             stage_number = int((stage or "1-1").split("-")[0])
         except (TypeError, ValueError):
@@ -306,6 +309,12 @@ class Coach:
     ) -> None:
         breakdown = advice.board_power_breakdown
         if breakdown.source == "none":
+            return
+        if breakdown.source == "traits_only":
+            advice.tips.append(
+                f"Full board strength is unavailable until unit classification is "
+                f"active; current traits contribute {breakdown.synergy_bonus:.0f}/20."
+            )
             return
         estimate_note = (
             " (roster estimate until board classification is active)"

@@ -25,6 +25,7 @@ const MAX_RECONNECT_ATTEMPTS = 50;
  * @property {Object[]} board_champions - Champions on board
  * @property {Object[]} augment_options - Augment choices (during selection)
  * @property {string} capture_method - window, screen_foreground, or screen_untrusted
+ * @property {string} unit_detection_source - classifier, templates, purchase_roster, or unknown
  * @property {Object} collection_status - Live training-data collection telemetry
  * @property {Object} advice - Coaching advice from the engine
  */

@@ -51,6 +51,8 @@ BENCH_SLOTS = 9
 _THUMB_SIZE = (24, 32)          # (w, h) of the comparison thumbnail
 _CHANGE_FLOOR = 6.0             # minimum mean-abs-diff to count as a change
 _CHANGE_OUTLIER_FACTOR = 1.6    # ...and it must stand out vs the other slots
+_LANDING_RECOVERY_MIN_SCORE = 9.0
+_LANDING_RECOVERY_MIN_MARGIN = 4.0
 _LANDING_HISTORY_FRAMES = 6
 _EMPTY_STD_MAX = 21.0
 _OCCUPIED_STD_MIN = 19.5
@@ -446,7 +448,12 @@ class BenchHarvester:
         saved = 0
         for landing in pending:
             current = thumbs[landing.slot]
-            if not self._became_occupied(current, landing.empty_thumb):
+            if not self._landing_persists(current, landing):
+                self.skip_counts["landing_not_persistent"] += 1
+                self.last_event = (
+                    f"Confirmed {landing.label}, but bench slot "
+                    f"{landing.slot} no longer matched its staged landing"
+                )
                 continue
             # The pre-purchase frame is a trustworthy empty-slot label. Keep
             # it as classifier background; deduplication prevents the same
@@ -493,7 +500,12 @@ class BenchHarvester:
         saved = 0
         for landing in landings:
             current = thumbs[landing.slot]
-            if not self._became_occupied(current, landing.empty_thumb):
+            if not self._landing_persists(current, landing):
+                self.skip_counts["landing_not_persistent"] += 1
+                self.last_event = (
+                    f"Confirmed {landing.label}, but bench slot "
+                    f"{landing.slot} no longer matched its landing"
+                )
                 continue
             self._save_empty(landing.empty_crop, landing.slot)
             did_save = self._save(
@@ -527,13 +539,24 @@ class BenchHarvester:
                 )
                 continue
             if len(slots) != len(names):
-                # Do not jump past an ambiguous newer transition and attach
-                # the purchase label to an unrelated older unit movement.
-                self._last_landing_diagnostic = (
-                    f"history offset {len(frames) - index}: "
-                    f"slots={slots}, wanted={len(names)}"
-                )
-                return []
+                # UE5 idle poses can move several already-occupied slots in
+                # the same slow detector interval as one real landing. Once
+                # a later confirmation frame proves which change persisted,
+                # recover a single dominant stable-before → stable-after
+                # landing. Never guess for multi-buy labels: their ordering
+                # cannot be recovered safely from a single sampled frame.
+                recovered = None
+                if len(names) == 1 and len(slots) > 1:
+                    recovered = self._recover_single_landing_slot(
+                        frames, index, slots
+                    )
+                if recovered is None:
+                    self._last_landing_diagnostic = (
+                        f"history offset {len(frames) - index}: "
+                        f"slots={slots}, wanted={len(names)}"
+                    )
+                    return []
+                slots = [recovered]
             landings: list[_PendingLanding] = []
             for name, slot in zip(names, slots):
                 occupied = after.thumbs[slot]
@@ -560,6 +583,111 @@ class BenchHarvester:
             + ", ".join(mismatches[:2])
         )
         return []
+
+    def _recover_single_landing_slot(
+        self,
+        frames: list[_BenchFrame],
+        transition_index: int,
+        slots: list[int],
+    ) -> Optional[int]:
+        """Resolve one landing hidden among animated occupied bench slots.
+
+        Recovery requires frames on both sides of the transition. A real
+        landing has a stable empty baseline, a large transition, and remains
+        occupied on the confirmation frame. Existing units that merely change
+        pose pay both a pre-transition motion penalty and a post-transition
+        drift penalty. A minimum score and lead over the runner-up keep this
+        conservative when arena effects make two candidates equally likely.
+        """
+        if transition_index < 2 or transition_index + 1 >= len(frames):
+            return None
+
+        prior = frames[transition_index - 2]
+        before = frames[transition_index - 1]
+        after = frames[transition_index]
+        confirmed = frames[transition_index + 1]
+        scored: list[tuple[float, int, float, float, float]] = []
+
+        for slot in slots:
+            four = (
+                prior.thumbs[slot],
+                before.thumbs[slot],
+                after.thumbs[slot],
+                confirmed.thumbs[slot],
+            )
+            if any(thumb is None for thumb in four):
+                continue
+            prior_thumb, before_thumb, after_thumb, confirmed_thumb = four
+            transition = float(np.mean(cv2.absdiff(after_thumb, before_thumb)))
+            pre_drift = float(np.mean(cv2.absdiff(before_thumb, prior_thumb)))
+            post_drift = float(np.mean(cv2.absdiff(confirmed_thumb, after_thumb)))
+            if not self._became_occupied(
+                confirmed_thumb,
+                before_thumb,
+                change_evidence=True,
+            ):
+                continue
+            score = transition - (1.5 * pre_drift) - (0.5 * post_drift)
+            scored.append((score, slot, transition, pre_drift, post_drift))
+
+        scored.sort(reverse=True)
+        if not scored:
+            return None
+        best = scored[0]
+        runner_up = scored[1][0] if len(scored) > 1 else 0.0
+        margin = best[0] - runner_up
+        self._last_transition_diagnostic += (
+            "; recovery="
+            + str([
+                {
+                    "slot": slot,
+                    "score": round(score, 1),
+                    "change": round(change, 1),
+                    "pre": round(pre, 1),
+                    "post": round(post, 1),
+                }
+                for score, slot, change, pre, post in scored
+            ])
+        )
+        if (
+            best[0] < _LANDING_RECOVERY_MIN_SCORE
+            or margin < _LANDING_RECOVERY_MIN_MARGIN
+        ):
+            return None
+
+        self.skip_counts["ambiguous_landing_recovered"] += 1
+        logger.info(
+            f"Recovered animated single-unit landing in bench slot {best[1]} "
+            f"(score={best[0]:.1f}, margin={margin:.1f})"
+        )
+        return best[1]
+
+    @staticmethod
+    def _landing_persists(
+        current: Optional[np.ndarray],
+        landing: _PendingLanding,
+    ) -> bool:
+        """Validate a staged landing without assuming empty arenas are smooth.
+
+        The transition detector already proved that the slot changed relative
+        to its eight peers. Confirmation only needs to show that the current
+        slot remains materially different from the staged empty crop and is
+        at least approximately as close to the landed model as to that empty
+        texture. This works on high-detail Set 18 arenas while still rejecting
+        a unit that was moved away before shop confirmation.
+        """
+        if current is None:
+            return False
+        empty_distance = float(np.mean(cv2.absdiff(
+            current, landing.empty_thumb
+        )))
+        landed_distance = float(np.mean(cv2.absdiff(
+            current, landing.occupied_thumb
+        )))
+        return (
+            empty_distance >= _CHANGE_FLOOR
+            and landed_distance <= empty_distance * 1.15
+        )
 
     def _newly_occupied_slots(
         self,

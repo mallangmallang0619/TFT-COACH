@@ -44,8 +44,31 @@ logger = logging.getLogger(__name__)
 
 _COLLECTION_DIAGNOSTIC_INTERVAL_SECONDS = 120.0
 _COLLECTION_DIAGNOSTIC_MIN_EVENT_GAP_SECONDS = 10.0
+_COLLECTION_DIAGNOSTIC_PURCHASE_GAP_SECONDS = 5.0
 _COLLECTION_DIAGNOSTIC_KEEP = 12
 _COLLECTION_DIAGNOSTIC_DIR = Path(__file__).parent / "_debug" / "session"
+
+
+def _collection_diagnostic_due(
+    now: float,
+    last_saved_at: float,
+    *,
+    capture_changed: bool = False,
+    purchase_event: bool = False,
+) -> bool:
+    """Return whether periodic or event evidence should be persisted."""
+    elapsed = now - last_saved_at
+    return (
+        elapsed >= _COLLECTION_DIAGNOSTIC_INTERVAL_SECONDS
+        or (
+            capture_changed
+            and elapsed >= _COLLECTION_DIAGNOSTIC_MIN_EVENT_GAP_SECONDS
+        )
+        or (
+            purchase_event
+            and elapsed >= _COLLECTION_DIAGNOSTIC_PURCHASE_GAP_SECONDS
+        )
+    )
 
 
 class TFTCoachServer:
@@ -375,13 +398,15 @@ class TFTCoachServer:
         state: GameState,
         *,
         capture_changed: bool = False,
+        purchase_event: bool = False,
     ) -> None:
         """Persist a bounded stream of annotated frames for capture debugging."""
         now = time.monotonic()
-        elapsed = now - self._last_diagnostic_at
-        if elapsed < _COLLECTION_DIAGNOSTIC_INTERVAL_SECONDS and not (
-            capture_changed
-            and elapsed >= _COLLECTION_DIAGNOSTIC_MIN_EVENT_GAP_SECONDS
+        if not _collection_diagnostic_due(
+            now,
+            self._last_diagnostic_at,
+            capture_changed=capture_changed,
+            purchase_event=purchase_event,
         ):
             return
 
@@ -408,6 +433,7 @@ class TFTCoachServer:
             f"capture={state.capture_method} trusted={status.capture_trusted}",
             f"shop={status.recognized_shop_slots}/5 purchases={status.detected_purchases}",
             f"saved={status.session_crops_saved} rejected={status.rejected_crops}",
+            f"event={(status.last_event or status.reason)[:100]}",
         ]
         for index, line in enumerate(lines):
             cv2.putText(
@@ -423,8 +449,9 @@ class TFTCoachServer:
         try:
             _COLLECTION_DIAGNOSTIC_DIR.mkdir(parents=True, exist_ok=True)
             stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            event_suffix = "_purchase" if purchase_event else ""
             path = _COLLECTION_DIAGNOSTIC_DIR / (
-                f"capture_{stamp}_{state.capture_method}.jpg"
+                f"capture_{stamp}_{state.capture_method}{event_suffix}.jpg"
             )
             if not cv2.imwrite(str(path), annotated, [cv2.IMWRITE_JPEG_QUALITY, 82]):
                 logger.warning(f"Could not save collection diagnostic: {path}")
@@ -562,6 +589,7 @@ class TFTCoachServer:
                     frame,
                     state,
                     capture_changed=capture_changed,
+                    purchase_event=bool(purchases),
                 )
 
                 # A single frame's OCR can fail while the region is obscured
@@ -601,6 +629,8 @@ class TFTCoachServer:
                 # direction.
                 if not state.bench_champions:
                     state.bench_champions = self.roster.owned_units()
+                    if state.bench_champions:
+                        state.unit_detection_source = "purchase_roster"
 
                 # Run coaching logic
                 state.pinned_comp = self._pinned_comp
