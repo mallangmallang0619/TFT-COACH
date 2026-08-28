@@ -40,6 +40,7 @@ from config import (
     GameROIs,
     ShopGeometry,
     TraitPanel,
+    BENCH_CROP_HORIZONTAL_INSET_RATIO,
 )
 from detector import Detector, TemplateStore
 
@@ -148,9 +149,10 @@ def annotate(frame: np.ndarray) -> np.ndarray:
     # The harvester compares nine individual crops inside the broad bench ROI.
     nx, ny, nw, nh = rois.champion_bench_capture.to_pixels(w, h)
     slot_w = nw // 9
+    inset = int(round(slot_w * BENCH_CROP_HORIZONTAL_INSET_RATIO))
     for slot in range(9):
-        sx = nx + slot * slot_w
-        cv2.rectangle(out, (sx, ny), (sx + slot_w, ny + nh),
+        sx = nx + slot * slot_w + inset
+        cv2.rectangle(out, (sx, ny), (nx + (slot + 1) * slot_w - inset, ny + nh),
                       ROI_COLORS["champion_bench"], 1)
 
     # Board hex centers (within the board ROI)
@@ -197,8 +199,12 @@ def dump_hex_crops(frame: np.ndarray, out_dir: Path) -> int:
 
     nx, ny, nw, nh = rois.champion_bench_capture.to_pixels(w, h)
     slot_w = nw // 9
+    inset = int(round(slot_w * BENCH_CROP_HORIZONTAL_INSET_RATIO))
     for i in range(9):
-        crop = frame[ny:ny + nh, nx + i * slot_w:nx + (i + 1) * slot_w]
+        crop = frame[
+            ny:ny + nh,
+            nx + i * slot_w + inset:nx + (i + 1) * slot_w - inset,
+        ]
         if crop.size:
             cv2.imwrite(str(out_dir / f"bench_{i}.png"), crop)
             count += 1

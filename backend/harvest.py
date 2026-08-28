@@ -35,7 +35,11 @@ from typing import Optional
 import cv2
 import numpy as np
 
-from config import GameROIs, UNSAFE_BENCH_SLOTS
+from config import (
+    BENCH_CROP_HORIZONTAL_INSET_RATIO,
+    GameROIs,
+    UNSAFE_BENCH_SLOTS,
+)
 from game_data import ACTIVE_SET_NUMBER, canonical_training_label
 
 logger = logging.getLogger(__name__)
@@ -64,6 +68,7 @@ _TRACK_SAVE_INTERVAL = 1        # every processed frame while stable
 _TRACK_MAX_SAVES = 12           # diverse poses without one purchase dominating
 _TRACK_CHANGE_LIMIT = 18.0      # tolerate idle poses and brief spell glows
 _EMPTY_RETURN_MAX_MAD = 4.0     # must closely match the known empty baseline
+_EMPTY_LANDING_MIN_MAD = 8.0    # before/after must not contain the same model
 READY_CROPS_PER_CLASS = 50
 _DUPLICATE_THUMB_MAD = 1.0      # <= this is effectively the same pose/frame
 _CROP_MIN_STD = 18.0
@@ -493,7 +498,16 @@ class BenchHarvester:
             # The pre-purchase frame is a trustworthy empty-slot label. Keep
             # it as classifier background; deduplication prevents the same
             # arena plank from flooding the dataset.
-            self._save_empty(landing.empty_crop, landing.slot)
+            if self._empty_reference_is_distinct(
+                landing.empty_crop, crops[landing.slot]
+            ):
+                self._save_empty(landing.empty_crop, landing.slot)
+            else:
+                self.skip_counts["occupied_empty_reference"] += 1
+                logger.info(
+                    f"Skipping occupied _empty reference for {landing.label} "
+                    f"(bench slot {landing.slot})"
+                )
             # Confirmation arrives after the initial landing transition. Save
             # this later frame, where the UE5 model has finished materializing,
             # rather than the cached dust/shadow animation.
@@ -543,7 +557,16 @@ class BenchHarvester:
                     f"{landing.slot} no longer matched its landing"
                 )
                 continue
-            self._save_empty(landing.empty_crop, landing.slot)
+            if self._empty_reference_is_distinct(
+                landing.empty_crop, current_frame.crops[landing.slot]
+            ):
+                self._save_empty(landing.empty_crop, landing.slot)
+            else:
+                self.skip_counts["occupied_empty_reference"] += 1
+                logger.info(
+                    f"Skipping occupied _empty reference for {landing.label} "
+                    f"(bench slot {landing.slot})"
+                )
             did_save = self._save(
                 current_frame.crops[landing.slot], landing.label, landing.slot
             )
@@ -777,21 +800,51 @@ class BenchHarvester:
 
     def _bench_slot_crops(self, frame: np.ndarray) -> list[np.ndarray]:
         """Return tall, full-model crops used for saving and inference."""
-        return self._split_bench_roi(frame, self.rois.champion_bench_capture)
+        return self._split_bench_roi(
+            frame,
+            self.rois.champion_bench_capture,
+            horizontal_inset_ratio=BENCH_CROP_HORIZONTAL_INSET_RATIO,
+        )
 
     def _bench_anchor_slot_crops(self, frame: np.ndarray) -> list[np.ndarray]:
         """Return the lower, stable strip used only for landing motion."""
         return self._split_bench_roi(frame, self.rois.champion_bench)
 
     @staticmethod
-    def _split_bench_roi(frame: np.ndarray, roi) -> list[np.ndarray]:
+    def _split_bench_roi(
+        frame: np.ndarray,
+        roi,
+        *,
+        horizontal_inset_ratio: float = 0.0,
+    ) -> list[np.ndarray]:
         h, w = frame.shape[:2]
         bx, by, bw, bh = roi.to_pixels(w, h)
         slot_w = max(1, bw // BENCH_SLOTS)
+        inset = min(
+            slot_w // 3,
+            max(0, int(round(slot_w * horizontal_inset_ratio))),
+        )
         return [
-            frame[by:by + bh, bx + i * slot_w: bx + (i + 1) * slot_w]
+            frame[
+                by:by + bh,
+                bx + i * slot_w + inset:bx + (i + 1) * slot_w - inset,
+            ]
             for i in range(BENCH_SLOTS)
         ]
+
+    @classmethod
+    def _empty_reference_is_distinct(
+        cls,
+        empty_crop: np.ndarray,
+        occupied_crop: np.ndarray,
+    ) -> bool:
+        """Only call a pre-landing frame empty when a model actually appeared."""
+        empty_thumb = cls._thumb(empty_crop)
+        occupied_thumb = cls._thumb(occupied_crop)
+        if empty_thumb is None or occupied_thumb is None:
+            return False
+        distance = float(np.mean(cv2.absdiff(empty_thumb, occupied_thumb)))
+        return distance >= _EMPTY_LANDING_MIN_MAD
 
     @staticmethod
     def _thumb(crop: np.ndarray) -> Optional[np.ndarray]:

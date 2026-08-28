@@ -1370,7 +1370,8 @@ def test_bench_crop_geometry():
 
         assert capture_x == anchor_x and capture_w == anchor_w
         assert capture_y < anchor_y, "training crop still starts below the sprite"
-        assert capture_h >= anchor_h * 2.1, "training crop still clips tall UE5 models"
+        height_ratio = capture_h / anchor_h
+        assert 1.8 <= height_ratio <= 2.0, "crop must balance full models and board overlap"
         assert abs((capture_y + capture_h) - (anchor_y + anchor_h)) <= 1
 
         # A marker above the landing detector must still be present in the
@@ -1378,8 +1379,10 @@ def test_bench_crop_geometry():
         frame[capture_y:anchor_y, capture_x:capture_x + capture_w] = 255
         crops = harvester._bench_slot_crops(frame)
         assert len(crops) == BENCH_SLOTS
-        expected_width = capture_w // BENCH_SLOTS
-        assert all(c.shape == (capture_h, expected_width, 3) for c in crops)
+        slot_pitch = capture_w // BENCH_SLOTS
+        assert all(c.shape[0] == capture_h for c in crops)
+        assert all(slot_pitch * 0.78 <= c.shape[1] <= slot_pitch * 0.86 for c in crops)
+        assert len({c.shape for c in crops}) == 1
         assert all(float(c[:anchor_y - capture_y].mean()) == 255.0 for c in crops)
 
     # Training and live inference must receive pixel-identical bench crops;
@@ -1471,6 +1474,29 @@ def test_bench_harvester_quality_invariants():
         collector.process(replacement, [])
         collector.process(replacement, [])
         assert len(list((Path(tmp) / "_empty").glob("*.png"))) == original_empty_count
+
+    # A combine/landing effect can change the platform under a champion that
+    # was already present. The before and after crops then contain the same
+    # unit; saving the former as _empty would poison the background class.
+    with tempfile.TemporaryDirectory() as tmp:
+        collector = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        cx, cy, cw, ch = rois.champion_bench_capture.to_pixels(width, height)
+        pitch = cw // BENCH_SLOTS
+        before = frame()
+        unit = np.random.default_rng(404).integers(
+            20, 220, (ch, pitch, 3), dtype=np.uint8
+        )
+        before[cy:cy + ch, cx + pitch:cx + 2 * pitch] = unit
+        after = before.copy()
+        effect = after[by + bh - 18:by + bh, bx + slot_w:bx + 2 * slot_w]
+        after[by + bh - 18:by + bh, bx + slot_w:bx + 2 * slot_w] = np.clip(
+            effect.astype(np.int16) + 70, 0, 255
+        ).astype(np.uint8)
+
+        assert collector.process(before, []) == 0
+        assert collector.process(after, ["Yorick"]) == 1
+        assert not list((Path(tmp) / "_empty").glob("*.png"))
+        assert len(list((Path(tmp) / "Yorick").glob("*.png"))) == 1
 
     # The landing strip can remain stable while combat effects or board units
     # move through the newly added upper part of the full-model crop. Such a

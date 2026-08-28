@@ -138,6 +138,9 @@ GAME_WINDOW_TITLE = "Teamfight Tactics"  # macOS/Linux fallback only
 # Until its geometry can be isolated reliably, treating motion there as a
 # purchase is more likely to create a wrong label than useful training data.
 UNSAFE_BENCH_SLOTS = frozenset({8})
+# Trim each slot equally so neighboring models and health bars at the slot
+# boundaries do not become features of the purchased champion's class.
+BENCH_CROP_HORIZONTAL_INSET_RATIO = 0.08
 
 
 # ── Detection Thresholds ──────────────────────────────────────────────────────
@@ -258,7 +261,7 @@ class GameROIs:
     # extending only the saved crop captures heads and spell silhouettes that
     # rise above the bench platform. Both regions share the same bottom edge.
     champion_bench_capture: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.183, 0.470, 0.565, 0.300)
+        default_factory=lambda: RegionOfInterest(0.183, 0.520, 0.565, 0.250)
     )
 
     # Board area — the hex grid where champions are placed. Calibrated

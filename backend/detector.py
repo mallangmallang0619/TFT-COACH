@@ -63,6 +63,7 @@ from config import (
     ShopGeometry,
     TraitPanel,
     UNSAFE_BENCH_SLOTS,
+    BENCH_CROP_HORIZONTAL_INSET_RATIO,
 )
 from game_data import CHAMPIONS, TRAITS, find_champion_name, find_augment_rating
 from unit_classifier import UnitClassifier
@@ -1511,10 +1512,17 @@ class Detector:
         # sees exactly what training saw.
         nx, ny, nw, nh = self.rois.champion_bench_capture.to_pixels(w, h)
         slot_w = max(1, nw // 9)
+        inset = min(
+            slot_w // 3,
+            max(0, int(round(slot_w * BENCH_CROP_HORIZONTAL_INSET_RATIO))),
+        )
         for slot in range(9):
             crops.append(
                 None if slot in UNSAFE_BENCH_SLOTS
-                else frame[ny:ny+nh, nx + slot * slot_w: nx + (slot + 1) * slot_w]
+                else frame[
+                    ny:ny + nh,
+                    nx + slot * slot_w + inset:nx + (slot + 1) * slot_w - inset,
+                ]
             )
 
         results = self.unit_classifier.classify_batch(crops)
