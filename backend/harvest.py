@@ -67,10 +67,10 @@ _OCCUPIED_STD_MIN = 19.5
 _TRACK_SAVE_INTERVAL = 1        # every processed frame while stable
 _TRACK_MAX_SAVES = 12           # diverse poses without one purchase dominating
 _TRACK_CHANGE_LIMIT = 18.0      # tolerate idle poses and brief spell glows
-_EMPTY_RETURN_MAX_MAD = 4.0     # must closely match the known empty baseline
-_EMPTY_LANDING_MIN_MAD = 8.0    # before/after must not contain the same model
+_TRACK_TOP_CHANGE_LIMIT = 10.0  # board units/effects entering above the bench
 READY_CROPS_PER_CLASS = 50
 _DUPLICATE_THUMB_MAD = 1.0      # <= this is effectively the same pose/frame
+_CROSS_LABEL_THUMB_MAD = 5.0    # same model must never survive under two labels
 _CROP_MIN_STD = 18.0
 _CROP_MIN_LAPLACIAN = 500.0
 # Real Set 18 unit crops measured 210-3200; empty portal/platform crops that
@@ -82,14 +82,16 @@ _CROP_MIN_FULL_LAPLACIAN = 180.0
 # a thin cyan outline (observed at ~7% of the crop); the materialisation effect
 # fills much more of the crop (observed at ~16%), so keep a conservative gap.
 _MATERIALIZATION_BLUE_COMPONENT_RATIO = 0.10
+_HEALTH_BAR_MIN_WIDTH_RATIO = 0.22
+_HEALTH_BAR_MAX_HEIGHT_RATIO = 0.12
+_TOOLTIP_DARK_ROW_RATIO = 0.65
+_TOOLTIP_MIN_DENSE_ROWS_RATIO = 0.20
 
 
 @dataclass
 class _PendingLanding:
     label: str
     slot: int
-    crop: np.ndarray
-    empty_crop: np.ndarray
     occupied_thumb: np.ndarray
     empty_thumb: np.ndarray
 
@@ -99,6 +101,7 @@ class _TrackedSlot:
     label: str
     reference: np.ndarray
     crop_reference: np.ndarray
+    top_reference: np.ndarray
     empty_reference: np.ndarray
     frames_since: int = 0
     saves: int = 0
@@ -162,6 +165,39 @@ def audit_training_crops(
                 continue
             accepted[label].append(path)
             thumbs[label].append(thumb)
+
+    # Pixel-quality checks cannot detect a semantically wrong folder. Flag
+    # nearly identical crops appearing under different canonical labels; both
+    # sides are unsafe because the image alone cannot tell us which label won.
+    collision_paths: set[Path] = set()
+    labels = [name for name, paths in accepted.items() if paths]
+    for left_index, left_label in enumerate(labels):
+        for right_label in labels[left_index + 1:]:
+            for left_path, left_thumb in zip(
+                accepted[left_label], thumbs[left_label]
+            ):
+                left_mean = float(np.mean(left_thumb))
+                for right_path, right_thumb in zip(
+                    accepted[right_label], thumbs[right_label]
+                ):
+                    if abs(left_mean - float(np.mean(right_thumb))) > (
+                        _CROSS_LABEL_THUMB_MAD
+                    ):
+                        continue
+                    distance = float(np.mean(cv2.absdiff(left_thumb, right_thumb)))
+                    if distance <= _CROSS_LABEL_THUMB_MAD:
+                        collision_paths.update((left_path, right_path))
+
+    if collision_paths:
+        for label, paths in accepted.items():
+            removed = sum(path in collision_paths for path in paths)
+            if removed:
+                rejected[label]["label_collision"] = (
+                    rejected[label].get("label_collision", 0) + removed
+                )
+                accepted[label] = [
+                    path for path in paths if path not in collision_paths
+                ]
 
     accepted = {name: paths for name, paths in accepted.items() if paths}
     rejected = {name: reasons for name, reasons in rejected.items() if reasons}
@@ -230,8 +266,16 @@ class BenchHarvester:
                 tracked = self._tracked[slot]
                 current = thumbs[slot]
                 crop_current = self._thumb(crops[slot])
-                if current is None or crop_current is None or not self._became_occupied(
-                    current, tracked.empty_reference
+                top_current = self._top_thumb(crops[slot])
+                if (
+                    current is None
+                    or crop_current is None
+                    or top_current is None
+                    or not self._has_champion_health_bar(crops[slot])
+                    or self._has_ui_overlay(crops[slot])
+                    or not self._became_occupied(
+                        current, tracked.empty_reference
+                    )
                 ):
                     del self._tracked[slot]
                     continue
@@ -241,6 +285,7 @@ class BenchHarvester:
                     continue
                 tracked.reference = current.copy()
                 tracked.crop_reference = crop_current.copy()
+                tracked.top_reference = top_current.copy()
                 tracked.frames_since = 0
                 tracked.change_frames = 0
                 tracked.occupancy_misses = 0
@@ -352,27 +397,30 @@ class BenchHarvester:
                 continue    # landing crop already saved this frame
             tracked = self._tracked[slot]
             crop_thumb = self._thumb(crops[slot])
-            if thumbs[slot] is None or crop_thumb is None:
+            top_thumb = self._top_thumb(crops[slot])
+            if thumbs[slot] is None or crop_thumb is None or top_thumb is None:
                 del self._tracked[slot]
                 continue
-            if not self._became_occupied(thumbs[slot], tracked.empty_reference):
-                empty_distance = float(np.mean(cv2.absdiff(
-                    thumbs[slot], tracked.empty_reference
-                )))
-                if empty_distance <= _EMPTY_RETURN_MAX_MAD:
-                    self._save_empty(crops[slot], slot)
-                    logger.debug(
-                        f"Slot {slot} became empty — stop tracking {tracked.label}"
-                    )
+            if (
+                not self._has_champion_health_bar(crops[slot])
+                or self._has_ui_overlay(crops[slot])
+            ):
+                # Little Legends, tooltips, and replacement effects can occupy
+                # the same pixels as a previously confirmed bench unit. Never
+                # turn those frames into pose diversity or background data.
+                tracked.occupancy_misses += 1
+                if tracked.occupancy_misses >= 2:
                     del self._tracked[slot]
-                elif tracked.occupancy_misses >= 1:
-                    # The old occupant disappeared, but this does not look
-                    # like the known empty platform. It may be a replacement
-                    # champion or the movable Little Legend; stop tracking
-                    # without poisoning the background class.
+                continue
+            if not self._became_occupied(thumbs[slot], tracked.empty_reference):
+                if tracked.occupancy_misses >= 1:
+                    # Runtime motion cannot prove that a crop is background:
+                    # the old occupant may have been replaced by another unit
+                    # or the movable Little Legend. Stop tracking without ever
+                    # writing an automatic _empty sample.
                     logger.debug(
-                        f"Slot {slot} changed without returning to its empty "
-                        f"baseline — stop tracking {tracked.label}"
+                        f"Slot {slot} no longer contains a trusted champion — "
+                        f"stop tracking {tracked.label}"
                     )
                     del self._tracked[slot]
                 else:
@@ -382,6 +430,9 @@ class BenchHarvester:
             drift = float(np.mean(cv2.absdiff(thumbs[slot], tracked.reference)))
             crop_drift = float(np.mean(cv2.absdiff(
                 crop_thumb, tracked.crop_reference
+            )))
+            top_drift = float(np.mean(cv2.absdiff(
+                top_thumb, tracked.top_reference
             )))
 
             # The first confirmation frame can still be the UE5 purchase
@@ -393,9 +444,11 @@ class BenchHarvester:
                 if (
                     drift >= self.track_change_limit
                     or crop_drift >= self.track_change_limit
+                    or top_drift >= _TRACK_TOP_CHANGE_LIMIT
                 ):
                     tracked.reference = thumbs[slot].copy()
                     tracked.crop_reference = crop_thumb.copy()
+                    tracked.top_reference = top_thumb.copy()
                     tracked.frames_since = 0
                     tracked.change_frames = 0
                     continue
@@ -407,11 +460,13 @@ class BenchHarvester:
                         tracked.frames_since = 0
                         tracked.reference = thumbs[slot].copy()
                         tracked.crop_reference = crop_thumb.copy()
+                        tracked.top_reference = top_thumb.copy()
                 continue
 
             if (
                 drift >= self.track_change_limit
                 or crop_drift >= self.track_change_limit
+                or top_drift >= _TRACK_TOP_CHANGE_LIMIT
             ):
                 # Empty/low-detail means the unit definitely left. A single
                 # viable high-drift frame may just be an idle animation or
@@ -420,7 +475,7 @@ class BenchHarvester:
                 if tracked.change_frames >= 2:
                     logger.debug(
                         f"Slot {slot} changed (anchor drift {drift:.0f}, "
-                        f"crop drift {crop_drift:.0f}) — "
+                        f"crop drift {crop_drift:.0f}, top drift {top_drift:.0f}) — "
                         f"stop tracking {tracked.label}"
                     )
                     del self._tracked[slot]
@@ -436,6 +491,7 @@ class BenchHarvester:
                     tracked.frames_since = 0
                     tracked.reference = thumbs[slot]
                     tracked.crop_reference = crop_thumb
+                    tracked.top_reference = top_thumb
                     if tracked.saves >= self.track_max_saves:
                         logger.info(
                             f"Harvest complete: {tracked.label} reached "
@@ -488,26 +544,15 @@ class BenchHarvester:
         saved = 0
         for landing in pending:
             current = thumbs[landing.slot]
-            if not self._landing_persists(current, landing):
+            if not self._landing_persists(
+                current, landing, crops[landing.slot]
+            ):
                 self.skip_counts["landing_not_persistent"] += 1
                 self.last_event = (
                     f"Confirmed {landing.label}, but bench slot "
                     f"{landing.slot} no longer matched its staged landing"
                 )
                 continue
-            # The pre-purchase frame is a trustworthy empty-slot label. Keep
-            # it as classifier background; deduplication prevents the same
-            # arena plank from flooding the dataset.
-            if self._empty_reference_is_distinct(
-                landing.empty_crop, crops[landing.slot]
-            ):
-                self._save_empty(landing.empty_crop, landing.slot)
-            else:
-                self.skip_counts["occupied_empty_reference"] += 1
-                logger.info(
-                    f"Skipping occupied _empty reference for {landing.label} "
-                    f"(bench slot {landing.slot})"
-                )
             # Confirmation arrives after the initial landing transition. Save
             # this later frame, where the UE5 model has finished materializing,
             # rather than the cached dust/shadow animation.
@@ -520,6 +565,7 @@ class BenchHarvester:
                 label=landing.label,
                 reference=current.copy(),
                 crop_reference=self._thumb(crops[landing.slot]),
+                top_reference=self._top_thumb(crops[landing.slot]),
                 empty_reference=landing.empty_thumb,
                 saves=int(did_save),
             )
@@ -550,23 +596,15 @@ class BenchHarvester:
         saved = 0
         for landing in landings:
             current = thumbs[landing.slot]
-            if not self._landing_persists(current, landing):
+            if not self._landing_persists(
+                current, landing, current_frame.crops[landing.slot]
+            ):
                 self.skip_counts["landing_not_persistent"] += 1
                 self.last_event = (
                     f"Confirmed {landing.label}, but bench slot "
                     f"{landing.slot} no longer matched its landing"
                 )
                 continue
-            if self._empty_reference_is_distinct(
-                landing.empty_crop, current_frame.crops[landing.slot]
-            ):
-                self._save_empty(landing.empty_crop, landing.slot)
-            else:
-                self.skip_counts["occupied_empty_reference"] += 1
-                logger.info(
-                    f"Skipping occupied _empty reference for {landing.label} "
-                    f"(bench slot {landing.slot})"
-                )
             did_save = self._save(
                 current_frame.crops[landing.slot], landing.label, landing.slot
             )
@@ -575,6 +613,7 @@ class BenchHarvester:
                 label=landing.label,
                 reference=current.copy(),
                 crop_reference=self._thumb(current_frame.crops[landing.slot]),
+                top_reference=self._top_thumb(current_frame.crops[landing.slot]),
                 empty_reference=landing.empty_thumb,
                 saves=int(did_save),
             )
@@ -591,13 +630,25 @@ class BenchHarvester:
         for index in range(len(frames) - 1, 0, -1):
             before = frames[index - 1]
             after = frames[index]
-            slots = self._newly_occupied_slots(after.thumbs, before.thumbs)
-            if not slots:
+            changed_slots = self._newly_occupied_slots(after.thumbs, before.thumbs)
+            if not changed_slots:
                 mismatches.append(
                     f"-{len(frames) - index}: "
                     f"{self._last_transition_diagnostic}"
                 )
                 continue
+            slots = [
+                slot for slot in changed_slots
+                if self._is_trusted_landing_transition(
+                    before.crops[slot], after.crops[slot]
+                )
+            ]
+            if not slots:
+                self._last_landing_diagnostic = (
+                    f"history offset {len(frames) - index}: visual transition "
+                    f"rejected for slots={changed_slots}"
+                )
+                return []
             if len(slots) != len(names):
                 # UE5 idle poses can move several already-occupied slots in
                 # the same slow detector interval as one real landing. Once
@@ -627,8 +678,6 @@ class BenchHarvester:
                 landings.append(_PendingLanding(
                     label=name,
                     slot=slot,
-                    crop=after.crops[slot].copy(),
-                    empty_crop=before.crops[slot].copy(),
                     occupied_thumb=occupied.copy(),
                     empty_thumb=empty.copy(),
                 ))
@@ -722,10 +771,12 @@ class BenchHarvester:
         )
         return best[1]
 
-    @staticmethod
+    @classmethod
     def _landing_persists(
+        cls,
         current: Optional[np.ndarray],
         landing: _PendingLanding,
+        current_crop: Optional[np.ndarray] = None,
     ) -> bool:
         """Validate a staged landing without assuming empty arenas are smooth.
 
@@ -736,7 +787,12 @@ class BenchHarvester:
         texture. This works on high-detail Set 18 arenas while still rejecting
         a unit that was moved away before shop confirmation.
         """
-        if current is None:
+        if (
+            current is None
+            or current_crop is None
+            or not cls._has_champion_health_bar(current_crop)
+            or cls._has_ui_overlay(current_crop)
+        ):
             return False
         empty_distance = float(np.mean(cv2.absdiff(
             current, landing.empty_thumb
@@ -833,18 +889,73 @@ class BenchHarvester:
         ]
 
     @classmethod
-    def _empty_reference_is_distinct(
+    def _is_trusted_landing_transition(
         cls,
-        empty_crop: np.ndarray,
-        occupied_crop: np.ndarray,
+        before_crop: np.ndarray,
+        after_crop: np.ndarray,
     ) -> bool:
-        """Only call a pre-landing frame empty when a model actually appeared."""
-        empty_thumb = cls._thumb(empty_crop)
-        occupied_thumb = cls._thumb(occupied_crop)
-        if empty_thumb is None or occupied_thumb is None:
+        """Require visual evidence of a real empty -> champion transition."""
+        return (
+            not cls._has_ui_overlay(before_crop)
+            and not cls._has_ui_overlay(after_crop)
+            and not cls._has_champion_health_bar(before_crop)
+            and cls._has_champion_health_bar(after_crop)
+        )
+
+    @staticmethod
+    def _has_champion_health_bar(crop: Optional[np.ndarray]) -> bool:
+        """Detect the long green bar rendered above every bench champion."""
+        if crop is None or crop.size == 0:
             return False
-        distance = float(np.mean(cv2.absdiff(empty_thumb, occupied_thumb)))
-        return distance >= _EMPTY_LANDING_MIN_MAD
+        height, width = crop.shape[:2]
+        hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+        green = cv2.inRange(
+            hsv,
+            np.array([45, 170, 50], dtype=np.uint8),
+            np.array([75, 255, 255], dtype=np.uint8),
+        )
+        kernel = cv2.getStructuringElement(
+            cv2.MORPH_RECT, (max(3, width // 16), 1)
+        )
+        green = cv2.morphologyEx(green, cv2.MORPH_CLOSE, kernel)
+        dense_rows = np.mean(green > 0, axis=1) >= 0.35
+        padded = np.pad(dense_rows.astype(np.int8), (1, 1))
+        edges = np.diff(padded)
+        starts = np.flatnonzero(edges == 1)
+        ends = np.flatnonzero(edges == -1)
+        for start, end in zip(starts, ends):
+            bar_height = end - start
+            if start >= height * 0.60 or not (
+                2 <= bar_height <= height * _HEALTH_BAR_MAX_HEIGHT_RATIO
+            ):
+                continue
+            columns = np.any(green[start:end] > 0, axis=0)
+            positions = np.flatnonzero(columns)
+            if positions.size == 0:
+                continue
+            x, right = int(positions[0]), int(positions[-1])
+            bar_width = right - x + 1
+            if (
+                bar_width >= width * _HEALTH_BAR_MIN_WIDTH_RATIO
+                and x < width * 0.70
+                and right > width * 0.30
+            ):
+                return True
+        return False
+
+    @staticmethod
+    def _has_ui_overlay(crop: Optional[np.ndarray]) -> bool:
+        """Recognize dark text panels that can mimic a bench transition."""
+        if crop is None or crop.size == 0:
+            return False
+        gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+        hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+        dark_rows = np.mean(gray < 55, axis=1) >= _TOOLTIP_DARK_ROW_RATIO
+        if float(np.mean(dark_rows)) < _TOOLTIP_MIN_DENSE_ROWS_RATIO:
+            return False
+        neutral_bright = (gray > 150) & (hsv[:, :, 1] < 60)
+        text_rows = np.mean(neutral_bright, axis=1) >= 0.01
+        return float(np.mean(dark_rows & text_rows)) >= 0.02
 
     @staticmethod
     def _thumb(crop: np.ndarray) -> Optional[np.ndarray]:
@@ -852,6 +963,14 @@ class BenchHarvester:
             return None
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
         return cv2.resize(gray, _THUMB_SIZE, interpolation=cv2.INTER_AREA)
+
+    @staticmethod
+    def _top_thumb(crop: np.ndarray) -> Optional[np.ndarray]:
+        """Thumbnail of the top edge where neighboring board units intrude."""
+        if crop is None or crop.size == 0:
+            return None
+        top_height = max(1, int(round(crop.shape[0] * 0.18)))
+        return BenchHarvester._thumb(crop[:top_height])
 
     @staticmethod
     def _crop_metrics(thumb: np.ndarray) -> tuple[float, float]:
@@ -913,6 +1032,12 @@ class BenchHarvester:
         """Explain why a crop must not enter training, or return ``None``."""
         if crop is None or crop.size == 0:
             return "unreadable"
+        if cls._has_ui_overlay(crop):
+            return "ui_overlay"
+        if background and cls._has_champion_health_bar(crop):
+            return "occupied_background"
+        if not background and not cls._has_champion_health_bar(crop):
+            return "no_health_bar"
         if cls._has_materialization_effect(crop):
             return "materialization"
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
@@ -947,16 +1072,6 @@ class BenchHarvester:
             logger.debug(f"Skipping near-duplicate training crop: {name} (slot {slot})")
             return False
         return self._write_crop(crop, name, slot)
-
-    def _save_empty(self, crop: np.ndarray, slot: int) -> bool:
-        reason = self.training_crop_rejection_reason(crop, background=True)
-        if reason:
-            self._record_rejection(reason, "_empty", slot)
-            return False
-        if self._is_near_duplicate(crop, "_empty"):
-            self._record_rejection("duplicate", "_empty", slot)
-            return False
-        return self._write_crop(crop, "_empty", slot)
 
     @staticmethod
     def _safe_label(name: str) -> str:

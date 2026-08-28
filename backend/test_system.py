@@ -1027,6 +1027,7 @@ def test_roster_tracker():
 def test_bench_harvester():
     """Purchases pair with newly-occupied bench slots and save labeled crops."""
     import tempfile
+    import cv2
     import numpy as np
     from pathlib import Path
     from harvest import BenchHarvester
@@ -1042,8 +1043,16 @@ def test_bench_harvester():
         f = np.full((h, w, 3), 40, dtype=np.uint8)   # flat = empty bench
         rng = np.random.default_rng(seed)
         for s in occupied_slots:
-            noise = rng.integers(0, 255, (bh, slot_w, 3), dtype=np.uint8)
-            f[by:by + bh, bx + s * slot_w: bx + (s + 1) * slot_w] = noise
+            noise = rng.integers(20, 220, (ch, slot_w, 3), dtype=np.uint8)
+            x0 = cx + s * slot_w
+            f[cy:cy + ch, x0:x0 + slot_w] = noise
+            cv2.rectangle(
+                f,
+                (x0 + slot_w // 6, cy + ch // 12),
+                (x0 + slot_w * 5 // 6, cy + ch // 12 + 5),
+                (25, 225, 65),
+                -1,
+            )
         return f
 
     def pose(delta=0):
@@ -1120,10 +1129,17 @@ def test_bench_harvester():
                 ).astype(np.uint8)
             if landed:
                 result[
-                    by:by + bh,
-                    bx + 4 * slot_w:bx + 5 * slot_w,
+                    cy:cy + ch,
+                    cx + 4 * slot_w:cx + 5 * slot_w,
                 ] = np.random.default_rng(404).integers(
-                    0, 255, (bh, slot_w, 3), dtype=np.uint8
+                    20, 220, (ch, slot_w, 3), dtype=np.uint8
+                )
+                cv2.rectangle(
+                    result,
+                    (cx + 4 * slot_w + slot_w // 6, cy + ch // 12),
+                    (cx + 4 * slot_w + slot_w * 5 // 6, cy + ch // 12 + 5),
+                    (25, 225, 65),
+                    -1,
                 )
             return result
 
@@ -1141,14 +1157,23 @@ def test_bench_harvester():
         hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
         baseline = frame([])
         landed = baseline.copy()
-        background = np.random.default_rng(700).integers(
-            30, 210, (bh, slot_w, 3), dtype=np.uint8
+        yy, xx = np.indices((ch, slot_w))
+        background_gray = ((yy // 3 + xx // 3) % 2 * 120 + 35).astype(np.uint8)
+        background = np.dstack(
+            [background_gray, background_gray, background_gray]
         )
         champion = np.random.default_rng(701).integers(
-            30, 210, (bh, slot_w, 3), dtype=np.uint8
+            30, 210, (ch, slot_w, 3), dtype=np.uint8
         )
-        baseline[by:by + bh, bx + 4 * slot_w:bx + 5 * slot_w] = background
-        landed[by:by + bh, bx + 4 * slot_w:bx + 5 * slot_w] = champion
+        baseline[cy:cy + ch, cx + 4 * slot_w:cx + 5 * slot_w] = background
+        landed[cy:cy + ch, cx + 4 * slot_w:cx + 5 * slot_w] = champion
+        cv2.rectangle(
+            landed,
+            (cx + 4 * slot_w + slot_w // 6, cy + ch // 12),
+            (cx + 4 * slot_w + slot_w * 5 // 6, cy + ch // 12 + 5),
+            (25, 225, 65),
+            -1,
+        )
 
         assert hv.process(baseline, []) == 0
         assert hv.process(landed, [], ["Gwen"]) == 0
@@ -1197,8 +1222,9 @@ def test_bench_harvester():
         assert quality._save(smooth_crop, "Portal", 8) is False
         assert not list(Path(tmp).rglob("*.png"))
 
-    # The slot immediately before a confirmed landing is a trustworthy empty
-    # example. Save it once as _empty and suppress an identical repeat.
+    # A purchase proves the champion label, but it does not prove the prior
+    # full crop was empty (Little Legends and tooltips can cover that slot).
+    # Runtime harvesting therefore never writes the background class.
     with tempfile.TemporaryDirectory() as tmp:
         hv = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
         empty = frame([])
@@ -1207,15 +1233,11 @@ def test_bench_harvester():
         empty[by:by + bh, bx:bx + slot_w] = np.dstack(
             [texture, texture + 5, texture + 10]
         )
-        landed = empty.copy()
-        landed[by:by + bh, bx:bx + slot_w] = frame([0])[
-            by:by + bh, bx:bx + slot_w
-        ]
+        landed = frame([0])
         assert hv.process(empty, []) == 0
         assert hv.process(landed, ["Gwen"]) == 1
         empties = list((Path(tmp) / "_empty").glob("*.png"))
-        assert len(empties) == 1
-        assert hv._save_empty(hv._bench_slot_crops(empty)[0], 0) is False
+        assert len(empties) == 0
 
     # UE5 renders a newly bought champion as a sharp blue hologram. It has
     # plenty of edge detail, so the generic quality gate used to save it as a
@@ -1231,12 +1253,20 @@ def test_bench_harvester():
         effect_crop[checker] = (235, 190, 25)
         effect_crop[~checker] = (180, 145, 20)
         effect[by:by + bh, bx:bx + slot_w] = effect_crop
+        cv2.rectangle(
+            effect,
+            (cx + slot_w // 6, cy + ch // 12),
+            (cx + slot_w * 5 // 6, cy + ch // 12 + 5),
+            (25, 225, 65),
+            -1,
+        )
         settled = frame([0], seed=91)
 
         assert hv.process(empty, []) == 0
         assert hv.process(effect, ["Rakan"]) == 0
         assert not list(Path(tmp).rglob("*.png"))
-        assert hv.process(settled, []) == 1  # first clean model frame: retry
+        assert hv.process(settled, []) == 0  # rebase after hologram disappears
+        assert hv.process(settled, []) == 1  # stable clean model frame: retry
         saved = list(Path(tmp).rglob("*.png"))
         assert len(saved) == 1 and saved[0].parent.name == "Rakan"
 
@@ -1411,6 +1441,7 @@ def test_bench_crop_geometry():
 def test_bench_harvester_quality_invariants():
     """Collector favors fewer trustworthy labels over ambiguous edge data."""
     import tempfile
+    import cv2
     import numpy as np
     from pathlib import Path
     from harvest import BENCH_SLOTS, BenchHarvester
@@ -1419,15 +1450,24 @@ def test_bench_harvester_quality_invariants():
     height, width = 720, 1280
     rois = GameROIs()
     bx, by, bw, bh = rois.champion_bench.to_pixels(width, height)
+    cx, cy, cw, ch = rois.champion_bench_capture.to_pixels(width, height)
     slot_w = bw // BENCH_SLOTS
 
     def frame(slot=None, seed=1):
         result = np.full((height, width, 3), 45, dtype=np.uint8)
         if slot is not None:
-            result[by:by + bh, bx + slot * slot_w:bx + (slot + 1) * slot_w] = (
+            x0 = cx + slot * slot_w
+            result[cy:cy + ch, x0:x0 + slot_w] = (
                 np.random.default_rng(seed).integers(
-                    0, 256, (bh, slot_w, 3), dtype=np.uint8
+                    20, 220, (ch, slot_w, 3), dtype=np.uint8
                 )
+            )
+            cv2.rectangle(
+                result,
+                (x0 + slot_w // 6, cy + ch // 12),
+                (x0 + slot_w * 5 // 6, cy + ch // 12 + 5),
+                (25, 225, 65),
+                -1,
             )
         return result
 
@@ -1458,10 +1498,7 @@ def test_bench_harvester_quality_invariants():
         baseline[by:by + bh, bx:bx + slot_w] = np.dstack(
             [texture, texture, texture]
         )
-        landed = baseline.copy()
-        landed[by:by + bh, bx:bx + slot_w] = frame(0, 101)[
-            by:by + bh, bx:bx + slot_w
-        ]
+        landed = frame(0, 101)
         replacement = baseline.copy()
         replacement[by:by + bh, bx:bx + slot_w] = np.dstack(
             [inverse, inverse, inverse]
@@ -1470,7 +1507,7 @@ def test_bench_harvester_quality_invariants():
         assert collector.process(baseline, []) == 0
         assert collector.process(landed, ["Gwen"]) == 1
         original_empty_count = len(list((Path(tmp) / "_empty").glob("*.png")))
-        assert original_empty_count == 1
+        assert original_empty_count == 0
         collector.process(replacement, [])
         collector.process(replacement, [])
         assert len(list((Path(tmp) / "_empty").glob("*.png"))) == original_empty_count
@@ -1480,7 +1517,6 @@ def test_bench_harvester_quality_invariants():
     # unit; saving the former as _empty would poison the background class.
     with tempfile.TemporaryDirectory() as tmp:
         collector = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
-        cx, cy, cw, ch = rois.champion_bench_capture.to_pixels(width, height)
         pitch = cw // BENCH_SLOTS
         before = frame()
         unit = np.random.default_rng(404).integers(
@@ -1494,9 +1530,9 @@ def test_bench_harvester_quality_invariants():
         ).astype(np.uint8)
 
         assert collector.process(before, []) == 0
-        assert collector.process(after, ["Yorick"]) == 1
+        assert collector.process(after, ["Yorick"]) == 0
         assert not list((Path(tmp) / "_empty").glob("*.png"))
-        assert len(list((Path(tmp) / "Yorick").glob("*.png"))) == 1
+        assert not list((Path(tmp) / "Yorick").glob("*.png"))
 
     # The landing strip can remain stable while combat effects or board units
     # move through the newly added upper part of the full-model crop. Such a
@@ -1506,8 +1542,6 @@ def test_bench_harvester_quality_invariants():
         collector = BenchHarvester(
             out_dir=Path(tmp), track_interval=1, track_max_saves=3
         )
-        cx, cy, cw, ch = rois.champion_bench_capture.to_pixels(width, height)
-
         def stable_pose(delta=0):
             result = frame(0, 202)
             lower = result[by:by + bh, bx:bx + slot_w].astype(np.int16)
@@ -1530,6 +1564,112 @@ def test_bench_harvester_quality_invariants():
     assert BenchHarvester().track_max_saves <= 12
 
     return "unsafe edge ignored, occupied replacement protected, default class balance capped"
+
+
+def test_bench_harvester_live_capture_regressions():
+    """Reject the false Set 18 landings observed in the August 28 game."""
+    import tempfile
+    import cv2
+    import numpy as np
+    from pathlib import Path
+    from harvest import BENCH_SLOTS, BenchHarvester
+    from config import GameROIs
+
+    height, width = 720, 1280
+    rois = GameROIs()
+    _bx, _by, bw, _bh = rois.champion_bench.to_pixels(width, height)
+    cx, cy, cw, ch = rois.champion_bench_capture.to_pixels(width, height)
+    capture_pitch = cw // BENCH_SLOTS
+
+    def arena():
+        result = np.full((height, width, 3), 58, dtype=np.uint8)
+        yy, xx = np.indices((ch, cw))
+        texture = ((yy // 13 + xx // 17) % 2 * 7 + 52).astype(np.uint8)
+        result[cy:cy + ch, cx:cx + cw] = np.dstack(
+            [texture, texture + 3, texture + 8]
+        )
+        return result
+
+    def with_model(result, slot, seed, *, health_bar=True):
+        result = result.copy()
+        x0 = cx + slot * capture_pitch
+        rng = np.random.default_rng(seed)
+        model = rng.integers(20, 220, (ch, capture_pitch, 3), dtype=np.uint8)
+        result[cy:cy + ch, x0:x0 + capture_pitch] = model
+        if health_bar:
+            # Bench champions consistently expose a long green health bar;
+            # Little Legends and arena/tooltip motion do not.
+            cv2.rectangle(
+                result,
+                (x0 + capture_pitch // 6, cy + ch // 12),
+                (x0 + capture_pitch * 5 // 6, cy + ch // 12 + 5),
+                (25, 225, 65),
+                -1,
+            )
+        return result
+
+    # Buying Sejuani while a previously labeled Leona was already in the slot
+    # produced the same model under two labels. Occupied -> occupied motion is
+    # never a trustworthy purchase landing.
+    with tempfile.TemporaryDirectory() as tmp:
+        collector = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        leona = with_model(arena(), 1, 401)
+        sejuani_motion = with_model(arena(), 1, 402)
+        assert collector.process(leona, []) == 0
+        assert collector.process(sejuani_motion, ["Sejuani"]) == 0
+        assert not list(Path(tmp).rglob("*.png"))
+
+    # A shop/trait tooltip disappearing over a slot was paired with Xayah.
+    # The transition is large and persistent but the before frame is UI, not
+    # an empty bench platform.
+    with tempfile.TemporaryDirectory() as tmp:
+        collector = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        tooltip = arena()
+        x0 = cx + 3 * capture_pitch
+        cv2.rectangle(
+            tooltip,
+            (x0, cy),
+            (x0 + capture_pitch - 1, cy + ch - 1),
+            (10, 17, 19),
+            -1,
+        )
+        for row in range(cy + 25, cy + ch - 10, 24):
+            cv2.line(
+                tooltip,
+                (x0 + 8, row),
+                (x0 + capture_pitch // 4, row),
+                (225, 225, 225),
+                3,
+            )
+        xayah = with_model(arena(), 3, 403)
+        assert collector.process(tooltip, []) == 0
+        assert collector.process(xayah, ["Xayah"]) == 0
+        assert not list(Path(tmp).rglob("*.png"))
+        tooltip_crop = collector._bench_slot_crops(tooltip)[3]
+        assert (
+            collector.training_crop_rejection_reason(tooltip_crop) == "ui_overlay"
+        )
+
+    # Little Legend movement changes an otherwise empty slot dramatically,
+    # but without a champion health bar it must not become a unit label.
+    with tempfile.TemporaryDirectory() as tmp:
+        collector = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        little_legend = with_model(arena(), 4, 404, health_bar=False)
+        assert collector.process(arena(), []) == 0
+        assert collector.process(little_legend, ["Rakan"]) == 0
+        assert not list(Path(tmp).rglob("*.png"))
+
+    # Runtime collection must not create _empty from a unit pose, tooltip, or
+    # a tracked model that merely resembles its old lower-strip baseline.
+    with tempfile.TemporaryDirectory() as tmp:
+        collector = BenchHarvester(out_dir=Path(tmp), track_interval=10_000)
+        occupied_before = with_model(arena(), 2, 405)
+        occupied_after = with_model(arena(), 2, 406)
+        collector.process(occupied_before, [])
+        collector.process(occupied_after, ["Karma"])
+        assert not list((Path(tmp) / "_empty").glob("*.png"))
+
+    return "health-bar landing gate, tooltip rejection, and no unsafe _empty writes OK"
 
 
 def test_window_picker():
@@ -1765,6 +1905,8 @@ def test_classifier_data_pipeline():
                 image = np.random.default_rng(seed).integers(
                     0, 256, (96, 64, 3), dtype=np.uint8
                 )
+                if not name.startswith("_"):
+                    cv2.rectangle(image, (8, 12), (55, 16), (25, 225, 65), -1)
                 seed += 1
                 assert cv2.imwrite(str(d / f"crop_{i}.png"), image)
         # Old collectors may have left duplicates and blue purchase effects.
@@ -1776,12 +1918,22 @@ def test_classifier_data_pipeline():
         checker = ((yy // 6 + xx // 6) % 2).astype(bool)
         effect[checker] = (235, 190, 25)
         effect[~checker] = (180, 145, 20)
+        cv2.rectangle(effect, (8, 12), (55, 16), (25, 225, 65), -1)
         assert cv2.imwrite(str(root / "Gwen" / "hologram.png"), effect)
+        # The same model under two labels is semantic corruption that normal
+        # sharpness/duplicate checks cannot catch.
+        collision = cv2.imread(str(root / "Gwen" / "crop_1.png"))
+        assert cv2.imwrite(str(root / "Zed" / "wrong_label.png"), collision)
         (root / "notes.txt").write_text("ignore me")
 
         audited, rejected = audit_dataset(root)
-        assert len(audited["Gwen"]) == 25
-        assert rejected["Gwen"] == {"duplicate": 1, "materialization": 1}
+        assert len(audited["Gwen"]) == 24
+        assert rejected["Gwen"] == {
+            "duplicate": 1,
+            "label_collision": 1,
+            "materialization": 1,
+        }
+        assert rejected["Zed"]["label_collision"] == 1
         usable, skipped = discover_dataset(root, min_crops=20)
         assert set(usable) == {"Gwen", "Lux", "_empty"}, usable.keys()
         assert skipped == {"Zed": 3}, skipped
@@ -1790,7 +1942,7 @@ def test_classifier_data_pipeline():
 
         train, val, labels = split_dataset(usable, val_fraction=0.15)
         assert labels == ["Gwen", "Lux", "_empty"]  # forms pooled, background kept
-        assert len(train) + len(val) == 79
+        assert len(train) + len(val) == 78
         # Every class keeps at least one val sample; splits are disjoint.
         val_classes = {lbl for _, lbl in val}
         assert val_classes == {0, 1, 2}, "each class needs a val sample"
@@ -2511,6 +2663,7 @@ def main():
     test("Bench harvester", test_bench_harvester)
     test("Bench crop geometry", test_bench_crop_geometry)
     test("Bench harvester quality invariants", test_bench_harvester_quality_invariants)
+    test("Bench live-capture regressions", test_bench_harvester_live_capture_regressions)
     test("Window picker", test_window_picker)
     test("Direct window capture", test_direct_window_capture)
     test("Collection diagnostic schedule", test_collection_diagnostic_schedule)
