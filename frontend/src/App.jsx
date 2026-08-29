@@ -2329,9 +2329,13 @@ export default function App() {
             {(collectionStatus || gameData?.classifier_status) && (
               <span title={collectionStatus?.reason || (gameData.classifier_status.active
                 ? "Unit classifier model is active"
-                : "No model is installed yet; collecting labeled bench crops for later training")}>
+                : collectionStatus?.mode === "manual_inbox"
+                  ? "No model is installed yet; collecting unlabeled unit crops for manual sorting"
+                  : "No model is installed yet; collecting labeled bench crops for later training")}>
                 {collectionStatus
-                  ? `DATA ${collectionStatus.state.toUpperCase()} · ${collectionStatus.recognized_shop_slots || 0}/5 shop · ${collectionStatus.total_clean_crops || 0} crops · ${collectionStatus.rejected_crops || 0} rejected`
+                  ? collectionStatus.mode === "manual_inbox"
+                    ? `DATA INBOX · ${collectionStatus.session_crops_saved || 0} new · ${collectionStatus.total_clean_crops || 0} unsorted · ${collectionStatus.rejected_crops || 0} rejected`
+                    : `DATA ${collectionStatus.state.toUpperCase()} · ${collectionStatus.recognized_shop_slots || 0}/5 shop · ${collectionStatus.total_clean_crops || 0} crops · ${collectionStatus.rejected_crops || 0} rejected`
                   : `ML ${gameData.classifier_status.active ? "ON" : "COLLECTING"} · ${gameData.classifier_status.crops} crops · ${gameData.classifier_status.ready_classes} ready`}
               </span>
             )}

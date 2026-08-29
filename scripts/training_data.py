@@ -1,8 +1,8 @@
 """
 Training-Data Pack / Merge
 
-The bench-crop harvester saves labeled unit crops to backend/_training/set18/
-on whatever machine runs live mode. Raw crops stay local (gitignored) —
+The live harvester saves unlabeled crops to backend/_training/set18/_inbox;
+the sorter moves reviewed crops into champion folders. Raw crops stay local —
 only the trained model ships in the repo. When several machines collect
 crops, this script moves data between them without any cloud setup:
 
@@ -27,6 +27,7 @@ from harvest import READY_CROPS_PER_CLASS, audit_training_crops  # noqa: E402
 from set18_data import SET_NUMBER, canonical_training_label  # noqa: E402
 
 TRAINING_DIR = REPO_ROOT / "backend" / "_training" / f"set{SET_NUMBER}"
+RESERVED_DIRS = {"_inbox", "_rejected_manual"}
 
 
 def stats() -> int:
@@ -34,8 +35,11 @@ def stats() -> int:
         print("No training data collected yet — play games with live mode running.")
         return 0
     raw_by_label: dict[str, int] = {}
+    inbox_count = sum(1 for _ in (TRAINING_DIR / "_inbox").glob("*.png"))
     for champ_dir in sorted(TRAINING_DIR.iterdir()):
         if not champ_dir.is_dir():
+            continue
+        if champ_dir.name in RESERVED_DIRS:
             continue
         n = sum(1 for _ in champ_dir.glob("*.png"))
         if n:
@@ -48,6 +52,7 @@ def stats() -> int:
         f"Training crops: {raw_total} raw / {clean_total} clean+diverse "
         f"across {len(raw_by_label)} classes"
     )
+    print(f"Manual inbox: {inbox_count} unsorted crops")
     for name in sorted(raw_by_label, key=lambda n: -raw_by_label[n]):
         clean = len(accepted.get(name, []))
         status = "READY" if clean >= READY_CROPS_PER_CLASS else "waiting"
@@ -74,7 +79,10 @@ def pack(out_path: str) -> int:
     if not TRAINING_DIR.exists():
         print("Nothing to pack — no training data collected yet.", file=sys.stderr)
         return 1
-    files = sorted(TRAINING_DIR.rglob("*.png"))
+    files = sorted(
+        path for path in TRAINING_DIR.rglob("*.png")
+        if path.relative_to(TRAINING_DIR).parts[0] not in RESERVED_DIRS
+    )
     if not files:
         print("Nothing to pack — no crops found.", file=sys.stderr)
         return 1

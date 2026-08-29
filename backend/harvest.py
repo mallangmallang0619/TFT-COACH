@@ -1,26 +1,10 @@
-"""
-Bench-Crop Harvester — auto-labeled training data for the unit classifier.
+"""Unit-crop collection and quality auditing for the Set 18 classifier.
 
-Live board/bench units are 3D models that template matching can't
-identify; the plan is a small per-hex CNN classifier, which needs labeled
-crops of those models. This module collects them for free while the
-player plays:
-
-  1. The purchase tracker (roster.py) tells us WHICH champion was just
-     bought — the shop card name is reliable OCR.
-  2. A bought unit always lands on the leftmost empty bench slot, so the
-     bench slot that flips empty → occupied between the frames around a
-     purchase is a picture OF that champion.
-  3. Save the crop to _training/set18/<champion>/<timestamp>.png.
-  4. While that slot stays visually stable (the unit is still standing
-     there), keep saving crops of it every few frames — idle-animation
-     poses multiply one purchase into a dozen labeled samples. Any abrupt
-     slot change (moved, sold, combined, item flash) stops the tracking
-     immediately, so labels stay pure.
-
-A few games of normal play yields hundreds of labeled samples per set —
-no manual labeling. The directory is gitignored; it feeds model training
-offline.
+Live mode uses a high-volume manual inbox: health-bar-verified board and bench
+crops are saved to ``_training/set18/_inbox`` without guessing names. The sorter
+moves reviewed crops into champion folders. The older purchase-pairing path is
+retained as an opt-in mode and for regression coverage, but is no longer used by
+the live server because UE5 animations made its inferred labels unreliable.
 """
 
 from __future__ import annotations
@@ -37,6 +21,7 @@ import numpy as np
 
 from config import (
     BENCH_CROP_HORIZONTAL_INSET_RATIO,
+    BOARD_HEX_GRID,
     GameROIs,
     UNSAFE_BENCH_SLOTS,
 )
@@ -86,6 +71,8 @@ _HEALTH_BAR_MIN_WIDTH_RATIO = 0.22
 _HEALTH_BAR_MAX_HEIGHT_RATIO = 0.12
 _TOOLTIP_DARK_ROW_RATIO = 0.65
 _TOOLTIP_MIN_DENSE_ROWS_RATIO = 0.20
+_MANUAL_INBOX_DIR = "_inbox"
+_MANUAL_REJECTED_DIR = "_rejected_manual"
 
 
 @dataclass
@@ -140,6 +127,8 @@ def audit_training_crops(
 
     for champ_dir in sorted(train_dir.iterdir()):
         if not champ_dir.is_dir():
+            continue
+        if champ_dir.name in {_MANUAL_INBOX_DIR, _MANUAL_REJECTED_DIR}:
             continue
         label = canonical_training_label(champ_dir.name)
         accepted.setdefault(label, [])
@@ -213,12 +202,19 @@ class BenchHarvester:
         track_interval: int = _TRACK_SAVE_INTERVAL,
         track_max_saves: int = _TRACK_MAX_SAVES,
         track_change_limit: float = _TRACK_CHANGE_LIMIT,
+        manual_inbox: bool = False,
+        manual_interval: int = 1,
+        manual_collect_board: bool = True,
     ):
         self.out_dir = out_dir
         self.rois = GameROIs()
         self.track_interval = track_interval
         self.track_max_saves = track_max_saves
         self.track_change_limit = track_change_limit
+        self.manual_inbox = manual_inbox
+        self.manual_interval = max(1, manual_interval)
+        self.manual_collect_board = manual_collect_board
+        self._manual_frame_count = 0
         # Keep a short bench history so delayed shop confirmation can recover
         # the exact frame where a unit landed instead of requiring perfect
         # timing between OCR and animation.
@@ -232,7 +228,11 @@ class BenchHarvester:
         self.saved_count = 0
         self.rejection_counts: Counter[str] = Counter()
         self.skip_counts: Counter[str] = Counter()
-        self.last_event = "Waiting for a readable shop and bench baseline"
+        self.last_event = (
+            "Manual inbox ready; waiting for visible units"
+            if manual_inbox
+            else "Waiting for a readable shop and bench baseline"
+        )
         self.last_save_at: Optional[float] = None
         self.last_saved_label: Optional[str] = None
         self._suspended = False
@@ -243,7 +243,19 @@ class BenchHarvester:
         purchases: list[str],
         pending_purchases: Optional[list[str]] = None,
     ) -> int:
-        """Returns how many labeled crops were saved this frame."""
+        """Returns how many labeled or manual-inbox crops were saved."""
+        if self.manual_inbox:
+            if self._suspended:
+                self._suspended = False
+                self._manual_frame_count = 0
+                self.last_event = "Trusted capture resumed; manual inbox rebased"
+                return 0
+            self._manual_frame_count += 1
+            if self._manual_frame_count < self.manual_interval:
+                return 0
+            self._manual_frame_count = 0
+            return self._collect_manual_inbox(frame)
+
         # Compare only the stable lower bench strip, but retain a taller crop
         # for training so the full UE5 model is visible. Using the tall crop
         # for motion detection would mix in board units above the bench.
@@ -337,6 +349,7 @@ class BenchHarvester:
         self._history.clear()
         self._last_landing_diagnostic = "no bench transitions inspected"
         self._last_transition_diagnostic = "no transition"
+        self._manual_frame_count = 0
         self._suspended = False
 
     def suspend_observation(self, reason: str = "capture is not trusted") -> None:
@@ -365,7 +378,47 @@ class BenchHarvester:
             "last_event": self.last_event,
             "last_save_at": self.last_save_at,
             "last_saved_label": self.last_saved_label,
+            "mode": "manual_inbox" if self.manual_inbox else "automatic",
+            "inbox_crops": self.manual_inbox_count(),
         }
+
+    def manual_inbox_count(self) -> int:
+        return sum(1 for _ in (self.out_dir / _MANUAL_INBOX_DIR).glob("*.png"))
+
+    def _collect_manual_inbox(self, frame: np.ndarray) -> int:
+        """Save visible units without assigning champion names."""
+        candidates: list[tuple[str, np.ndarray]] = []
+        if self.manual_collect_board:
+            candidates.extend(self._board_hex_crops(frame))
+        candidates.extend(
+            (f"bench_slot{slot}", crop)
+            for slot, crop in enumerate(self._bench_slot_crops(frame))
+            if slot not in UNSAFE_BENCH_SLOTS
+        )
+
+        saved = 0
+        for source, crop in candidates:
+            # No health bar normally means an empty board/bench position; that
+            # is expected and should not flood rejection telemetry.
+            if not self._has_champion_health_bar(crop):
+                continue
+            reason = self.training_crop_rejection_reason(crop)
+            if reason:
+                self.rejection_counts[reason] += 1
+                continue
+            if self._is_near_duplicate(crop, _MANUAL_INBOX_DIR):
+                self.skip_counts["manual_duplicate"] += 1
+                continue
+            if self._write_manual_crop(crop, source):
+                saved += 1
+
+        if saved:
+            self.last_event = (
+                f"Saved {saved} unlabeled unit crop(s) to the manual inbox"
+            )
+        else:
+            self.last_event = "Manual inbox watching visible board and bench units"
+        return saved
 
     def _record_rejection(self, reason: str, name: str, slot: int) -> None:
         self.rejection_counts[reason] += 1
@@ -862,6 +915,28 @@ class BenchHarvester:
             horizontal_inset_ratio=BENCH_CROP_HORIZONTAL_INSET_RATIO,
         )
 
+    def _board_hex_crops(self, frame: np.ndarray) -> list[tuple[str, np.ndarray]]:
+        """Use pixel-identical board geometry to classifier inference."""
+        height, width = frame.shape[:2]
+        bx, by, bw, bh = self.rois.board.to_pixels(width, height)
+        board_region = frame[by:by + bh, bx:bx + bw]
+        region_height, region_width = board_region.shape[:2]
+        crops: list[tuple[str, np.ndarray]] = []
+        for index, position in enumerate(BOARD_HEX_GRID):
+            center_x = int(position.cx * region_width)
+            center_y = int(position.cy * region_height)
+            radius = int(position.radius * region_width)
+            crop = board_region[
+                max(0, center_y - int(2.55 * radius)):
+                min(region_height, center_y + radius),
+                max(0, center_x - int(1.1 * radius)):
+                min(region_width, center_x + int(1.1 * radius)),
+            ]
+            crops.append(
+                (f"board_r{position.row}_c{position.col}_i{index}", crop)
+            )
+        return crops
+
     def _bench_anchor_slot_crops(self, frame: np.ndarray) -> list[np.ndarray]:
         """Return the lower, stable strip used only for landing motion."""
         return self._split_bench_roi(frame, self.rois.champion_bench)
@@ -1120,6 +1195,29 @@ class BenchHarvester:
             self._saved_thumbs.setdefault(safe, []).append(thumb)
             self._loaded_thumb_labels.add(safe)
         logger.info(f"Training crop saved: {name} (bench slot {slot}) → {out.name}")
+        return True
+
+    def _write_manual_crop(self, crop: np.ndarray, source: str) -> bool:
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        out = self.out_dir / _MANUAL_INBOX_DIR / f"{ts}_{source}.png"
+        try:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            if not cv2.imwrite(str(out), crop):
+                self.rejection_counts["write_failed"] += 1
+                logger.warning(f"Could not save manual training crop: {out}")
+                return False
+        except OSError as error:
+            self.rejection_counts["write_failed"] += 1
+            logger.warning(f"Could not save manual training crop: {error}")
+            return False
+        self.saved_count += 1
+        self.last_save_at = datetime.datetime.now().timestamp()
+        self.last_saved_label = _MANUAL_INBOX_DIR
+        thumb = self._thumb(crop)
+        if thumb is not None:
+            self._saved_thumbs.setdefault(_MANUAL_INBOX_DIR, []).append(thumb)
+            self._loaded_thumb_labels.add(_MANUAL_INBOX_DIR)
+        logger.info(f"Manual training crop saved: {source} → {out.name}")
         return True
 
     @staticmethod

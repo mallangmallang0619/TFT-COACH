@@ -1672,6 +1672,136 @@ def test_bench_harvester_live_capture_regressions():
     return "health-bar landing gate, tooltip rejection, and no unsafe _empty writes OK"
 
 
+def test_manual_training_inbox():
+    """Manual mode captures many clean crops without inventing class labels."""
+    import tempfile
+    import cv2
+    import numpy as np
+    from pathlib import Path
+    from types import SimpleNamespace
+    from harvest import BENCH_SLOTS, BenchHarvester
+    from config import BOARD_HEX_GRID, GameROIs
+    from game_state import GamePhase, GameState
+
+    sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
+    from sort_training_inbox import move_crop, requeue_existing, restore_crop
+    from websocket_server import TFTCoachServer
+
+    live_server = TFTCoachServer()
+    assert live_server.harvester.manual_inbox, "live mode still guesses crop labels"
+    live_server.capture = SimpleNamespace(
+        is_training_capture_trusted=True,
+        capture_trust_reason="Direct TFT window capture",
+    )
+    status = live_server._collection_status(
+        GameState(phase=GamePhase.PLANNING, shop_units=[None] * 5), []
+    )
+    assert status.mode == "manual_inbox" and status.state == "collecting"
+
+    height, width = 720, 1280
+    rois = GameROIs()
+    cx, cy, cw, ch = rois.champion_bench_capture.to_pixels(width, height)
+    pitch = cw // BENCH_SLOTS
+
+    def frame(slots, seed=700):
+        result = np.full((height, width, 3), 52, dtype=np.uint8)
+        for slot in slots:
+            x0 = cx + slot * pitch
+            model = np.random.default_rng(seed + slot).integers(
+                20, 220, (ch, pitch, 3), dtype=np.uint8
+            )
+            result[cy:cy + ch, x0:x0 + pitch] = model
+            cv2.rectangle(
+                result,
+                (x0 + pitch // 6, cy + ch // 12),
+                (x0 + pitch * 5 // 6, cy + ch // 12 + 5),
+                (25, 225, 65),
+                -1,
+            )
+        return result
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        collector = BenchHarvester(
+            out_dir=root,
+            manual_inbox=True,
+            manual_interval=1,
+            manual_collect_board=False,
+        )
+
+        # Purchase names are intentionally wrong: manual mode must ignore them
+        # and put visually valid crops only in the unlabeled inbox.
+        assert collector.process(frame([0, 3, 8]), ["WrongName"]) == 2
+        inbox = sorted((root / "_inbox").glob("*.png"))
+        assert len(inbox) == 2
+        assert not (root / "WrongName").exists()
+        assert all("bench_slot8" not in path.name for path in inbox)
+
+        # Static frames do not flood the inbox, while new poses are retained.
+        assert collector.process(frame([0, 3, 8]), []) == 0
+        assert collector.process(frame([0, 3, 8], seed=800), []) == 2
+        assert len(list((root / "_inbox").glob("*.png"))) == 4
+
+        # Sorting is recoverable and canonicalizes all Lux forms into one class.
+        source = sorted((root / "_inbox").glob("*.png"))[0]
+        destination = move_crop(source, "Lux_Coven", root)
+        assert destination.parent.name == "Lux" and destination.exists()
+        restored = restore_crop(destination, root / "_inbox")
+        assert restored.parent.name == "_inbox" and restored.exists()
+
+        # Old auto-labeled folders can be requeued without deleting the raw
+        # images or silently trusting their previous guessed labels.
+        old_dir = root / "WrongName"
+        old_dir.mkdir()
+        old_crop = old_dir / "legacy.png"
+        assert cv2.imwrite(str(old_crop), frame([0])[:ch, :pitch])
+        assert requeue_existing(root) == 1
+        assert not old_crop.exists()
+        assert any(
+            path.name.startswith("prior-WrongName-")
+            for path in (root / "_inbox").glob("*.png")
+        )
+
+    # Board crops use the exact same geometry as classifier inference, so a
+    # game also collects fielded/enemy units instead of waiting for every
+    # champion to sit on the player's bench.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        collector = BenchHarvester(
+            out_dir=root,
+            manual_inbox=True,
+            manual_interval=1,
+            manual_collect_board=True,
+        )
+        board = np.full((height, width, 3), 52, dtype=np.uint8)
+        bx, by, bw, bh = rois.board.to_pixels(width, height)
+        position = BOARD_HEX_GRID[17]
+        center_x = bx + int(position.cx * bw)
+        center_y = by + int(position.cy * bh)
+        radius = int(position.radius * bw)
+        x1, x2 = center_x - int(1.1 * radius), center_x + int(1.1 * radius)
+        y1, y2 = center_y - int(2.55 * radius), center_y + radius
+        board[y1:y2, x1:x2] = np.random.default_rng(901).integers(
+            20, 220, (y2 - y1, x2 - x1, 3), dtype=np.uint8
+        )
+        cv2.rectangle(
+            board,
+            (x1 + (x2 - x1) // 6, y1 + (y2 - y1) // 12),
+            (x1 + (x2 - x1) * 5 // 6, y1 + (y2 - y1) // 12 + 5),
+            (25, 225, 65),
+            -1,
+        )
+        assert collector.process(board, []) >= 1
+        assert any(
+            "board_" in path.name for path in (root / "_inbox").glob("*.png")
+        )
+
+    return (
+        "unlabeled burst collection, dedupe, unsafe-slot guard, "
+        "sort+undo+legacy requeue OK"
+    )
+
+
 def test_window_picker():
     """Capture targets TFT.exe, independent of window title."""
     from capture import WindowFinder
@@ -1924,9 +2054,13 @@ def test_classifier_data_pipeline():
         # sharpness/duplicate checks cannot catch.
         collision = cv2.imread(str(root / "Gwen" / "crop_1.png"))
         assert cv2.imwrite(str(root / "Zed" / "wrong_label.png"), collision)
+        inbox = root / "_inbox"
+        inbox.mkdir()
+        assert cv2.imwrite(str(inbox / "unsorted.png"), collision)
         (root / "notes.txt").write_text("ignore me")
 
         audited, rejected = audit_dataset(root)
+        assert "_inbox" not in audited and "_inbox" not in rejected
         assert len(audited["Gwen"]) == 24
         assert rejected["Gwen"] == {
             "duplicate": 1,
@@ -2664,6 +2798,7 @@ def main():
     test("Bench crop geometry", test_bench_crop_geometry)
     test("Bench harvester quality invariants", test_bench_harvester_quality_invariants)
     test("Bench live-capture regressions", test_bench_harvester_live_capture_regressions)
+    test("Manual training inbox", test_manual_training_inbox)
     test("Window picker", test_window_picker)
     test("Direct window capture", test_direct_window_capture)
     test("Collection diagnostic schedule", test_collection_diagnostic_schedule)

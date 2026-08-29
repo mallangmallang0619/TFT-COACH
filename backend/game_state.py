@@ -71,7 +71,8 @@ class ActiveSynergy(BaseModel):
 
 
 class TrainingCollectionStatus(BaseModel):
-    """Live visibility into auto-labeled classifier data collection."""
+    """Live visibility into classifier training-data collection."""
+    mode: str = "automatic"                   # automatic / manual_inbox
     state: str = "waiting"                    # collecting / waiting / paused
     reason: str = "Waiting for TFT"
     capture_trusted: bool = False

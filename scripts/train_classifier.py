@@ -2,9 +2,9 @@
 Unit Classifier Training — bench/board 3D-model crops -> ONNX.
 
 Live TFT renders units as 3D models that portrait template matching can't
-identify. The bench harvester (backend/harvest.py) auto-collects labeled
-crops of those models into backend/_training/set18/<champion>/ while the player
-plays. This script turns those crops into the classifier that ships in
+identify. Live mode collects unlabeled crops into backend/_training/set18/_inbox;
+scripts/sort_training_inbox.py moves reviewed images into each champion folder.
+This script turns those sorted crops into the classifier that ships in
 the repo — users never train, they just get assets/models/.
 
     python scripts/train_classifier.py --check     # is the data ready?

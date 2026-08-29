@@ -128,9 +128,10 @@ on its UI element — if they're all shifted, the capture grabbed the wrong
 window or region; if one box is off, that ROI needs recalibrating in
 `config.GameROIs`.
 
-The overlay header also reports `DATA COLLECTING`, `DATA WAITING`, or
-`DATA PAUSED`. Direct UE5 window capture may be unavailable; the collector
-automatically uses a trusted screen fallback while `TFT.exe` is foreground.
+The overlay header also reports `DATA INBOX`, `DATA WAITING`, or `DATA PAUSED`.
+Live mode collects visually valid board and bench crops without guessing unit
+names. Direct UE5 window capture may be unavailable; the collector automatically
+uses a trusted screen fallback while `TFT.exe` is foreground.
 Recent annotated session frames are kept in `backend/_debug/session/`, and
 the persistent backend log is `backend/_logs/tft-coach.log`.
 
@@ -236,13 +237,28 @@ intentionally pooled into the single `Lux` class: their Unreal models differ
 only slightly, while the live trait HUD supplies the exact origin.
 
 The Unreal unit classifier dataset is isolated at
-`backend/_training/set18/`. A Set 17/Hextech ONNX model is rejected at load time
-rather than silently producing bad predictions. Check collection readiness with:
+`backend/_training/set18/`. New live crops first enter `_inbox` with board/bench
+locations in their filenames. Sort them with the keyboard-driven viewer, then
+check training readiness:
 
 ```bash
+# Run this form once to manually review crops from the old auto-labeler:
+python scripts/sort_training_inbox.py --requeue-existing
+
+# Future sessions can open the new-crop inbox directly:
+python scripts/sort_training_inbox.py
 python scripts/train_classifier.py --check
 python scripts/training_data.py --stats
 ```
+
+In the sorter, choose/type a champion and press Enter. Space defers a crop,
+Delete moves it to a recoverable rejected folder, and Ctrl+Z undoes the latest
+move. Requeued files retain their previous guessed label in the filename only
+as a hint; you still choose the class. Lux's forms are automatically pooled
+into `Lux`.
+
+A Set 17/Hextech ONNX model is rejected at load time rather than silently
+producing bad predictions.
 
 The core Unreal HUD/board ROIs were calibrated from a live 2560×1440 Set 18
 frame. Re-run `python backend/diagnose_capture.py --dump-hexes` after changing
@@ -292,7 +308,7 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] Meta board layouts (Position tab renders TFT Academy's recommended placement, stars, and items for your comp)
 - [x] Shop-card reading (name-banner OCR + fuzzy roster matching — skin-proof, no art templates)
 - [x] Purchase-tracking roster — shop diffs between frames reveal buys; owned units (with 3-copy star-ups) feed comp direction as held units
-- [x] Auto-labeling training-data harvester — every purchase saves the bench crop it lands in, labeled by the shop card name, to `backend/_training/` (gitignored). Just play games and the classifier dataset builds itself. Raw crops stay local; only the trained model will ship in the repo (`assets/models/`), so users never collect or train. Pool crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
+- [x] Manual-inbox training harvester — live mode saves diverse health-bar-verified board and bench crops to `_training/set18/_inbox` without guessing labels. Sort them quickly with `python scripts/sort_training_inbox.py`; raw crops remain local and reversible. Pool sorted crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
 - [ ] Live unit identification — retrain on Set 18 Unreal crops (currently needs a few live games of collected data first)
 - [ ] Player-HP row tracking — the right-side player list reorders by standing, so the fixed HP ROI reads the wrong row late-game
 - [ ] Opponent scouting + positioning prediction (read enemy boards during combat, suggest counter-positioning)

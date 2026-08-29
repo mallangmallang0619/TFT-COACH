@@ -83,7 +83,10 @@ class TFTCoachServer:
         self.detector = Detector(self.templates)
         self.coach = Coach()
         self.roster = RosterTracker()
-        self.harvester = BenchHarvester()
+        # Set 18 UE5 animations made shop-to-bench auto-labels too noisy.
+        # Collect many unlabeled board/bench crops instead; the developer sorts
+        # them afterward with scripts/sort_training_inbox.py.
+        self.harvester = BenchHarvester(manual_inbox=True)
 
         # Hex template matching can't identify live 3D unit models and eats
         # ~2.3s/frame — turn it off so the loop runs at real capture FPS.
@@ -126,7 +129,17 @@ class TFTCoachServer:
         logger.info("Loading template images...")
         self.templates.load()
         crop_count, champion_count, ready_count = training_stats()
-        self._initial_clean_crop_count = crop_count
+        self._initial_clean_crop_count = (
+            self.harvester.manual_inbox_count()
+            if self.harvester.manual_inbox
+            else crop_count
+        )
+        if self.harvester.manual_inbox:
+            logger.info(
+                "Manual training inbox active; "
+                f"{self._initial_clean_crop_count} unsorted crops waiting in "
+                f"{self.harvester.out_dir / '_inbox'}"
+            )
         if self.detector.unit_classifier.available:
             logger.info(
                 f"Unit classifier active ({len(self.detector.unit_classifier.labels)} classes)"
@@ -354,6 +367,9 @@ class TFTCoachServer:
         elif state.phase not in {GamePhase.PLANNING, GamePhase.COMBAT, GamePhase.PVE}:
             collection_state = "waiting"
             reason = f"Waiting during {state.phase.value.replace('_', ' ')}"
+        elif self.harvester.manual_inbox:
+            collection_state = "collecting"
+            reason = "Manual inbox: collecting visible board and bench units"
         elif readable_shop == 0:
             collection_state = "waiting"
             reason = "Capture is trusted, but no champion names are readable in the shop"
@@ -371,6 +387,7 @@ class TFTCoachServer:
             reason = f"Watching {readable_shop}/5 readable shop slots"
 
         return TrainingCollectionStatus(
+            mode=telemetry["mode"],
             state=collection_state,
             reason=reason,
             capture_trusted=trusted,
@@ -380,7 +397,9 @@ class TFTCoachServer:
             pending_purchases=list(self.roster.pending_purchase_names),
             session_crops_saved=telemetry["session_crops_saved"],
             total_clean_crops=(
-                self._initial_clean_crop_count + telemetry["session_crops_saved"]
+                telemetry["inbox_crops"]
+                if self.harvester.manual_inbox
+                else self._initial_clean_crop_count + telemetry["session_crops_saved"]
             ),
             rejected_crops=telemetry["rejected_crops"],
             rejection_reasons=telemetry["rejection_reasons"],
