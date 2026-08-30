@@ -58,7 +58,6 @@ _TRACK_CHANGE_LIMIT = 18.0      # tolerate idle poses and brief spell glows
 _TRACK_TOP_CHANGE_LIMIT = 10.0  # board units/effects entering above the bench
 READY_CROPS_PER_CLASS = 50
 _DUPLICATE_THUMB_MAD = 1.0      # <= this is effectively the same pose/frame
-_MANUAL_DUPLICATE_THUMB_MAD = 5.0
 _MANUAL_STABILITY_THUMB_MAD = 12.0
 _CROSS_LABEL_THUMB_MAD = 5.0    # same model must never survive under two labels
 _CROP_MIN_STD = 18.0
@@ -148,13 +147,6 @@ def audit_training_crops(
                 require_health_bar=not bool(_BENCH_CROP_FILENAME.search(path.stem)),
             )
             thumb = BenchHarvester._thumb(image) if image is not None else None
-            if reason is None and thumb is not None:
-                if any(
-                    float(np.mean(cv2.absdiff(thumb, prior)))
-                    <= _DUPLICATE_THUMB_MAD
-                    for prior in thumbs[label]
-                ):
-                    reason = "duplicate"
             if reason:
                 counts = rejected[label]
                 counts[reason] = counts.get(reason, 0) + 1
@@ -440,7 +432,8 @@ class BenchHarvester:
         for source, crop in candidates:
             # Board health bars are the safest occupancy signal. Set 18 bench
             # models can render without one, so reviewed bench crops rely on
-            # detail/stability/deduplication instead of this board-only gate.
+            # detail, stability, cooldowns, and review instead of this
+            # board-only gate.
             reason = self.training_crop_rejection_reason(
                 crop,
                 require_health_bar=source.startswith("board_"),
@@ -468,13 +461,6 @@ class BenchHarvester:
                 and now - last_saved < self.manual_source_interval
             ):
                 self.skip_counts["manual_source_cooldown"] += 1
-                continue
-            if self._is_near_duplicate(
-                crop,
-                _MANUAL_INBOX_DIR,
-                threshold=_MANUAL_DUPLICATE_THUMB_MAD,
-            ):
-                self.skip_counts["manual_duplicate"] += 1
                 continue
             if self._write_manual_crop(crop, source):
                 saved += 1
@@ -1308,10 +1294,6 @@ class BenchHarvester:
         self.saved_count += 1
         self.last_save_at = datetime.datetime.now().timestamp()
         self.last_saved_label = _MANUAL_INBOX_DIR
-        thumb = self._thumb(crop)
-        if thumb is not None:
-            self._saved_thumbs.setdefault(_MANUAL_INBOX_DIR, []).append(thumb)
-            self._loaded_thumb_labels.add(_MANUAL_INBOX_DIR)
         logger.info(f"Manual training crop saved: {source} → {out.name}")
         return True
 

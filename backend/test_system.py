@@ -1875,6 +1875,19 @@ def test_manual_training_inbox():
         assert collector.process(frame([0, 3], seed=950), []) == 0
         assert collector.telemetry()["skipped_events"]["manual_inbox_full"]
 
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        collector = BenchHarvester(
+            out_dir=root,
+            manual_inbox=True,
+            manual_collect_board=False,
+            manual_source_interval=0,
+            manual_stability_threshold=None,
+        )
+        assert collector.process(frame([0]), []) == 1
+        assert collector.process(frame([0]), []) == 1
+        assert len(list((root / "_inbox").glob("*.png"))) == 2
+
     # Board crops use the exact same geometry as classifier inference, so a
     # game also collects fielded/enemy units instead of waiting for every
     # champion to sit on the player's bench.
@@ -1911,7 +1924,7 @@ def test_manual_training_inbox():
         )
 
     return (
-        "unlabeled burst collection, dedupe, unsafe-slot guard, "
+        "unlabeled burst collection, duplicates retained, unsafe-slot guard, "
         "sort+undo+legacy requeue OK"
     )
 
@@ -2153,8 +2166,8 @@ def test_classifier_data_pipeline():
                     cv2.rectangle(image, (8, 12), (55, 16), (25, 225, 65), -1)
                 seed += 1
                 assert cv2.imwrite(str(d / f"crop_{i}.png"), image)
-        # Old collectors may have left duplicates and blue purchase effects.
-        # Audit excludes them without deleting the raw files.
+        # Same-label duplicates are valid training examples; blue purchase
+        # effects and cross-label collisions remain unsafe.
         first_gwen = cv2.imread(str(root / "Gwen" / "crop_0.png"))
         assert cv2.imwrite(str(root / "Gwen" / "duplicate.png"), first_gwen)
         effect = np.empty((96, 64, 3), dtype=np.uint8)
@@ -2175,9 +2188,8 @@ def test_classifier_data_pipeline():
 
         audited, rejected = audit_dataset(root)
         assert "_inbox" not in audited and "_inbox" not in rejected
-        assert len(audited["Gwen"]) == 24
+        assert len(audited["Gwen"]) == 25
         assert rejected["Gwen"] == {
-            "duplicate": 1,
             "label_collision": 1,
             "materialization": 1,
         }
@@ -2190,7 +2202,7 @@ def test_classifier_data_pipeline():
 
         train, val, labels = split_dataset(usable, val_fraction=0.15)
         assert labels == ["Gwen", "Lux", "_empty"]  # forms pooled, background kept
-        assert len(train) + len(val) == 78
+        assert len(train) + len(val) == 79
         # Every class keeps at least one val sample; splits are disjoint.
         val_classes = {lbl for _, lbl in val}
         assert val_classes == {0, 1, 2}, "each class needs a val sample"

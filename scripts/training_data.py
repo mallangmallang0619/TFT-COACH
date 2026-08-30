@@ -49,7 +49,7 @@ def stats() -> int:
     raw_total = sum(raw_by_label.values())
     clean_total = sum(len(paths) for paths in accepted.values())
     print(
-        f"Training crops: {raw_total} raw / {clean_total} clean+diverse "
+        f"Training crops: {raw_total} raw / {clean_total} accepted "
         f"across {len(raw_by_label)} classes"
     )
     print(f"Manual inbox: {inbox_count} unsorted crops")
@@ -66,9 +66,9 @@ def stats() -> int:
         )
     if raw_total:
         print()
-        print("Training uses 50+ clean, diverse crops per champion plus _empty;")
+        print("Training uses 50+ reviewed crops per champion plus _empty;")
         print(
-            "effects/duplicates are excluded. Share with: "
+            "effects and cross-label collisions are excluded. Share with: "
             "python scripts/training_data.py --pack crops.zip"
         )
         print("Check readiness / train:    python scripts/train_classifier.py --check")

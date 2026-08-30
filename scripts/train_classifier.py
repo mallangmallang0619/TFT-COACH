@@ -62,7 +62,7 @@ INPUT_SIZE = 128
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
-MIN_CROPS_DEFAULT = 50      # clean, diverse crops required per class
+MIN_CROPS_DEFAULT = 50      # reviewed crops required per class
 MIN_ROSTER_COVERAGE_DEFAULT = 0.75
 VAL_FRACTION = 0.15
 
@@ -72,7 +72,7 @@ VAL_FRACTION = 0.15
 def audit_dataset(
     train_dir: Path = TRAINING_DIR,
 ) -> tuple[dict[str, list[Path]], dict[str, dict[str, int]]]:
-    """Return clean, diverse crops and non-destructive rejection counts."""
+    """Return reviewed crops and non-destructive rejection counts."""
     from harvest import audit_training_crops
 
     return audit_training_crops(train_dir)
@@ -168,12 +168,12 @@ def print_readiness(
     coverage = len(real_classes) / max(1, len(roster_labels))
     print(
         f"\n{len(real_classes)}/{len(roster_labels)} champions ready "
-        f"({coverage:.0%} coverage), {clean_crop_total} clean crops "
+        f"({coverage:.0%} coverage), {clean_crop_total} accepted crops "
         f"({ready_crop_total} in ready classes)."
     )
     ready = True
     if "_empty" not in usable:
-        print(f"Need _empty with at least {min_crops} clean, diverse crops.")
+        print(f"Need _empty with at least {min_crops} reviewed crops.")
         ready = False
     if len(real_classes) < required_classes:
         print(
