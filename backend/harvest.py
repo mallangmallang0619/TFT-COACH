@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import re
 import time
 from collections import Counter, deque
 from collections.abc import Callable
@@ -77,6 +78,7 @@ _TOOLTIP_DARK_ROW_RATIO = 0.65
 _TOOLTIP_MIN_DENSE_ROWS_RATIO = 0.20
 _MANUAL_INBOX_DIR = "_inbox"
 _MANUAL_REJECTED_DIR = "_rejected_manual"
+_BENCH_CROP_FILENAME = re.compile(r"(?:^|_)(?:bench_)?slot[0-8](?:_|$)")
 
 
 @dataclass
@@ -143,6 +145,7 @@ def audit_training_crops(
             reason = BenchHarvester.training_crop_rejection_reason(
                 image,
                 background=label.startswith("_"),
+                require_health_bar=not bool(_BENCH_CROP_FILENAME.search(path.stem)),
             )
             thumb = BenchHarvester._thumb(image) if image is not None else None
             if reason is None and thumb is not None:
@@ -435,11 +438,13 @@ class BenchHarvester:
 
         saved = 0
         for source, crop in candidates:
-            # No health bar normally means an empty board/bench position; that
-            # is expected and should not flood rejection telemetry.
-            if not self._has_champion_health_bar(crop):
-                continue
-            reason = self.training_crop_rejection_reason(crop)
+            # Board health bars are the safest occupancy signal. Set 18 bench
+            # models can render without one, so reviewed bench crops rely on
+            # detail/stability/deduplication instead of this board-only gate.
+            reason = self.training_crop_rejection_reason(
+                crop,
+                require_health_bar=source.startswith("board_"),
+            )
             if reason:
                 self.rejection_counts[reason] += 1
                 continue
@@ -1179,7 +1184,11 @@ class BenchHarvester:
 
     @classmethod
     def training_crop_rejection_reason(
-        cls, crop: Optional[np.ndarray], *, background: bool = False
+        cls,
+        crop: Optional[np.ndarray],
+        *,
+        background: bool = False,
+        require_health_bar: bool = True,
     ) -> Optional[str]:
         """Explain why a crop must not enter training, or return ``None``."""
         if crop is None or crop.size == 0:
@@ -1189,7 +1198,7 @@ class BenchHarvester:
         health_bars = cls._champion_health_bar_bands(crop)
         if background and health_bars:
             return "occupied_background"
-        if not background and not health_bars:
+        if not background and require_health_bar and not health_bars:
             return "no_health_bar"
         if not background and len(health_bars) > 1:
             return "multiple_health_bars"

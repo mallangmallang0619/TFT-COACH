@@ -1679,7 +1679,7 @@ def test_manual_training_inbox():
     import numpy as np
     from pathlib import Path
     from types import SimpleNamespace
-    from harvest import BENCH_SLOTS, BenchHarvester
+    from harvest import BENCH_SLOTS, BenchHarvester, audit_training_crops
     from config import BOARD_HEX_GRID, GameROIs
     from game_state import GamePhase, GameState
 
@@ -1718,7 +1718,7 @@ def test_manual_training_inbox():
     cx, cy, cw, ch = rois.champion_bench_capture.to_pixels(width, height)
     pitch = cw // BENCH_SLOTS
 
-    def frame(slots, seed=700):
+    def frame(slots, seed=700, *, health_bar=True):
         result = np.full((height, width, 3), 52, dtype=np.uint8)
         for slot in slots:
             x0 = cx + slot * pitch
@@ -1726,14 +1726,59 @@ def test_manual_training_inbox():
                 20, 220, (ch, pitch, 3), dtype=np.uint8
             )
             result[cy:cy + ch, x0:x0 + pitch] = model
-            cv2.rectangle(
-                result,
-                (x0 + pitch // 6, cy + ch // 12),
-                (x0 + pitch * 5 // 6, cy + ch // 12 + 5),
-                (25, 225, 65),
-                -1,
-            )
+            if health_bar:
+                cv2.rectangle(
+                    result,
+                    (x0 + pitch // 6, cy + ch // 12),
+                    (x0 + pitch * 5 // 6, cy + ch // 12 + 5),
+                    (25, 225, 65),
+                    -1,
+                )
         return result
+
+    no_bar_frame = frame([2], seed=675, health_bar=False)
+    no_bar_crop = no_bar_frame[cy:cy + ch, cx + 2 * pitch:cx + 3 * pitch]
+    assert (
+        BenchHarvester.training_crop_rejection_reason(no_bar_crop)
+        == "no_health_bar"
+    )
+    assert (
+        BenchHarvester.training_crop_rejection_reason(
+            no_bar_crop,
+            require_health_bar=False,
+        )
+        is None
+    )
+
+    # Set 18 bench models may render without health bars. Manual collection
+    # and the later training audit must retain those crops, while board crops
+    # continue to require a bar as their occupancy signal.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        collector = BenchHarvester(
+            out_dir=root,
+            manual_inbox=True,
+            manual_collect_board=False,
+            manual_source_interval=0,
+        )
+        assert collector.process(no_bar_frame, []) == 0
+        assert collector.process(no_bar_frame, []) == 1
+        saved = next((root / "_inbox").glob("*_bench_slot2.png"))
+        champ_dir = root / "Gwen"
+        champ_dir.mkdir()
+        reviewed = champ_dir / saved.name
+        saved.replace(reviewed)
+        legacy_frame = frame([4], seed=676, health_bar=False)
+        legacy_crop = legacy_frame[
+            cy:cy + ch,
+            cx + 4 * pitch:cx + 5 * pitch,
+        ]
+        legacy_path = champ_dir / "legacy_slot4.png"
+        assert cv2.imwrite(str(legacy_path), legacy_crop)
+        accepted, rejected = audit_training_crops(root)
+        assert reviewed in accepted["Gwen"]
+        assert legacy_path in accepted["Gwen"]
+        assert "Gwen" not in rejected
 
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
