@@ -130,8 +130,11 @@ window or region; if one box is off, that ROI needs recalibrating in
 
 The overlay header also reports `DATA INBOX`, `DATA WAITING`, or `DATA PAUSED`.
 Live mode collects visually valid board and bench crops without guessing unit
-names. Direct UE5 window capture may be unavailable; the collector automatically
-uses a trusted screen fallback while `TFT.exe` is foreground.
+names. Collection runs only during planning, requires two stable observations,
+waits eight seconds before saving the same position again, and stops at 250
+crops per game or 750 unsorted crops. Direct UE5 window capture may be
+unavailable; the collector automatically uses a trusted screen fallback while
+`TFT.exe` is foreground.
 Recent annotated session frames are kept in `backend/_debug/session/`, and
 the persistent backend log is `backend/_logs/tft-coach.log`.
 
@@ -242,6 +245,9 @@ locations in their filenames. Sort them with the keyboard-driven viewer, then
 check training readiness:
 
 ```bash
+# Optional: move a noisy old inbox aside without permanently deleting it:
+python scripts/sort_training_inbox.py --archive-inbox
+
 # Run this form once to manually review crops from the old auto-labeler:
 python scripts/sort_training_inbox.py --requeue-existing
 
@@ -251,11 +257,11 @@ python scripts/train_classifier.py --check
 python scripts/training_data.py --stats
 ```
 
-In the sorter, choose/type a champion and press Enter. Space defers a crop,
-Delete moves it to a recoverable rejected folder, and Ctrl+Z undoes the latest
-move. Requeued files retain their previous guessed label in the filename only
-as a hint; you still choose the class. Lux's forms are automatically pooled
-into `Lux`.
+In the sorter, choose a champion from the read-only dropdown and press Enter.
+Space defers a crop, Delete moves it to a recoverable rejected folder, and
+Ctrl+Z undoes the latest move. Requeued files retain their previous guessed
+label in the filename only as a hint; you still choose the class. Lux's forms
+are automatically pooled into `Lux`.
 
 A Set 17/Hextech ONNX model is rejected at load time rather than silently
 producing bad predictions.

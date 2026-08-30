@@ -5,10 +5,10 @@ Live mode writes visually valid board and bench crops to
 
     python scripts/sort_training_inbox.py
 
-Type or select a champion and press Enter to file the crop. Space defers it,
-Delete moves it to a recoverable rejected folder, and Ctrl+Z undoes the most
-recent move. To review crops created by the old automatic labeler first, run
-with ``--requeue-existing`` once.
+Select a champion from the read-only dropdown and press Enter to file the crop.
+Space defers it, Delete moves it to a recoverable rejected folder, and Ctrl+Z
+undoes the most recent move. To review crops created by the old automatic
+labeler first, run with ``--requeue-existing`` once.
 """
 
 from __future__ import annotations
@@ -28,6 +28,7 @@ from set18_data import CHAMPIONS, SET_NUMBER, canonical_training_label  # noqa: 
 TRAINING_DIR = BACKEND_DIR / "_training" / f"set{SET_NUMBER}"
 INBOX_DIR = TRAINING_DIR / "_inbox"
 REJECTED_DIR = TRAINING_DIR / "_rejected_manual"
+SORTER_COMBO_STATE = "readonly"
 
 
 def available_labels() -> list[str]:
@@ -94,6 +95,23 @@ def restore_crop(source: Path, inbox_dir: Path = INBOX_DIR) -> Path:
     return destination
 
 
+def archive_inbox(training_dir: Path = TRAINING_DIR) -> int:
+    """Move the current noisy inbox aside without permanently deleting it."""
+    training_dir = Path(training_dir)
+    inbox_dir = training_dir / "_inbox"
+    rejected_dir = training_dir / "_rejected_manual"
+    moved = 0
+    for source in list_inbox(inbox_dir):
+        destination = _unique_destination(
+            rejected_dir,
+            f"archived-{source.name}",
+        )
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), str(destination))
+        moved += 1
+    return moved
+
+
 def requeue_existing(training_dir: Path = TRAINING_DIR) -> int:
     """Move previously labeled crops back to the inbox for manual review."""
     training_dir = Path(training_dir)
@@ -143,7 +161,14 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
     filename_label.pack(fill="x", padx=12, pady=4)
 
     selected = tk.StringVar()
-    combo = ttk.Combobox(root, textvariable=selected, values=labels, font=("Segoe UI", 14))
+    combo = ttk.Combobox(
+        root,
+        textvariable=selected,
+        values=labels,
+        state=SORTER_COMBO_STATE,
+        takefocus=False,
+        font=("Segoe UI", 14),
+    )
     combo.pack(fill="x", padx=20, pady=8)
 
     buttons = ttk.Frame(root)
@@ -175,7 +200,7 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
             text=f"Crop {state['index'] + 1} of {len(paths)} · "
             f"sorted this run: {len(state['history'])}"
         )
-        combo.focus_set()
+        root.focus_set()
 
     def file_current(_event=None) -> None:
         path = current_path()
@@ -227,7 +252,8 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
         side="left", expand=True, fill="x", padx=4
     )
 
-    combo.bind("<Return>", file_current)
+    combo.bind("<<ComboboxSelected>>", lambda _event: root.after_idle(root.focus_set))
+    root.bind("<Return>", file_current)
     root.bind("<space>", defer_current)
     root.bind("<Delete>", reject_current)
     root.bind("<Control-z>", undo)
@@ -238,12 +264,22 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
+    actions = parser.add_mutually_exclusive_group()
+    actions.add_argument(
         "--requeue-existing",
         action="store_true",
         help="move old auto-labeled champion crops into the manual inbox first",
     )
+    actions.add_argument(
+        "--archive-inbox",
+        action="store_true",
+        help="move the current inbox aside without deleting its crops",
+    )
     args = parser.parse_args()
+    if args.archive_inbox:
+        moved = archive_inbox()
+        print(f"Archived {moved} inbox crop(s) without deleting them.")
+        return 0
     if args.requeue_existing:
         moved = requeue_existing()
         print(f"Requeued {moved} previously labeled crop(s) for review.")

@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import datetime
 import logging
+import time
 from collections import Counter, deque
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -55,6 +57,8 @@ _TRACK_CHANGE_LIMIT = 18.0      # tolerate idle poses and brief spell glows
 _TRACK_TOP_CHANGE_LIMIT = 10.0  # board units/effects entering above the bench
 READY_CROPS_PER_CLASS = 50
 _DUPLICATE_THUMB_MAD = 1.0      # <= this is effectively the same pose/frame
+_MANUAL_DUPLICATE_THUMB_MAD = 5.0
+_MANUAL_STABILITY_THUMB_MAD = 12.0
 _CROSS_LABEL_THUMB_MAD = 5.0    # same model must never survive under two labels
 _CROP_MIN_STD = 18.0
 _CROP_MIN_LAPLACIAN = 500.0
@@ -205,6 +209,11 @@ class BenchHarvester:
         manual_inbox: bool = False,
         manual_interval: int = 1,
         manual_collect_board: bool = True,
+        manual_source_interval: float = 8.0,
+        manual_max_crops_per_session: int = 250,
+        manual_max_inbox: int = 750,
+        manual_stability_threshold: Optional[float] = _MANUAL_STABILITY_THUMB_MAD,
+        manual_clock: Callable[[], float] = time.monotonic,
     ):
         self.out_dir = out_dir
         self.rois = GameROIs()
@@ -214,7 +223,15 @@ class BenchHarvester:
         self.manual_inbox = manual_inbox
         self.manual_interval = max(1, manual_interval)
         self.manual_collect_board = manual_collect_board
+        self.manual_source_interval = max(0.0, manual_source_interval)
+        self.manual_max_crops_per_session = max(1, manual_max_crops_per_session)
+        self.manual_max_inbox = max(1, manual_max_inbox)
+        self.manual_stability_threshold = manual_stability_threshold
+        self._manual_clock = manual_clock
         self._manual_frame_count = 0
+        self._manual_game_saved = 0
+        self._manual_last_saved_by_source: dict[str, float] = {}
+        self._manual_previous_by_source: dict[str, np.ndarray] = {}
         # Keep a short bench history so delayed shop confirmation can recover
         # the exact frame where a unit landed instead of requiring perfect
         # timing between OCR and animation.
@@ -350,6 +367,9 @@ class BenchHarvester:
         self._last_landing_diagnostic = "no bench transitions inspected"
         self._last_transition_diagnostic = "no transition"
         self._manual_frame_count = 0
+        self._manual_game_saved = 0
+        self._manual_last_saved_by_source.clear()
+        self._manual_previous_by_source.clear()
         self._suspended = False
 
     def suspend_observation(self, reason: str = "capture is not trusted") -> None:
@@ -366,6 +386,7 @@ class BenchHarvester:
         self._suspended = True
         self._pending_landings.clear()
         self._history.clear()
+        self._manual_previous_by_source.clear()
 
     def telemetry(self) -> dict:
         """Small JSON-safe snapshot for logs and the live overlay."""
@@ -380,6 +401,9 @@ class BenchHarvester:
             "last_saved_label": self.last_saved_label,
             "mode": "manual_inbox" if self.manual_inbox else "automatic",
             "inbox_crops": self.manual_inbox_count(),
+            "manual_game_crops": self._manual_game_saved,
+            "manual_game_cap": self.manual_max_crops_per_session,
+            "manual_inbox_cap": self.manual_max_inbox,
         }
 
     def manual_inbox_count(self) -> int:
@@ -387,6 +411,19 @@ class BenchHarvester:
 
     def _collect_manual_inbox(self, frame: np.ndarray) -> int:
         """Save visible units without assigning champion names."""
+        if self._manual_game_saved >= self.manual_max_crops_per_session:
+            self.skip_counts["manual_session_cap"] += 1
+            self.last_event = (
+                "Manual inbox paused: this game reached its crop limit"
+            )
+            return 0
+        inbox_count = self.manual_inbox_count()
+        if inbox_count >= self.manual_max_inbox:
+            self.skip_counts["manual_inbox_full"] += 1
+            self.last_event = "Manual inbox full; sort or reject crops to resume"
+            return 0
+
+        now = self._manual_clock()
         candidates: list[tuple[str, np.ndarray]] = []
         if self.manual_collect_board:
             candidates.extend(self._board_hex_crops(frame))
@@ -406,11 +443,43 @@ class BenchHarvester:
             if reason:
                 self.rejection_counts[reason] += 1
                 continue
-            if self._is_near_duplicate(crop, _MANUAL_INBOX_DIR):
+            thumb = self._thumb(crop)
+            previous = self._manual_previous_by_source.get(source)
+            if thumb is None:
+                self.rejection_counts["unreadable"] += 1
+                continue
+            self._manual_previous_by_source[source] = thumb
+            if self.manual_stability_threshold is not None:
+                if previous is None:
+                    self.skip_counts["manual_stability_baseline"] += 1
+                    continue
+                movement = float(np.mean(cv2.absdiff(thumb, previous)))
+                if movement > self.manual_stability_threshold:
+                    self.skip_counts["manual_unstable"] += 1
+                    continue
+            last_saved = self._manual_last_saved_by_source.get(source)
+            if (
+                last_saved is not None
+                and now - last_saved < self.manual_source_interval
+            ):
+                self.skip_counts["manual_source_cooldown"] += 1
+                continue
+            if self._is_near_duplicate(
+                crop,
+                _MANUAL_INBOX_DIR,
+                threshold=_MANUAL_DUPLICATE_THUMB_MAD,
+            ):
                 self.skip_counts["manual_duplicate"] += 1
                 continue
             if self._write_manual_crop(crop, source):
                 saved += 1
+                self._manual_game_saved += 1
+                self._manual_last_saved_by_source[source] = now
+                if (
+                    self._manual_game_saved >= self.manual_max_crops_per_session
+                    or inbox_count + saved >= self.manual_max_inbox
+                ):
+                    break
 
         if saved:
             self.last_event = (
@@ -978,10 +1047,12 @@ class BenchHarvester:
         )
 
     @staticmethod
-    def _has_champion_health_bar(crop: Optional[np.ndarray]) -> bool:
-        """Detect the long green bar rendered above every bench champion."""
+    def _champion_health_bar_bands(
+        crop: Optional[np.ndarray],
+    ) -> list[tuple[int, int, int, int]]:
+        """Return plausible champion health-bar bands as x/y/width/height."""
         if crop is None or crop.size == 0:
-            return False
+            return []
         height, width = crop.shape[:2]
         hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
         green = cv2.inRange(
@@ -998,6 +1069,7 @@ class BenchHarvester:
         edges = np.diff(padded)
         starts = np.flatnonzero(edges == 1)
         ends = np.flatnonzero(edges == -1)
+        bars: list[tuple[int, int, int, int]] = []
         for start, end in zip(starts, ends):
             bar_height = end - start
             if start >= height * 0.60 or not (
@@ -1015,8 +1087,13 @@ class BenchHarvester:
                 and x < width * 0.70
                 and right > width * 0.30
             ):
-                return True
-        return False
+                bars.append((x, int(start), bar_width, int(bar_height)))
+        return bars
+
+    @classmethod
+    def _has_champion_health_bar(cls, crop: Optional[np.ndarray]) -> bool:
+        """Detect the long green bar rendered above every bench champion."""
+        return bool(cls._champion_health_bar_bands(crop))
 
     @staticmethod
     def _has_ui_overlay(crop: Optional[np.ndarray]) -> bool:
@@ -1109,10 +1186,13 @@ class BenchHarvester:
             return "unreadable"
         if cls._has_ui_overlay(crop):
             return "ui_overlay"
-        if background and cls._has_champion_health_bar(crop):
+        health_bars = cls._champion_health_bar_bands(crop)
+        if background and health_bars:
             return "occupied_background"
-        if not background and not cls._has_champion_health_bar(crop):
+        if not background and not health_bars:
             return "no_health_bar"
+        if not background and len(health_bars) > 1:
+            return "multiple_health_bars"
         if cls._has_materialization_effect(crop):
             return "materialization"
         gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
@@ -1152,7 +1232,13 @@ class BenchHarvester:
     def _safe_label(name: str) -> str:
         return name.replace("'", "").replace(" ", "_").replace(".", "")
 
-    def _is_near_duplicate(self, crop: np.ndarray, name: str) -> bool:
+    def _is_near_duplicate(
+        self,
+        crop: np.ndarray,
+        name: str,
+        *,
+        threshold: float = _DUPLICATE_THUMB_MAD,
+    ) -> bool:
         safe = self._safe_label(name)
         if safe not in self._loaded_thumb_labels:
             remembered: list[np.ndarray] = []
@@ -1167,7 +1253,7 @@ class BenchHarvester:
         if thumb is None:
             return True
         return any(
-            float(np.mean(cv2.absdiff(thumb, prior))) <= _DUPLICATE_THUMB_MAD
+            float(np.mean(cv2.absdiff(thumb, prior))) <= threshold
             for prior in self._saved_thumbs.get(safe, [])
         )
 

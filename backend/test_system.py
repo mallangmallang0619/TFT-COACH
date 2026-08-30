@@ -1684,7 +1684,13 @@ def test_manual_training_inbox():
     from game_state import GamePhase, GameState
 
     sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
-    from sort_training_inbox import move_crop, requeue_existing, restore_crop
+    from sort_training_inbox import (
+        SORTER_COMBO_STATE,
+        archive_inbox,
+        move_crop,
+        requeue_existing,
+        restore_crop,
+    )
     from websocket_server import TFTCoachServer
 
     live_server = TFTCoachServer()
@@ -1693,10 +1699,19 @@ def test_manual_training_inbox():
         is_training_capture_trusted=True,
         capture_trust_reason="Direct TFT window capture",
     )
-    status = live_server._collection_status(
-        GameState(phase=GamePhase.PLANNING, shop_units=[None] * 5), []
-    )
-    assert status.mode == "manual_inbox" and status.state == "collecting"
+    with tempfile.TemporaryDirectory() as status_tmp:
+        live_server.harvester.out_dir = Path(status_tmp)
+        status = live_server._collection_status(
+            GameState(phase=GamePhase.PLANNING, shop_units=[None] * 5), []
+        )
+        assert status.mode == "manual_inbox" and status.state == "collecting"
+        combat_status = live_server._collection_status(
+            GameState(phase=GamePhase.COMBAT, shop_units=[None] * 5), []
+        )
+        assert (
+            combat_status.state == "waiting"
+        ), "combat frames would poison the inbox"
+    assert SORTER_COMBO_STATE == "readonly", "sorter still accepts typed input"
 
     height, width = 720, 1280
     rois = GameROIs()
@@ -1722,25 +1737,53 @@ def test_manual_training_inbox():
 
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
+        now = [100.0]
         collector = BenchHarvester(
             out_dir=root,
             manual_inbox=True,
             manual_interval=1,
             manual_collect_board=False,
+            manual_source_interval=8.0,
+            manual_max_crops_per_session=3,
+            manual_clock=lambda: now[0],
         )
 
         # Purchase names are intentionally wrong: manual mode must ignore them
         # and put visually valid crops only in the unlabeled inbox.
+        assert collector.process(frame([0, 3, 8]), ["WrongName"]) == 0
         assert collector.process(frame([0, 3, 8]), ["WrongName"]) == 2
         inbox = sorted((root / "_inbox").glob("*.png"))
         assert len(inbox) == 2
         assert not (root / "WrongName").exists()
         assert all("bench_slot8" not in path.name for path in inbox)
 
-        # Static frames do not flood the inbox, while new poses are retained.
+        # Static and even changed frames do not flood the inbox before the
+        # per-position cooldown. Once due, the per-game cap is also enforced.
         assert collector.process(frame([0, 3, 8]), []) == 0
-        assert collector.process(frame([0, 3, 8], seed=800), []) == 2
-        assert len(list((root / "_inbox").glob("*.png"))) == 4
+        assert collector.process(frame([0, 3, 8], seed=800), []) == 0
+        now[0] += 8.0
+        assert collector.process(frame([0, 3, 8], seed=800), []) == 1
+        assert collector.process(frame([0, 3, 8], seed=900), []) == 0
+        assert len(list((root / "_inbox").glob("*.png"))) == 3
+        assert collector.telemetry()["skipped_events"]["manual_session_cap"]
+
+        # Two visible health bars means the crop contains multiple units and
+        # must be rejected rather than handed to the sorter.
+        crowded = frame([0])[
+            cy:cy + ch,
+            cx:cx + pitch,
+        ].copy()
+        cv2.rectangle(
+            crowded,
+            (pitch // 6, ch // 3),
+            (pitch * 5 // 6, ch // 3 + 5),
+            (25, 225, 65),
+            -1,
+        )
+        assert (
+            collector.training_crop_rejection_reason(crowded)
+            == "multiple_health_bars"
+        )
 
         # Sorting is recoverable and canonicalizes all Lux forms into one class.
         source = sorted((root / "_inbox").glob("*.png"))[0]
@@ -1761,6 +1804,31 @@ def test_manual_training_inbox():
             path.name.startswith("prior-WrongName-")
             for path in (root / "_inbox").glob("*.png")
         )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        inbox = root / "_inbox"
+        inbox.mkdir()
+        source = inbox / "noisy.png"
+        assert cv2.imwrite(str(source), frame([0])[:ch, :pitch])
+        assert archive_inbox(root) == 1
+        assert not source.exists()
+        assert (root / "_rejected_manual" / "archived-noisy.png").exists()
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        collector = BenchHarvester(
+            out_dir=root,
+            manual_inbox=True,
+            manual_collect_board=False,
+            manual_source_interval=0,
+            manual_max_inbox=1,
+            manual_stability_threshold=None,
+        )
+        assert collector.process(frame([0, 3]), []) == 1
+        assert len(list((root / "_inbox").glob("*.png"))) == 1
+        assert collector.process(frame([0, 3], seed=950), []) == 0
+        assert collector.telemetry()["skipped_events"]["manual_inbox_full"]
 
     # Board crops use the exact same geometry as classifier inference, so a
     # game also collects fielded/enemy units instead of waiting for every
@@ -1791,6 +1859,7 @@ def test_manual_training_inbox():
             (25, 225, 65),
             -1,
         )
+        assert collector.process(board, []) == 0
         assert collector.process(board, []) >= 1
         assert any(
             "board_" in path.name for path in (root / "_inbox").glob("*.png")

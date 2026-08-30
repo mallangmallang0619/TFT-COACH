@@ -364,6 +364,21 @@ class TFTCoachServer:
         if not trusted:
             collection_state = "paused"
             reason = self.capture.capture_trust_reason
+        elif self.harvester.manual_inbox and state.phase != GamePhase.PLANNING:
+            collection_state = "waiting"
+            reason = "Waiting for planning phase to avoid moving/combat units"
+        elif (
+            self.harvester.manual_inbox
+            and telemetry["inbox_crops"] >= telemetry["manual_inbox_cap"]
+        ):
+            collection_state = "waiting"
+            reason = "Manual inbox full; sort or reject crops to resume"
+        elif (
+            self.harvester.manual_inbox
+            and telemetry["manual_game_crops"] >= telemetry["manual_game_cap"]
+        ):
+            collection_state = "waiting"
+            reason = "This game reached its training-crop limit"
         elif state.phase not in {GamePhase.PLANNING, GamePhase.COMBAT, GamePhase.PVE}:
             collection_state = "waiting"
             reason = f"Waiting during {state.phase.value.replace('_', ' ')}"
@@ -579,11 +594,16 @@ class TFTCoachServer:
                 purchases: list[str] = []
                 if self.capture.is_training_capture_trusted:
                     purchases = self.roster.update(state)
-                    saved = self.harvester.process(
-                        frame,
-                        purchases,
-                        self.roster.pending_purchase_names,
-                    )
+                    saved = 0
+                    if (
+                        not self.harvester.manual_inbox
+                        or state.phase == GamePhase.PLANNING
+                    ):
+                        saved = self.harvester.process(
+                            frame,
+                            purchases,
+                            self.roster.pending_purchase_names,
+                        )
                     if purchases:
                         logger.info(
                             f"Confirmed shop purchase(s): {purchases}; "
