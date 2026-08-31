@@ -1382,10 +1382,10 @@ def test_bench_harvester():
 
 
 def test_bench_crop_geometry():
-    """Training crops cover the full model while landing detection stays low."""
+    """Bench crops stay centered on one model and match live inference."""
     import numpy as np
     from harvest import BENCH_SLOTS, BenchHarvester
-    from config import GameROIs
+    from config import GameROIs, RegionOfInterest
 
     rois = GameROIs()
     harvester = BenchHarvester()
@@ -1400,8 +1400,10 @@ def test_bench_crop_geometry():
 
         assert capture_x == anchor_x and capture_w == anchor_w
         assert capture_y < anchor_y, "training crop still starts below the sprite"
-        height_ratio = capture_h / anchor_h
-        assert 1.8 <= height_ratio <= 2.0, "crop must balance full models and board overlap"
+        legacy_capture_h = RegionOfInterest(
+            0.183, 0.520, 0.565, 0.250
+        ).to_pixels(width, height)[3]
+        assert 0.62 <= capture_h / legacy_capture_h <= 0.68
         assert abs((capture_y + capture_h) - (anchor_y + anchor_h)) <= 1
 
         # A marker above the landing detector must still be present in the
@@ -1411,14 +1413,7 @@ def test_bench_crop_geometry():
         assert len(crops) == BENCH_SLOTS
         slot_pitch = capture_w // BENCH_SLOTS
         assert all(c.shape[0] == capture_h for c in crops)
-        # Bench crops are 35% narrower than the previous 8%-per-side crop.
-        # Keep the height so tall models remain visible, but exclude much more
-        # of adjacent champions and the player's moving Little Legend.
-        legacy_width = slot_pitch - 2 * int(round(slot_pitch * 0.08))
-        assert all(
-            0.62 <= c.shape[1] / legacy_width <= 0.68
-            for c in crops
-        )
+        assert all(slot_pitch * 0.78 <= c.shape[1] <= slot_pitch * 0.86 for c in crops)
         assert len({c.shape for c in crops}) == 1
         assert all(float(c[:anchor_y - capture_y].mean()) == 255.0 for c in crops)
 
@@ -1442,7 +1437,7 @@ def test_bench_crop_geometry():
     )
     assert inference_crops[8] is None, "unsafe portal slot reached inference"
 
-    return "full-height crops scale across four resolutions; train/inference pixels match"
+    return "35%-shorter crops scale across four resolutions; train/inference pixels match"
 
 
 def test_bench_harvester_quality_invariants():

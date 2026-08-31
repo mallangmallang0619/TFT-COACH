@@ -138,11 +138,9 @@ GAME_WINDOW_TITLE = "Teamfight Tactics"  # macOS/Linux fallback only
 # Until its geometry can be isolated reliably, treating motion there as a
 # purchase is more likely to create a wrong label than useful training data.
 UNSAFE_BENCH_SLOTS = frozenset({8})
-# Trim each slot equally so neighboring models and the moving Little Legend do
-# not become features of the purchased champion's class.  This retains 65% of
-# the previous crop width (0.84 slot widths -> about 0.546 slot widths) while
-# preserving the full vertical model crop.
-BENCH_CROP_HORIZONTAL_INSET_RATIO = 0.227
+# Trim each slot equally so neighboring models and health bars at the slot
+# boundaries do not become features of the purchased champion's class.
+BENCH_CROP_HORIZONTAL_INSET_RATIO = 0.08
 
 
 # ── Detection Thresholds ──────────────────────────────────────────────────────
@@ -257,13 +255,12 @@ class GameROIs:
         default_factory=lambda: RegionOfInterest(0.183, 0.635, 0.565, 0.135)
     )
 
-    # Full-model crop used for classifier training and inference. Landing
-    # detection intentionally keeps using the lower champion_bench strip:
-    # extending that detector upward would include moving board units, while
-    # extending only the saved crop captures heads and spell silhouettes that
-    # rise above the bench platform. Both regions share the same bottom edge.
+    # Model crop used for classifier training and inference. It is 35% shorter
+    # than the original 0.250-height crop to exclude board units and the moving
+    # Little Legend above the bench. Landing detection still uses the lower
+    # champion_bench strip, and both regions share the same bottom edge.
     champion_bench_capture: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.183, 0.520, 0.565, 0.250)
+        default_factory=lambda: RegionOfInterest(0.183, 0.6075, 0.565, 0.1625)
     )
 
     # Board area — the hex grid where champions are placed. Calibrated

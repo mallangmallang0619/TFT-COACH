@@ -979,7 +979,7 @@ class BenchHarvester:
         return occupied
 
     def _bench_slot_crops(self, frame: np.ndarray) -> list[np.ndarray]:
-        """Return tall, full-model crops used for saving and inference."""
+        """Return vertically tightened model crops for saving and inference."""
         return self._split_bench_roi(
             frame,
             self.rois.champion_bench_capture,
