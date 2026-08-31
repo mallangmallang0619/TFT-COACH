@@ -375,6 +375,7 @@ class TFTCoachServer:
             reason = "Manual inbox full; sort or reject crops to resume"
         elif (
             self.harvester.manual_inbox
+            and telemetry["manual_game_cap"] is not None
             and telemetry["manual_game_crops"] >= telemetry["manual_game_cap"]
         ):
             collection_state = "waiting"

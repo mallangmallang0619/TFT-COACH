@@ -138,9 +138,11 @@ GAME_WINDOW_TITLE = "Teamfight Tactics"  # macOS/Linux fallback only
 # Until its geometry can be isolated reliably, treating motion there as a
 # purchase is more likely to create a wrong label than useful training data.
 UNSAFE_BENCH_SLOTS = frozenset({8})
-# Trim each slot equally so neighboring models and health bars at the slot
-# boundaries do not become features of the purchased champion's class.
-BENCH_CROP_HORIZONTAL_INSET_RATIO = 0.08
+# Trim each slot equally so neighboring models and the moving Little Legend do
+# not become features of the purchased champion's class.  This retains 65% of
+# the previous crop width (0.84 slot widths -> about 0.546 slot widths) while
+# preserving the full vertical model crop.
+BENCH_CROP_HORIZONTAL_INSET_RATIO = 0.227
 
 
 # ── Detection Thresholds ──────────────────────────────────────────────────────

@@ -1411,7 +1411,14 @@ def test_bench_crop_geometry():
         assert len(crops) == BENCH_SLOTS
         slot_pitch = capture_w // BENCH_SLOTS
         assert all(c.shape[0] == capture_h for c in crops)
-        assert all(slot_pitch * 0.78 <= c.shape[1] <= slot_pitch * 0.86 for c in crops)
+        # Bench crops are 35% narrower than the previous 8%-per-side crop.
+        # Keep the height so tall models remain visible, but exclude much more
+        # of adjacent champions and the player's moving Little Legend.
+        legacy_width = slot_pitch - 2 * int(round(slot_pitch * 0.08))
+        assert all(
+            0.62 <= c.shape[1] / legacy_width <= 0.68
+            for c in crops
+        )
         assert len({c.shape for c in crops}) == 1
         assert all(float(c[:anchor_y - capture_y].mean()) == 255.0 for c in crops)
 
@@ -1889,6 +1896,23 @@ def test_manual_training_inbox():
         assert collector.process(frame([0]), []) == 1
         assert collector.process(frame([0]), []) == 1
         assert len(list((root / "_inbox").glob("*.png"))) == 2
+
+    # Live collection no longer stops after 250 crops in one game. Explicit
+    # caps remain supported for focused tests/tools, and the separate inbox
+    # capacity guard still prevents unbounded disk growth.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        collector = BenchHarvester(
+            out_dir=root,
+            manual_inbox=True,
+            manual_collect_board=False,
+            manual_source_interval=0,
+            manual_stability_threshold=None,
+        )
+        collector._manual_game_saved = 250
+        assert collector.telemetry()["manual_game_cap"] is None
+        assert collector.process(frame([0]), []) == 1
+        assert len(list((root / "_inbox").glob("*.png"))) == 1
 
     # Offline filtering is recoverable and source-aware: bench crops may lack
     # bars, board crops may not, and same-position bursts are thinned without

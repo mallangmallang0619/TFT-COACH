@@ -205,7 +205,7 @@ class BenchHarvester:
         manual_interval: int = 1,
         manual_collect_board: bool = True,
         manual_source_interval: float = 8.0,
-        manual_max_crops_per_session: int = 250,
+        manual_max_crops_per_session: Optional[int] = None,
         manual_max_inbox: int = 750,
         manual_stability_threshold: Optional[float] = _MANUAL_STABILITY_THUMB_MAD,
         manual_clock: Callable[[], float] = time.monotonic,
@@ -219,7 +219,11 @@ class BenchHarvester:
         self.manual_interval = max(1, manual_interval)
         self.manual_collect_board = manual_collect_board
         self.manual_source_interval = max(0.0, manual_source_interval)
-        self.manual_max_crops_per_session = max(1, manual_max_crops_per_session)
+        self.manual_max_crops_per_session = (
+            None
+            if manual_max_crops_per_session is None
+            else max(1, manual_max_crops_per_session)
+        )
         self.manual_max_inbox = max(1, manual_max_inbox)
         self.manual_stability_threshold = manual_stability_threshold
         self._manual_clock = manual_clock
@@ -406,7 +410,10 @@ class BenchHarvester:
 
     def _collect_manual_inbox(self, frame: np.ndarray) -> int:
         """Save visible units without assigning champion names."""
-        if self._manual_game_saved >= self.manual_max_crops_per_session:
+        if (
+            self.manual_max_crops_per_session is not None
+            and self._manual_game_saved >= self.manual_max_crops_per_session
+        ):
             self.skip_counts["manual_session_cap"] += 1
             self.last_event = (
                 "Manual inbox paused: this game reached its crop limit"
@@ -467,7 +474,11 @@ class BenchHarvester:
                 self._manual_game_saved += 1
                 self._manual_last_saved_by_source[source] = now
                 if (
-                    self._manual_game_saved >= self.manual_max_crops_per_session
+                    (
+                        self.manual_max_crops_per_session is not None
+                        and self._manual_game_saved
+                        >= self.manual_max_crops_per_session
+                    )
                     or inbox_count + saved >= self.manual_max_inbox
                 ):
                     break
