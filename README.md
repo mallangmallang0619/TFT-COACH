@@ -253,6 +253,11 @@ python scripts/sort_training_inbox.py --requeue-existing
 
 # Future sessions can open the new-crop inbox directly:
 python scripts/sort_training_inbox.py
+
+# Preview/apply recoverable filtering before manual sorting:
+python scripts/sort_training_inbox.py --filter-inbox-dry-run
+python scripts/sort_training_inbox.py --filter-inbox
+
 python scripts/train_classifier.py --check
 python scripts/training_data.py --stats
 ```
@@ -262,6 +267,11 @@ Space defers a crop, Delete moves it to a recoverable rejected folder, and
 Ctrl+Z undoes the latest move. Requeued files retain their previous guessed
 label in the filename only as a hint; you still choose the class. Lux's forms
 are automatically pooled into `Lux`.
+
+Inbox filtering rejects known quality failures and thins only rapid,
+visually-similar crops from the same board/bench position. Spaced duplicates
+and visibly different units are retained. Filtered files are moved to
+`_rejected_manual` with their reason in the filename; nothing is deleted.
 
 A Set 17/Hextech ONNX model is rejected at load time rather than silently
 producing bad predictions.

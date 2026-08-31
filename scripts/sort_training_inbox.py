@@ -9,11 +9,16 @@ Select a champion from the read-only dropdown and press Enter to file the crop.
 Space defers it, Delete moves it to a recoverable rejected folder, and Ctrl+Z
 undoes the most recent move. To review crops created by the old automatic
 labeler first, run with ``--requeue-existing`` once.
+
+Use ``--filter-inbox-dry-run`` to preview recoverable quality/burst filtering,
+or ``--filter-inbox`` to quarantine rejects and open the remaining crops.
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -29,6 +34,13 @@ TRAINING_DIR = BACKEND_DIR / "_training" / f"set{SET_NUMBER}"
 INBOX_DIR = TRAINING_DIR / "_inbox"
 REJECTED_DIR = TRAINING_DIR / "_rejected_manual"
 SORTER_COMBO_STATE = "readonly"
+DEFAULT_FILTER_INTERVAL_SECONDS = 12.0
+DEFAULT_FILTER_VISUAL_CHANGE = 25.0
+_SOURCE_RE = re.compile(
+    r"_(board_r\d_c\d_i\d+|bench_slot\d+)(?:_\d+)?$"
+)
+_LEGACY_BENCH_RE = re.compile(r"(?:^|_)slot([0-8])(?:_|$)")
+_TIMESTAMP_RE = re.compile(r"(\d{8}_\d{6}_\d{6})")
 
 
 def available_labels() -> list[str]:
@@ -110,6 +122,114 @@ def archive_inbox(training_dir: Path = TRAINING_DIR) -> int:
         shutil.move(str(source), str(destination))
         moved += 1
     return moved
+
+
+def _capture_source(path: Path) -> str | None:
+    match = _SOURCE_RE.search(path.stem)
+    if match:
+        return match.group(1)
+    legacy = _LEGACY_BENCH_RE.search(path.stem)
+    if legacy:
+        return f"bench_slot{legacy.group(1)}"
+    return None
+
+
+def _capture_time(path: Path) -> float:
+    match = _TIMESTAMP_RE.search(path.name)
+    if match:
+        try:
+            return datetime.datetime.strptime(
+                match.group(1),
+                "%Y%m%d_%H%M%S_%f",
+            ).timestamp()
+        except ValueError:
+            pass
+    return path.stat().st_mtime
+
+
+def plan_inbox_filter(
+    training_dir: Path = TRAINING_DIR,
+    *,
+    min_source_interval: float = DEFAULT_FILTER_INTERVAL_SECONDS,
+    max_burst_visual_change: float = DEFAULT_FILTER_VISUAL_CHANGE,
+) -> dict[Path, str]:
+    """Plan obvious-quality and visually similar burst rejections."""
+    import cv2
+
+    from harvest import BenchHarvester
+
+    training_dir = Path(training_dir)
+    records = sorted(
+        (
+            (_capture_time(path), path, _capture_source(path))
+            for path in list_inbox(training_dir / "_inbox")
+        ),
+        key=lambda item: (item[0], item[1].name),
+    )
+    decisions: dict[Path, str] = {}
+    last_kept_by_source: dict[str, tuple[float, object]] = {}
+    interval = max(0.0, float(min_source_interval))
+    visual_limit = max(0.0, float(max_burst_visual_change))
+
+    for captured_at, path, source in records:
+        image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+        reason = BenchHarvester.training_crop_rejection_reason(
+            image,
+            require_health_bar=not bool(source and source.startswith("bench_slot")),
+        )
+        if reason:
+            decisions[path] = reason
+            continue
+        if source is None:
+            continue
+        thumb = BenchHarvester._thumb(image)
+        last_kept = last_kept_by_source.get(source)
+        if last_kept is not None and thumb is not None:
+            last_time, last_thumb = last_kept
+            visual_change = float(cv2.absdiff(thumb, last_thumb).mean())
+            if (
+                captured_at - last_time < interval
+                and visual_change <= visual_limit
+            ):
+                decisions[path] = "burst_excess"
+                continue
+        if thumb is not None:
+            last_kept_by_source[source] = (captured_at, thumb)
+    return decisions
+
+
+def filter_inbox(
+    training_dir: Path = TRAINING_DIR,
+    *,
+    min_source_interval: float = DEFAULT_FILTER_INTERVAL_SECONDS,
+    max_burst_visual_change: float = DEFAULT_FILTER_VISUAL_CHANGE,
+    dry_run: bool = False,
+) -> dict[str, int]:
+    """Filter obvious failures/bursts, moving rejects aside unless dry-run."""
+    training_dir = Path(training_dir)
+    inbox = list_inbox(training_dir / "_inbox")
+    decisions = plan_inbox_filter(
+        training_dir,
+        min_source_interval=min_source_interval,
+        max_burst_visual_change=max_burst_visual_change,
+    )
+    report: dict[str, int] = {"kept": len(inbox) - len(decisions)}
+    for reason in decisions.values():
+        report[reason] = report.get(reason, 0) + 1
+    if dry_run:
+        return report
+
+    rejected_dir = training_dir / "_rejected_manual"
+    for source, reason in decisions.items():
+        if not source.exists():
+            continue
+        rejected_dir.mkdir(parents=True, exist_ok=True)
+        destination = _unique_destination(
+            rejected_dir,
+            f"filtered-{reason}-{source.name}",
+        )
+        shutil.move(str(source), str(destination))
+    return report
 
 
 def requeue_existing(training_dir: Path = TRAINING_DIR) -> int:
@@ -275,11 +395,32 @@ def main() -> int:
         action="store_true",
         help="move the current inbox aside without deleting its crops",
     )
+    actions.add_argument(
+        "--filter-inbox",
+        action="store_true",
+        help="quarantine obvious failures and excessive same-position bursts",
+    )
+    actions.add_argument(
+        "--filter-inbox-dry-run",
+        action="store_true",
+        help="report what inbox filtering would do without moving files",
+    )
     args = parser.parse_args()
     if args.archive_inbox:
         moved = archive_inbox()
         print(f"Archived {moved} inbox crop(s) without deleting them.")
         return 0
+    if args.filter_inbox or args.filter_inbox_dry_run:
+        report = filter_inbox(dry_run=args.filter_inbox_dry_run)
+        action = "Would keep" if args.filter_inbox_dry_run else "Kept"
+        details = ", ".join(
+            f"{reason}={count}"
+            for reason, count in report.items()
+            if reason != "kept"
+        )
+        print(f"{action} {report['kept']} inbox crop(s); filtered {details or 'none'}.")
+        if args.filter_inbox_dry_run:
+            return 0
     if args.requeue_existing:
         moved = requeue_existing()
         print(f"Requeued {moved} previously labeled crop(s) for review.")

@@ -1687,7 +1687,9 @@ def test_manual_training_inbox():
     from sort_training_inbox import (
         SORTER_COMBO_STATE,
         archive_inbox,
+        filter_inbox,
         move_crop,
+        plan_inbox_filter,
         requeue_existing,
         restore_crop,
     )
@@ -1887,6 +1889,60 @@ def test_manual_training_inbox():
         assert collector.process(frame([0]), []) == 1
         assert collector.process(frame([0]), []) == 1
         assert len(list((root / "_inbox").glob("*.png"))) == 2
+
+    # Offline filtering is recoverable and source-aware: bench crops may lack
+    # bars, board crops may not, and same-position bursts are thinned without
+    # treating spaced duplicates as invalid training data.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        inbox = root / "_inbox"
+        inbox.mkdir()
+        bench = frame([0], seed=990)[cy:cy + ch, cx:cx + pitch]
+        different_bench = bench.copy()
+        different_bench[:, :pitch // 2] = 0
+        different_bench[:, pitch // 2:] = 255
+        board_without_bar = frame(
+            [1], seed=991, health_bar=False
+        )[cy:cy + ch, cx + pitch:cx + 2 * pitch]
+        paths = [
+            inbox / "20260830_120000_000000_bench_slot0.png",
+            inbox / "20260830_120005_000000_bench_slot0.png",
+            inbox / "20260830_120006_000000_bench_slot0.png",
+            inbox / "20260830_120012_000000_bench_slot0.png",
+            inbox / "20260830_120001_000000_board_r0_c0_i0.png",
+        ]
+        for path, image in zip(
+            paths,
+            [bench, bench, different_bench, bench, board_without_bar],
+        ):
+            assert cv2.imwrite(str(path), image)
+
+        planned = plan_inbox_filter(root, min_source_interval=10.0)
+        assert planned == {
+            paths[1]: "burst_excess",
+            paths[4]: "no_health_bar",
+        }
+        dry_report = filter_inbox(
+            root,
+            min_source_interval=10.0,
+            dry_run=True,
+        )
+        assert dry_report == {
+            "kept": 3,
+            "burst_excess": 1,
+            "no_health_bar": 1,
+        }
+        assert all(path.exists() for path in paths)
+
+        report = filter_inbox(root, min_source_interval=10.0)
+        assert report == dry_report
+        assert paths[0].exists() and paths[2].exists() and paths[3].exists()
+        assert not paths[1].exists() and not paths[4].exists()
+        rejected_names = {
+            path.name for path in (root / "_rejected_manual").glob("*.png")
+        }
+        assert any("burst_excess" in name for name in rejected_names)
+        assert any("no_health_bar" in name for name in rejected_names)
 
     # Board crops use the exact same geometry as classifier inference, so a
     # game also collects fielded/enemy units instead of waiting for every
