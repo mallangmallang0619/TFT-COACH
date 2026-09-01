@@ -1688,11 +1688,13 @@ def test_manual_training_inbox():
     sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
     from sort_training_inbox import (
         SORTER_COMBO_STATE,
+        _insert_inbox_path,
         archive_inbox,
         filter_inbox,
         list_inbox,
         move_crop,
         plan_inbox_filter,
+        reject_crop,
         requeue_existing,
         restore_crop,
     )
@@ -1738,6 +1740,17 @@ def test_manual_training_inbox():
             filenames[1],
             filenames[0],
         ]
+
+        # Undo must put the restored path back into that same slot-grouped
+        # order instead of falling back to lexicographic timestamp order.
+        queue = list_inbox(inbox)
+        original = queue[2]
+        moved = reject_crop(original, inbox / "rejected")
+        queue = [path for path in queue if path.exists()]
+        restored = restore_crop(moved, inbox)
+        restored_index = _insert_inbox_path(queue, restored)
+        assert queue == list_inbox(inbox)
+        assert queue[restored_index] == restored
 
     height, width = 720, 1280
     rois = GameROIs()

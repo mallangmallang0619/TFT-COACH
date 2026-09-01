@@ -161,6 +161,14 @@ def _inbox_sort_key(path: Path) -> tuple[int, int, float, str]:
     return (2, 0, _capture_time(path), path.name)
 
 
+def _insert_inbox_path(paths: list[Path], restored: Path) -> int:
+    """Insert an undone crop without losing the slot-grouped queue order."""
+    if restored not in paths:
+        paths.append(restored)
+    paths.sort(key=_inbox_sort_key)
+    return paths.index(restored)
+
+
 def plan_inbox_filter(
     training_dir: Path = TRAINING_DIR,
     *,
@@ -365,12 +373,10 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
     def undo(_event=None) -> None:
         if not state["history"]:
             return
-        moved, original = state["history"].pop()
+        moved, _original = state["history"].pop()
         if moved.exists():
             restored = restore_crop(moved, inbox_dir)
-            paths.append(restored)
-            paths.sort()
-            state["index"] = paths.index(restored)
+            state["index"] = _insert_inbox_path(paths, restored)
         refresh()
 
     ttk.Button(buttons, text="File (Enter)", command=file_current).pack(
