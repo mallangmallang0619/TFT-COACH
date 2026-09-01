@@ -49,7 +49,10 @@ def available_labels() -> list[str]:
 
 
 def list_inbox(inbox_dir: Path = INBOX_DIR) -> list[Path]:
-    return sorted(path for path in inbox_dir.glob("*.png") if path.is_file())
+    return sorted(
+        (path for path in inbox_dir.glob("*.png") if path.is_file()),
+        key=_inbox_sort_key,
+    )
 
 
 def _safe_folder(label: str) -> str:
@@ -145,6 +148,17 @@ def _capture_time(path: Path) -> float:
         except ValueError:
             pass
     return path.stat().st_mtime
+
+
+def _inbox_sort_key(path: Path) -> tuple[int, int, float, str]:
+    """Group bench slots numerically, then show board/unknown crops."""
+    source = _capture_source(path)
+    bench = re.fullmatch(r"bench_slot([0-8])", source or "")
+    if bench:
+        return (0, int(bench.group(1)), _capture_time(path), path.name)
+    if source and source.startswith("board_"):
+        return (1, 0, _capture_time(path), path.name)
+    return (2, 0, _capture_time(path), path.name)
 
 
 def plan_inbox_filter(

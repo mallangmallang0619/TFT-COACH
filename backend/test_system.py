@@ -1690,6 +1690,7 @@ def test_manual_training_inbox():
         SORTER_COMBO_STATE,
         archive_inbox,
         filter_inbox,
+        list_inbox,
         move_crop,
         plan_inbox_filter,
         requeue_existing,
@@ -1716,6 +1717,27 @@ def test_manual_training_inbox():
             combat_status.state == "waiting"
         ), "combat frames would poison the inbox"
     assert SORTER_COMBO_STATE == "readonly", "sorter still accepts typed input"
+
+    # Keep the inbox flat for the labeling workflow, but present each bench
+    # slot as one consecutive run. Board crops come after every bench slot.
+    with tempfile.TemporaryDirectory() as tmp:
+        inbox = Path(tmp)
+        filenames = [
+            "20260901_120003_000000_board_r0_c0_i0.png",
+            "20260901_120002_000000_bench_slot2.png",
+            "20260901_120004_000000_bench_slot0.png",
+            "20260901_120001_000000_bench_slot1.png",
+            "20260901_120000_000000_bench_slot0.png",
+        ]
+        for filename in filenames:
+            (inbox / filename).touch()
+        assert [path.name for path in list_inbox(inbox)] == [
+            filenames[4],
+            filenames[2],
+            filenames[3],
+            filenames[1],
+            filenames[0],
+        ]
 
     height, width = 720, 1280
     rois = GameROIs()
