@@ -206,7 +206,7 @@ class BenchHarvester:
         manual_collect_board: bool = True,
         manual_source_interval: float = 8.0,
         manual_max_crops_per_session: Optional[int] = None,
-        manual_max_inbox: int = 750,
+        manual_max_inbox: Optional[int] = None,
         manual_stability_threshold: Optional[float] = _MANUAL_STABILITY_THUMB_MAD,
         manual_clock: Callable[[], float] = time.monotonic,
     ):
@@ -224,7 +224,9 @@ class BenchHarvester:
             if manual_max_crops_per_session is None
             else max(1, manual_max_crops_per_session)
         )
-        self.manual_max_inbox = max(1, manual_max_inbox)
+        self.manual_max_inbox = (
+            None if manual_max_inbox is None else max(1, manual_max_inbox)
+        )
         self.manual_stability_threshold = manual_stability_threshold
         self._manual_clock = manual_clock
         self._manual_frame_count = 0
@@ -420,7 +422,10 @@ class BenchHarvester:
             )
             return 0
         inbox_count = self.manual_inbox_count()
-        if inbox_count >= self.manual_max_inbox:
+        if (
+            self.manual_max_inbox is not None
+            and inbox_count >= self.manual_max_inbox
+        ):
             self.skip_counts["manual_inbox_full"] += 1
             self.last_event = "Manual inbox full; sort or reject crops to resume"
             return 0
@@ -479,7 +484,10 @@ class BenchHarvester:
                         and self._manual_game_saved
                         >= self.manual_max_crops_per_session
                     )
-                    or inbox_count + saved >= self.manual_max_inbox
+                    or (
+                        self.manual_max_inbox is not None
+                        and inbox_count + saved >= self.manual_max_inbox
+                    )
                 ):
                     break
 

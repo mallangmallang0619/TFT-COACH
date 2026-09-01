@@ -1930,11 +1930,14 @@ def test_manual_training_inbox():
         assert collector.process(frame([0]), []) == 1
         assert len(list((root / "_inbox").glob("*.png"))) == 2
 
-    # Live collection no longer stops after 250 crops in one game. Explicit
-    # caps remain supported for focused tests/tools, and the separate inbox
-    # capacity guard still prevents unbounded disk growth.
+    # Live collection has no per-game or inbox-count cap. Explicit caps remain
+    # supported for focused tests/tools.
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
+        inbox = root / "_inbox"
+        inbox.mkdir()
+        for index in range(750):
+            (inbox / f"existing-{index:03d}.png").touch()
         collector = BenchHarvester(
             out_dir=root,
             manual_inbox=True,
@@ -1944,8 +1947,9 @@ def test_manual_training_inbox():
         )
         collector._manual_game_saved = 250
         assert collector.telemetry()["manual_game_cap"] is None
+        assert collector.telemetry()["manual_inbox_cap"] is None
         assert collector.process(frame([0]), []) == 1
-        assert len(list((root / "_inbox").glob("*.png"))) == 1
+        assert len(list(inbox.glob("*.png"))) == 751
 
     # Offline filtering is recoverable and source-aware: bench crops may lack
     # bars, board crops may not, and same-position bursts are thinned without

@@ -369,6 +369,7 @@ class TFTCoachServer:
             reason = "Waiting for planning phase to avoid moving/combat units"
         elif (
             self.harvester.manual_inbox
+            and telemetry["manual_inbox_cap"] is not None
             and telemetry["inbox_crops"] >= telemetry["manual_inbox_cap"]
         ):
             collection_state = "waiting"
