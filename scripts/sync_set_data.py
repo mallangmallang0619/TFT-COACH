@@ -40,7 +40,7 @@ USER_AGENT = "tft-coach-set-sync/0.1"
 # Data Dragon after the Unreal migration.
 RIFTBEAST_SOURCE_GAP = {
     "Cinderling", "Pebbles", "Gromp", "Murkwolf", "Scuttlecrab", "Krug",
-    "Raptor", "Ancient Sentinel", "Brambleback", "Elder Dragon",
+    "Mama Beak", "Ancient Sentinel", "Brambleback", "Elder Dragon",
 }
 
 

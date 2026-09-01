@@ -1689,6 +1689,7 @@ def test_manual_training_inbox():
     from sort_training_inbox import (
         SORTER_COMBO_STATE,
         _insert_inbox_path,
+        available_labels,
         archive_inbox,
         filter_inbox,
         list_inbox,
@@ -1719,6 +1720,8 @@ def test_manual_training_inbox():
             combat_status.state == "waiting"
         ), "combat frames would poison the inbox"
     assert SORTER_COMBO_STATE == "readonly", "sorter still accepts typed input"
+    assert "Mama Beak" in available_labels(), "sorter is missing Mama Beak"
+    assert "Raptor" not in available_labels(), "sorter still exposes the old unit name"
 
     # Keep the inbox flat for the labeling workflow, but present each bench
     # slot as one consecutive run. Board crops come after every bench slot.
