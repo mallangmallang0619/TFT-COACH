@@ -277,6 +277,9 @@ label in the filename only as a hint. Lux's forms are pooled into `Lux`.
 Classifier rebuilding uses a deterministic, capture-burst-aware validation
 split. Adjacent frames from the same idle-animation sequence stay together in
 training or validation instead of leaking near-duplicates across both sides.
+New models preserve the complete tall sprite with 192px letterboxed input,
+balance board and bench crops within each champion, and calibrate the accepted
+prediction threshold for at least 95% validation precision with a 0.55 floor.
 
 Inbox filtering rejects known quality failures and thins only rapid,
 visually-similar crops from the same board/bench position. Spaced duplicates

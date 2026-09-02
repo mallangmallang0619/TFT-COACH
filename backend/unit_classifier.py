@@ -34,6 +34,14 @@ META_PATH = MODELS_DIR / "unit_classifier.json"
 LEGACY_BOARD_CROP_MODE = "legacy_hex_v1"
 DEFAULT_BOARD_CROP_MODE = "health_bar_v1"
 DEFAULT_OCCUPIED_BOARD_MIN_CONFIDENCE = 0.08
+LEGACY_RESIZE_MODE = "stretch"
+FULL_SPRITE_RESIZE_MODE = "letterbox"
+MINIMUM_ACCEPTED_UNIT_CONFIDENCE = 0.55
+
+
+def safe_confidence_floor(value: float) -> float:
+    """Never accept a trained-model identity below the shipping safety floor."""
+    return max(MINIMUM_ACCEPTED_UNIT_CONFIDENCE, float(value))
 
 
 class UnitPredictionStabilizer:
@@ -156,11 +164,37 @@ class UnitPredictionStabilizer:
         return self.current()
 
 
+def resize_for_classifier(
+    crop: np.ndarray,
+    input_size: int,
+    mode: str = LEGACY_RESIZE_MODE,
+) -> np.ndarray:
+    """Resize a crop while optionally preserving the full sprite geometry."""
+    if mode != FULL_SPRITE_RESIZE_MODE:
+        return cv2.resize(
+            crop, (input_size, input_size), interpolation=cv2.INTER_AREA
+        )
+    height, width = crop.shape[:2]
+    scale = min(input_size / max(1, width), input_size / max(1, height))
+    resized_width = max(1, min(input_size, round(width * scale)))
+    resized_height = max(1, min(input_size, round(height * scale)))
+    interpolation = cv2.INTER_AREA if scale <= 1.0 else cv2.INTER_LINEAR
+    resized = cv2.resize(
+        crop, (resized_width, resized_height), interpolation=interpolation
+    )
+    canvas = np.zeros((input_size, input_size, crop.shape[2]), dtype=crop.dtype)
+    left = (input_size - resized_width) // 2
+    top = (input_size - resized_height) // 2
+    canvas[top:top + resized_height, left:left + resized_width] = resized
+    return canvas
+
+
 def preprocess(
     crops: list[np.ndarray],
     input_size: int,
     mean: np.ndarray,
     std: np.ndarray,
+    resize_mode: str = LEGACY_RESIZE_MODE,
 ) -> np.ndarray:
     """
     BGR crops -> normalized NCHW float32 batch, mirroring the training
@@ -169,7 +203,7 @@ def preprocess(
     batch = np.empty((len(crops), 3, input_size, input_size), dtype=np.float32)
     for i, crop in enumerate(crops):
         rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
-        resized = cv2.resize(rgb, (input_size, input_size), interpolation=cv2.INTER_AREA)
+        resized = resize_for_classifier(rgb, input_size, resize_mode)
         chw = resized.astype(np.float32).transpose(2, 0, 1) / 255.0
         batch[i] = (chw - mean) / std
     return batch
@@ -189,6 +223,7 @@ class UnitClassifier:
         # temporal agreement. Bench predictions retain the global floor.
         self.board_crop_mode = DEFAULT_BOARD_CROP_MODE
         self.board_min_confidence = DEFAULT_OCCUPIED_BOARD_MIN_CONFIDENCE
+        self.resize_mode = LEGACY_RESIZE_MODE
 
         if not (model_path.exists() and meta_path.exists()):
             logger.debug("Unit classifier model not present — CNN unit ID disabled.")
@@ -220,7 +255,10 @@ class UnitClassifier:
             self.input_size = int(meta["input_size"])
             self._mean = np.array(meta["mean"], dtype=np.float32).reshape(3, 1, 1)
             self._std = np.array(meta["std"], dtype=np.float32).reshape(3, 1, 1)
-            self.min_confidence = float(meta.get("min_confidence", 0.60))
+            self.min_confidence = safe_confidence_floor(
+                meta.get("min_confidence", 0.60)
+            )
+            self.resize_mode = str(meta.get("resize_mode", LEGACY_RESIZE_MODE))
             self.board_crop_mode = str(
                 meta.get("board_crop_mode", DEFAULT_BOARD_CROP_MODE)
             )
@@ -229,7 +267,7 @@ class UnitClassifier:
                 if "board_crop_mode" not in meta
                 else self.min_confidence
             )
-            self.board_min_confidence = float(
+            self.board_min_confidence = safe_confidence_floor(
                 meta.get("board_min_confidence", default_board_floor)
             )
             self._session = ort.InferenceSession(
@@ -284,7 +322,11 @@ class UnitClassifier:
             return results
 
         batch = preprocess(
-            [crops[i] for i in valid], self.input_size, self._mean, self._std
+            [crops[i] for i in valid],
+            self.input_size,
+            self._mean,
+            self._std,
+            self.resize_mode,
         )
         logits = self._session.run(None, {"image": batch})[0]
         # Softmax (stable) — confidences gate acceptance.

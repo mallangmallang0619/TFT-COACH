@@ -2744,11 +2744,13 @@ def test_classifier_data_pipeline():
     sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
     from train_classifier import (
         audit_dataset,
+        calibrate_confidence_threshold,
         fast_dataset_counts,
         discover_dataset,
         print_fast_readiness,
         print_readiness,
         split_dataset,
+        training_sample_weights,
     )
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -2861,6 +2863,32 @@ def test_classifier_data_pipeline():
             burst_train, burst_val, burst_labels
         ), "classifier split must be reproducible"
 
+        # Each champion contributes equal sampler mass, while board and bench
+        # domains split that mass evenly when both exist.
+        weighted_items = [
+            (root / "Gwen" / f"crop_{i}_bench_slot2.png", 0)
+            for i in range(4)
+        ] + [
+            (root / "Gwen" / "crop_board_r2_c3_i17.png", 0),
+            (root / "Zed" / "crop_0_bench_slot1.png", 1),
+            (root / "Zed" / "crop_1_bench_slot1.png", 1),
+        ]
+        weights = training_sample_weights(weighted_items)
+        assert np.allclose(weights[:4], [0.125] * 4)
+        assert weights[4] == 0.5
+        assert np.allclose(weights[5:], [0.5, 0.5])
+        assert abs(sum(weights[:5]) - sum(weights[5:])) < 1e-9
+
+        threshold, precision, coverage = calibrate_confidence_threshold(
+            [0.92, 0.81, 0.74, 0.62, 0.58, 0.41],
+            [True, True, True, False, True, False],
+            target_precision=0.95,
+            minimum=0.55,
+        )
+        assert threshold >= 0.55
+        assert precision >= 0.95
+        assert coverage > 0.0
+
         # Missing directory → empty, not an error.
         usable, skipped = discover_dataset(root / "nope", min_crops=20)
         assert usable == {} and skipped == {}
@@ -2873,7 +2901,12 @@ def test_unit_classifier_fallback():
     preprocessing contract produces correct batches."""
     import numpy as np
     from pathlib import Path
-    from unit_classifier import UnitClassifier, preprocess
+    from unit_classifier import (
+        UnitClassifier,
+        preprocess,
+        resize_for_classifier,
+        safe_confidence_floor,
+    )
 
     clf = UnitClassifier(
         model_path=Path("_nonexistent.onnx"), meta_path=Path("_nonexistent.json")
@@ -2881,6 +2914,8 @@ def test_unit_classifier_fallback():
     assert clf.available is False
     assert clf.board_crop_mode == "health_bar_v1"
     assert clf.board_min_confidence == 0.08
+    assert safe_confidence_floor(0.35) == 0.55
+    assert safe_confidence_floor(0.72) == 0.72
     crops = [np.zeros((30, 20, 3), dtype=np.uint8)] * 3
     assert clf.classify_batch(crops) == [(None, 0.0)] * 3
     assert clf.classify_batch([]) == []
@@ -2899,7 +2934,18 @@ def test_unit_classifier_fallback():
     got = batch.mean(axis=(0, 2, 3))
     assert np.allclose(got, expected, atol=1e-5), (got, expected)
 
-    return "no-model no-op OK, preprocess contract OK"
+    # New models letterbox instead of crushing a tall champion into a square.
+    tall = np.full((100, 40, 3), 255, dtype=np.uint8)
+    boxed = resize_for_classifier(tall, 100, mode="letterbox")
+    assert boxed.shape == (100, 100, 3)
+    assert np.all(boxed[:, :29] == 0) and np.all(boxed[:, 71:] == 0)
+    assert np.all(boxed[:, 31:69] == 255)
+    boxed_batch = preprocess(
+        [tall], input_size=100, mean=mean, std=std, resize_mode="letterbox"
+    )
+    assert boxed_batch.shape == (1, 3, 100, 100)
+
+    return "no-model no-op, legacy stretch, full-sprite letterbox OK"
 
 
 def test_unit_prediction_stabilizer():

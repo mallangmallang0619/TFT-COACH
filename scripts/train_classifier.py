@@ -55,13 +55,18 @@ from set18_data import (  # noqa: E402
     canonical_training_label,
 )
 from board_crops import BOARD_CROP_MODE  # noqa: E402
+from unit_classifier import (  # noqa: E402
+    FULL_SPRITE_RESIZE_MODE,
+    resize_for_classifier,
+)
 
 TRAINING_DIR = REPO_ROOT / "backend" / "_training" / f"set{SET_NUMBER}"
 MODELS_DIR = REPO_ROOT / "assets" / "models"
 
 # Preprocessing contract — written into unit_classifier.json and read back
 # by backend/unit_classifier.py. Change here, retrain, and inference follows.
-INPUT_SIZE = 128
+INPUT_SIZE = 192
+RESIZE_MODE = FULL_SPRITE_RESIZE_MODE
 IMAGENET_MEAN = [0.485, 0.456, 0.406]
 IMAGENET_STD = [0.229, 0.224, 0.225]
 
@@ -265,6 +270,72 @@ def split_dataset(
     return train, val, labels
 
 
+def _crop_domain(path: Path) -> str:
+    name = path.name.lower()
+    if "board_r" in name:
+        return "board"
+    if "bench" in name or re.search(r"(?:^|_)slot\d+", name):
+        return "bench"
+    return "legacy"
+
+
+def training_sample_weights(
+    train_items: list[tuple[Path, int]],
+) -> list[float]:
+    """Balance champions and board/bench domains within each champion."""
+    from collections import Counter, defaultdict
+
+    bucket_counts = Counter(
+        (label, _crop_domain(path)) for path, label in train_items
+    )
+    domains_by_label: dict[int, set[str]] = defaultdict(set)
+    for label, domain in bucket_counts:
+        domains_by_label[label].add(domain)
+    return [
+        1.0 / (
+            len(domains_by_label[label])
+            * bucket_counts[(label, _crop_domain(path))]
+        )
+        for path, label in train_items
+    ]
+
+
+def calibrate_confidence_threshold(
+    confidences: list[float],
+    correctness: list[bool],
+    *,
+    target_precision: float = 0.95,
+    minimum: float = 0.55,
+    maximum: float = 0.90,
+    minimum_coverage: float = 0.15,
+) -> tuple[float, float, float]:
+    """Choose the lowest validation threshold meeting accepted precision."""
+    if len(confidences) != len(correctness) or not confidences:
+        raise ValueError("Confidence calibration needs paired validation results")
+    rows = [(float(conf), bool(ok)) for conf, ok in zip(confidences, correctness)]
+    candidates = sorted({
+        min(maximum, max(minimum, conf))
+        for conf, _ok in rows
+        if conf <= maximum
+    } | {minimum, maximum})
+    evaluated: list[tuple[float, float, float]] = []
+    for threshold in candidates:
+        accepted = [ok for conf, ok in rows if conf >= threshold]
+        coverage = len(accepted) / len(rows)
+        if not accepted or coverage < minimum_coverage:
+            continue
+        precision = sum(accepted) / len(accepted)
+        evaluated.append((threshold, precision, coverage))
+    for result in evaluated:
+        if result[1] >= target_precision:
+            return result
+    if not evaluated:
+        return maximum, 0.0, 0.0
+    # If the target is impossible, prefer the safest available threshold and
+    # expose its measured precision/coverage in the model metadata.
+    return max(evaluated, key=lambda row: (row[1], row[0], row[2]))
+
+
 def print_readiness(
     min_crops: int,
     train_dir: Path = TRAINING_DIR,
@@ -363,22 +434,19 @@ def train(args: argparse.Namespace) -> int:
             self.items = items
             self.aug = (
                 transforms.Compose([
-                    transforms.RandomResizedCrop(
-                        INPUT_SIZE, scale=(0.7, 1.0), ratio=(0.75, 1.33), antialias=True
-                    ),
                     transforms.RandomHorizontalFlip(),
-                    # UE arenas/cameras vary, and Lux forms only differ in
-                    # small details. Learn the model silhouette across modest
-                    # viewpoint and focus changes instead of one highlight.
+                    # The crop is letterboxed before augmentation, so these
+                    # modest transforms vary the camera without chopping the
+                    # head or feet off a tall Unreal sprite.
                     transforms.RandomAffine(
-                        degrees=8, translate=(0.06, 0.06), scale=(0.92, 1.08)
+                        degrees=6, translate=(0.04, 0.04), scale=(0.95, 1.05)
                     ),
-                    transforms.RandomPerspective(distortion_scale=0.12, p=0.25),
-                    transforms.ColorJitter(0.25, 0.25, 0.25, 0.04),
-                    transforms.RandomApply([transforms.GaussianBlur(3)], p=0.12),
+                    transforms.RandomPerspective(distortion_scale=0.08, p=0.15),
+                    transforms.ColorJitter(0.20, 0.20, 0.20, 0.03),
+                    transforms.RandomApply([transforms.GaussianBlur(3)], p=0.08),
                 ])
                 if augment
-                else transforms.Resize((INPUT_SIZE, INPUT_SIZE), antialias=True)
+                else transforms.Compose([])
             )
 
         def __len__(self) -> int:
@@ -389,18 +457,16 @@ def train(args: argparse.Namespace) -> int:
             img = cv2.imread(str(path))
             if img is None:
                 raise RuntimeError(f"Unreadable crop: {path}")
+            img = resize_for_classifier(img, INPUT_SIZE, RESIZE_MODE)
             rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             t = torch.from_numpy(np.ascontiguousarray(rgb)).permute(2, 0, 1).float() / 255.0
             t = self.aug(t)
             return (t - mean_t) / std_t, label
 
-    # Champions appear at very different rates (cost-1 units get bought far
-    # more often) — oversample rare classes instead of letting the model
-    # coast on the common ones.
-    class_counts = [0] * len(labels)
-    for _, lbl in train_items:
-        class_counts[lbl] += 1
-    weights = [1.0 / class_counts[lbl] for _, lbl in train_items]
+    # Equalize champions, then divide each champion's mass between its board,
+    # bench, and legacy sources. Otherwise the much larger bench collection
+    # overwhelms the exact board domain used by live inference.
+    weights = training_sample_weights(train_items)
     sampler = WeightedRandomSampler(weights, num_samples=len(train_items), replacement=True)
 
     train_dl = DataLoader(
@@ -479,12 +545,12 @@ def train(args: argparse.Namespace) -> int:
     model.load_state_dict(best_state)
     model.cpu().eval()
 
-    # Per-class validation accuracy — the readiness signal for shipping —
-    # and the confidence gate, calibrated so ~95% of correct validation
-    # predictions pass it (a fixed threshold misjudges how confident a
-    # label-smoothed model actually is).
+    # Per-class validation accuracy and a precision-oriented confidence gate.
+    # A prediction below 0.55 is never accepted, even when a weak validation
+    # run would otherwise calibrate the threshold downward.
     per_class = {name: [0, 0] for name in labels}
-    correct_confs: list[float] = []
+    validation_confidences: list[float] = []
+    validation_correctness: list[bool] = []
     with torch.no_grad():
         for x, y in val_dl:
             probs = torch.softmax(model(x), dim=1)
@@ -492,14 +558,25 @@ def train(args: argparse.Namespace) -> int:
             for p, t, c in zip(pred.tolist(), y.tolist(), conf.tolist()):
                 per_class[labels[t]][1] += 1
                 per_class[labels[t]][0] += int(p == t)
-                if p == t:
-                    correct_confs.append(c)
+                validation_confidences.append(c)
+                validation_correctness.append(p == t)
     print("\nPer-class val accuracy:")
     for name, (c, n) in sorted(per_class.items()):
         print(f"  {name:<20} {c}/{n}")
 
-    min_confidence = float(np.clip(np.percentile(correct_confs, 5), 0.35, 0.75))
-    print(f"Calibrated min confidence: {min_confidence:.3f}")
+    min_confidence, accepted_precision, accepted_coverage = (
+        calibrate_confidence_threshold(
+            validation_confidences,
+            validation_correctness,
+            target_precision=0.95,
+            minimum=0.55,
+        )
+    )
+    print(
+        f"Calibrated min confidence: {min_confidence:.3f} "
+        f"(accepted precision {accepted_precision:.1%}, "
+        f"coverage {accepted_coverage:.1%})"
+    )
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     onnx_path = args.out_dir / "unit_classifier.onnx"
@@ -519,12 +596,15 @@ def train(args: argparse.Namespace) -> int:
         "engine": ENGINE,
         "labels": labels,
         "input_size": INPUT_SIZE,
+        "resize_mode": RESIZE_MODE,
         "mean": IMAGENET_MEAN,
         "std": IMAGENET_STD,
         "color": "rgb",
         "min_confidence": round(min_confidence, 3),
         "board_crop_mode": BOARD_CROP_MODE,
         "board_min_confidence": round(min_confidence, 3),
+        "accepted_val_precision": round(accepted_precision, 4),
+        "accepted_val_coverage": round(accepted_coverage, 4),
         "val_accuracy": round(best_acc, 4),
         "num_train_crops": len(train_items),
         "roster_coverage": round(
