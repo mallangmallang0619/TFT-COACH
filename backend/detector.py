@@ -68,6 +68,7 @@ from config import (
 )
 from game_data import CHAMPIONS, TRAITS, find_champion_name, find_augment_rating
 from board_crops import BOARD_CROP_MODE, extract_board_unit_crops
+from harvest import BenchHarvester
 from unit_classifier import (
     LEGACY_BOARD_CROP_MODE,
     UnitClassifier,
@@ -1828,13 +1829,24 @@ class Detector:
             max(0, int(round(slot_w * BENCH_CROP_HORIZONTAL_INSET_RATIO))),
         )
         for slot in range(9):
-            crops.append(
-                None if slot in UNSAFE_BENCH_SLOTS
+            crop = (
+                None
+                if slot in UNSAFE_BENCH_SLOTS
                 else frame[
                     ny:ny + nh,
                     nx + slot * slot_w + inset:nx + (slot + 1) * slot_w - inset,
                 ]
             )
+            # The tall crop preserves bench-unit heads, but an empty slot can
+            # then contain the feet of a champion on the board's bottom row.
+            # A health bar inside this exact bench slot is the independent
+            # occupancy anchor that prevents the board unit being emitted as
+            # a bench unit as well.
+            if crop is not None and not BenchHarvester._has_champion_health_bar(
+                crop
+            ):
+                crop = None
+            crops.append(crop)
 
         board_min_confidence = float(getattr(
             self.unit_classifier,

@@ -1563,6 +1563,7 @@ def test_bench_harvester():
 
 def test_bench_crop_geometry():
     """Bench crops stay centered on one model and match live inference."""
+    import cv2
     import numpy as np
     from harvest import BENCH_SLOTS, BenchHarvester
     from config import GameROIs, RegionOfInterest
@@ -1597,8 +1598,21 @@ def test_bench_crop_geometry():
         assert len({c.shape for c in crops}) == 1
         assert all(float(c[:anchor_y - capture_y].mean()) == 255.0 for c in crops)
 
-    # Training and live inference must receive pixel-identical bench crops;
-    # otherwise a model can pass offline validation and fail in the overlay.
+    # Training and live inference must receive pixel-identical occupied bench
+    # crops. Draw one anchored bar in each safe slot; empty slots are now
+    # withheld so a bottom-row board sprite cannot leak into the bench list.
+    slot_pitch = capture_w // BENCH_SLOTS
+    for slot in range(8):
+        bar_x = capture_x + slot * slot_pitch + slot_pitch // 4
+        cv2.rectangle(
+            frame,
+            (bar_x, capture_y + 12),
+            (bar_x + slot_pitch // 2, capture_y + 19),
+            (25, 225, 65),
+            -1,
+        )
+    crops = harvester._bench_slot_crops(frame)
+
     from detector import Detector
 
     class RecordingClassifier:
@@ -1662,6 +1676,15 @@ def test_board_health_bar_crop_geometry():
     cv2.rectangle(
         frame, (900, bench_y + 8), (988, bench_y + 15), (25, 225, 65), -1
     )
+    bench_slot_width = _nw // 9
+    anchored_x = _nx + 4 * bench_slot_width + bench_slot_width // 4
+    cv2.rectangle(
+        frame,
+        (anchored_x, bench_y + 20),
+        (anchored_x + bench_slot_width // 2, bench_y + 27),
+        (25, 225, 65),
+        -1,
+    )
     cv2.rectangle(
         frame, (1550, bar_y), (1695, bar_y + 10), (25, 225, 65), -1
     )
@@ -1710,7 +1733,26 @@ def test_board_health_bar_crop_geometry():
     detector._detect_units_cnn(frame)
     assert all(crop is not None for crop in legacy_classifier.crops[:28])
 
-    return "health-bar anchor gives one full-body nearest-hex crop"
+    # A board-row sprite may extend into the tall bench model crop. Only a
+    # health bar anchored inside the bench strip may make that slot eligible;
+    # otherwise a board champion can be reported as a bench champion too.
+    class OccupancyClassifier(RecordingClassifier):
+        def classify_batch(self, crops, min_confidences=None):
+            self.crops = crops
+            return [
+                ("Yorick", 0.90) if crop is not None else (None, 0.0)
+                for crop in crops
+            ]
+
+    occupancy_classifier = OccupancyClassifier("health_bar_v1")
+    detector.unit_classifier = occupancy_classifier
+    board, bench = detector._detect_units_cnn(frame)
+    assert len(board) == 1
+    assert len(bench) == 1, (
+        f"empty bench slots accepted board spillover: {len(bench)}"
+    )
+
+    return "board crop + bench occupancy gate prevent board/bench spillover"
 
 
 def test_slow_hud_refresh_schedule():
