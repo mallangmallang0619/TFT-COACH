@@ -6,9 +6,10 @@ Live mode writes visually valid board and bench crops to
     python scripts/sort_training_inbox.py
 
 Select a champion from the read-only dropdown and press Enter to file the crop.
-Space defers it, Delete moves it to a recoverable rejected folder, and Ctrl+Z
-undoes the most recent move. To review crops created by the old automatic
-labeler first, run with ``--requeue-existing`` once.
+Shift+Enter files a short burst of visually similar crops from the same board
+hex or bench slot. Space defers it, Delete moves it to a recoverable rejected
+folder, and Ctrl+Z undoes the most recent single or batch move. To review crops
+created by the old automatic labeler first, run with ``--requeue-existing``.
 
 Use ``--filter-inbox-dry-run`` to preview recoverable quality/burst filtering,
 or ``--filter-inbox`` to quarantine rejects and open the remaining crops.
@@ -36,6 +37,9 @@ REJECTED_DIR = TRAINING_DIR / "_rejected_manual"
 SORTER_COMBO_STATE = "readonly"
 DEFAULT_FILTER_INTERVAL_SECONDS = 12.0
 DEFAULT_FILTER_VISUAL_CHANGE = 25.0
+DEFAULT_BATCH_WINDOW_SECONDS = 30.0
+DEFAULT_BATCH_VISUAL_CHANGE = 12.0
+DEFAULT_BATCH_LIMIT = 25
 _SOURCE_RE = re.compile(
     r"_(board_r\d_c\d_i\d+|bench_slot\d+)(?:_\d+)?$"
 )
@@ -169,6 +173,50 @@ def _insert_inbox_path(paths: list[Path], restored: Path) -> int:
     return paths.index(restored)
 
 
+def similar_crop_batch(
+    current: Path,
+    paths: list[Path],
+    *,
+    max_time_gap: float = DEFAULT_BATCH_WINDOW_SECONDS,
+    max_visual_change: float = DEFAULT_BATCH_VISUAL_CHANGE,
+    limit: int = DEFAULT_BATCH_LIMIT,
+) -> list[Path]:
+    """Return a conservative same-occupant burst headed by ``current``."""
+    import cv2
+
+    from harvest import BenchHarvester
+
+    current = Path(current)
+    source = _capture_source(current)
+    image = cv2.imread(str(current), cv2.IMREAD_COLOR)
+    reference = BenchHarvester._thumb(image) if image is not None else None
+    if source is None or reference is None:
+        return [current]
+
+    captured_at = _capture_time(current)
+    candidates: list[Path] = []
+    for path in paths:
+        if not path.is_file() or _capture_source(path) != source:
+            continue
+        if abs(_capture_time(path) - captured_at) > max(0.0, max_time_gap):
+            continue
+        candidate_image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+        candidate = (
+            BenchHarvester._thumb(candidate_image)
+            if candidate_image is not None else None
+        )
+        if candidate is None or candidate.shape != reference.shape:
+            continue
+        visual_change = float(cv2.absdiff(reference, candidate).mean())
+        if visual_change <= max(0.0, max_visual_change):
+            candidates.append(path)
+
+    candidates.sort(key=lambda path: (_capture_time(path), path.name))
+    if current in candidates:
+        candidates.remove(current)
+    return [current, *candidates[:max(0, limit - 1)]]
+
+
 def plan_inbox_filter(
     training_dir: Path = TRAINING_DIR,
     *,
@@ -288,12 +336,12 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
         return 0
 
     labels = available_labels()
-    state = {"index": 0, "photo": None, "history": []}
+    state = {"index": 0, "photo": None, "history": [], "last_action": ""}
 
     root = tk.Tk()
     root.title("TFT Coach — Sort Training Crops")
-    root.geometry("760x780")
-    root.minsize(620, 620)
+    root.geometry("900x800")
+    root.minsize(720, 640)
 
     status = ttk.Label(root, anchor="center")
     status.pack(fill="x", padx=12, pady=(12, 4))
@@ -340,22 +388,45 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
         filename_label.configure(text=path.name)
         status.configure(
             text=f"Crop {state['index'] + 1} of {len(paths)} · "
-            f"sorted this run: {len(state['history'])}"
+            f"sorted this run: {sum(len(group) for group in state['history'])}"
+            + (f" · {state['last_action']}" if state['last_action'] else "")
         )
         root.focus_set()
+
+    def file_paths(paths_to_file: list[Path]) -> None:
+        moved_group: list[tuple[Path, Path]] = []
+        try:
+            for path in paths_to_file:
+                if path.exists():
+                    destination = move_crop(path, selected.get(), training_dir)
+                    moved_group.append((destination, path))
+        except ValueError as error:
+            for moved, _original in reversed(moved_group):
+                if moved.exists():
+                    restore_crop(moved, inbox_dir)
+            messagebox.showerror("Cannot file crop", str(error), parent=root)
+            return
+        if not moved_group:
+            return
+        state["history"].append(moved_group)
+        state["last_action"] = (
+            f"filed {len(moved_group)} similar crops"
+            if len(moved_group) > 1 else "filed 1 crop"
+        )
+        selected.set(canonical_training_label(selected.get().replace("_", " ")))
+        refresh()
 
     def file_current(_event=None) -> None:
         path = current_path()
         if path is None:
             return
-        try:
-            destination = move_crop(path, selected.get(), training_dir)
-        except ValueError as error:
-            messagebox.showerror("Cannot file crop", str(error), parent=root)
+        file_paths([path])
+
+    def file_similar(_event=None) -> None:
+        path = current_path()
+        if path is None:
             return
-        state["history"].append((destination, path))
-        selected.set(canonical_training_label(selected.get().replace("_", " ")))
-        refresh()
+        file_paths(similar_crop_batch(path, paths))
 
     def defer_current(_event=None) -> None:
         if current_path() is not None:
@@ -367,21 +438,32 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
         if path is None:
             return
         destination = reject_crop(path, rejected_dir)
-        state["history"].append((destination, path))
+        state["history"].append([(destination, path)])
+        state["last_action"] = "rejected 1 crop"
         refresh()
 
     def undo(_event=None) -> None:
         if not state["history"]:
             return
-        moved, _original = state["history"].pop()
-        if moved.exists():
-            restored = restore_crop(moved, inbox_dir)
-            state["index"] = _insert_inbox_path(paths, restored)
+        group = state["history"].pop()
+        restored_paths = []
+        for moved, _original in reversed(group):
+            if moved.exists():
+                restored_paths.append(restore_crop(moved, inbox_dir))
+        restored_indexes = [
+            _insert_inbox_path(paths, restored) for restored in restored_paths
+        ]
+        if restored_indexes:
+            state["index"] = min(restored_indexes)
+        state["last_action"] = f"restored {len(restored_paths)} crop(s)"
         refresh()
 
     ttk.Button(buttons, text="File (Enter)", command=file_current).pack(
         side="left", expand=True, fill="x", padx=4
     )
+    ttk.Button(
+        buttons, text="File Similar (Shift+Enter)", command=file_similar
+    ).pack(side="left", expand=True, fill="x", padx=4)
     ttk.Button(buttons, text="Defer (Space)", command=defer_current).pack(
         side="left", expand=True, fill="x", padx=4
     )
@@ -394,6 +476,7 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
 
     combo.bind("<<ComboboxSelected>>", lambda _event: root.after_idle(root.focus_set))
     root.bind("<Return>", file_current)
+    root.bind("<Shift-Return>", file_similar)
     root.bind("<space>", defer_current)
     root.bind("<Delete>", reject_current)
     root.bind("<Control-z>", undo)

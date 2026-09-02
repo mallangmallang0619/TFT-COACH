@@ -33,6 +33,115 @@ MODEL_PATH = MODELS_DIR / "unit_classifier.onnx"
 META_PATH = MODELS_DIR / "unit_classifier.json"
 
 
+class UnitPredictionStabilizer:
+    """Turn noisy per-frame slot predictions into stable unit identities.
+
+    A TFT model idles and animates inside an otherwise fixed board/bench
+    position.  One frame can therefore favor a visually similar champion.
+    New identities must repeat before they are shown, established identities
+    survive uncertain frames, and confident background must repeat before a
+    slot is cleared.
+    """
+
+    def __init__(
+        self,
+        slot_count: int,
+        min_confidence: float,
+        acquire_frames: int = 2,
+        switch_frames: int = 3,
+        clear_frames: int = 3,
+    ):
+        self.slot_count = slot_count
+        self.min_confidence = min_confidence
+        self.acquire_frames = acquire_frames
+        self.switch_frames = switch_frames
+        self.clear_frames = clear_frames
+        self.reset()
+
+    def reset(self) -> None:
+        self._names: list[Optional[str]] = [None] * self.slot_count
+        self._confidences: list[float] = [0.0] * self.slot_count
+        self._candidates: list[Optional[str]] = [None] * self.slot_count
+        self._candidate_counts: list[int] = [0] * self.slot_count
+        self._candidate_confidences: list[float] = [0.0] * self.slot_count
+        self._clear_counts: list[int] = [0] * self.slot_count
+
+    def current(self) -> list[tuple[Optional[str], float]]:
+        return list(zip(self._names, self._confidences))
+
+    def update(
+        self,
+        results: list[tuple[Optional[str], float]],
+        update_mask: Optional[list[bool]] = None,
+    ) -> list[tuple[Optional[str], float]]:
+        if len(results) != self.slot_count:
+            raise ValueError(
+                f"Expected {self.slot_count} unit slots, got {len(results)}"
+            )
+        if update_mask is not None and len(update_mask) != self.slot_count:
+            raise ValueError(
+                f"Expected {self.slot_count} update flags, got {len(update_mask)}"
+            )
+
+        for i, (name, confidence) in enumerate(results):
+            if update_mask is not None and not update_mask[i]:
+                continue
+
+            stable_name = self._names[i]
+            confident = confidence >= self.min_confidence
+            if name is not None and not confident:
+                name = None
+
+            if name is None:
+                # A low score means the network is unsure, not that a model
+                # disappeared.  Preserve the last trustworthy identity.
+                self._candidates[i] = None
+                self._candidate_counts[i] = 0
+                self._candidate_confidences[i] = 0.0
+                if confident and stable_name is not None:
+                    self._clear_counts[i] += 1
+                    if self._clear_counts[i] >= self.clear_frames:
+                        self._names[i] = None
+                        self._confidences[i] = 0.0
+                        self._clear_counts[i] = 0
+                elif not confident:
+                    self._clear_counts[i] = 0
+                continue
+
+            self._clear_counts[i] = 0
+            if name == stable_name:
+                # Smooth the displayed confidence without changing identity.
+                old = self._confidences[i]
+                self._confidences[i] = confidence if old == 0.0 else (
+                    old * 0.6 + confidence * 0.4
+                )
+                self._candidates[i] = None
+                self._candidate_counts[i] = 0
+                self._candidate_confidences[i] = 0.0
+                continue
+
+            if name == self._candidates[i]:
+                count = self._candidate_counts[i] + 1
+                self._candidate_counts[i] = count
+                self._candidate_confidences[i] = (
+                    self._candidate_confidences[i] * (count - 1) + confidence
+                ) / count
+            else:
+                self._candidates[i] = name
+                self._candidate_counts[i] = 1
+                self._candidate_confidences[i] = confidence
+
+            needed = self.acquire_frames if stable_name is None else self.switch_frames
+            if self._candidate_counts[i] >= needed:
+                self._names[i] = name
+                self._confidences[i] = self._candidate_confidences[i]
+                self._candidates[i] = None
+                self._candidate_counts[i] = 0
+                self._candidate_confidences[i] = 0.0
+
+        return self.current()
+
+
 def preprocess(
     crops: list[np.ndarray],
     input_size: int,

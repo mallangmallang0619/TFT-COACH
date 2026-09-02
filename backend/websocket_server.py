@@ -111,6 +111,7 @@ class TFTCoachServer:
         # ~2.3s/frame — turn it off so the loop runs at real capture FPS.
         # The roster (shop tracking) supplies held units instead.
         self.detector.match_board_units = False
+        self.detector.stabilize_unit_predictions = True
 
         self.clients: Set[WebSocketServerProtocol] = set()
         self.latest_state: GameState = GameState()

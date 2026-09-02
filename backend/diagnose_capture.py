@@ -11,10 +11,8 @@ Usage:
     python backend/diagnose_capture.py                  # capture live game window
     python backend/diagnose_capture.py --fullscreen     # capture whole monitor
     python backend/diagnose_capture.py --file shot.png  # annotate a screenshot
-    python backend/diagnose_capture.py --dump-hexes     # also save each board-hex
-                                                        # and bench-slot crop (for
-                                                        # building in-game unit
-                                                        # templates)
+    python backend/diagnose_capture.py --dump-hexes     # save occupied board-unit
+                                                        # and bench-slot crops
 
 Output goes to backend/_debug/.
 """
@@ -43,6 +41,7 @@ from config import (
     BENCH_CROP_HORIZONTAL_INSET_RATIO,
 )
 from detector import Detector, TemplateStore
+from board_crops import extract_board_unit_crops
 
 logger = logging.getLogger("diagnose")
 
@@ -181,21 +180,18 @@ def annotate(frame: np.ndarray) -> np.ndarray:
 
 
 def dump_hex_crops(frame: np.ndarray, out_dir: Path) -> int:
-    """Save each board-hex and bench-slot crop as its own PNG."""
+    """Save health-bar-anchored board units and each bench-slot crop."""
     h, w = frame.shape[:2]
     rois = GameROIs()
     out_dir.mkdir(parents=True, exist_ok=True)
     count = 0
 
-    bx, by, bw, bh = rois.board.to_pixels(w, h)
-    for hexpos in BOARD_HEX_GRID:
-        cx = bx + int(hexpos.cx * bw)
-        cy = by + int(hexpos.cy * bh)
-        r = max(8, int(hexpos.radius * bw * 1.6))
-        crop = frame[max(0, cy - r):cy + r, max(0, cx - r):cx + r]
-        if crop.size:
-            cv2.imwrite(str(out_dir / f"hex_r{hexpos.row}_c{hexpos.col}.png"), crop)
-            count += 1
+    for sample in extract_board_unit_crops(frame, rois):
+        cv2.imwrite(
+            str(out_dir / f"board_r{sample.row}_c{sample.col}.png"),
+            sample.crop,
+        )
+        count += 1
 
     nx, ny, nw, nh = rois.champion_bench_capture.to_pixels(w, h)
     slot_w = nw // 9
@@ -219,7 +215,7 @@ def main() -> int:
     ap.add_argument("--fullscreen", action="store_true",
                     help="Capture the whole primary monitor (skip window detection)")
     ap.add_argument("--dump-hexes", action="store_true",
-                    help="Also save each board-hex / bench-slot crop as a PNG")
+                    help="Save occupied board-unit / bench-slot crops as PNGs")
     args = ap.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
@@ -270,7 +266,7 @@ def main() -> int:
     if args.dump_hexes:
         crops_dir = DEBUG_DIR / f"hexes_{ts}"
         n = dump_hex_crops(frame, crops_dir)
-        print(f"Saved {n} hex/bench crops to {crops_dir}")
+        print(f"Saved {n} board-unit/bench crops to {crops_dir}")
         print("These crops are the raw material for real in-game unit templates.")
 
     return 0

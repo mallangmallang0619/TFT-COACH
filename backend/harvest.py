@@ -24,10 +24,10 @@ import numpy as np
 
 from config import (
     BENCH_CROP_HORIZONTAL_INSET_RATIO,
-    BOARD_HEX_GRID,
     GameROIs,
     UNSAFE_BENCH_SLOTS,
 )
+from board_crops import extract_board_unit_crops
 from game_data import ACTIVE_SET_NUMBER, canonical_training_label
 
 logger = logging.getLogger(__name__)
@@ -1011,26 +1011,11 @@ class BenchHarvester:
         )
 
     def _board_hex_crops(self, frame: np.ndarray) -> list[tuple[str, np.ndarray]]:
-        """Use pixel-identical board geometry to classifier inference."""
-        height, width = frame.shape[:2]
-        bx, by, bw, bh = self.rois.board.to_pixels(width, height)
-        board_region = frame[by:by + bh, bx:bx + bw]
-        region_height, region_width = board_region.shape[:2]
-        crops: list[tuple[str, np.ndarray]] = []
-        for index, position in enumerate(BOARD_HEX_GRID):
-            center_x = int(position.cx * region_width)
-            center_y = int(position.cy * region_height)
-            radius = int(position.radius * region_width)
-            crop = board_region[
-                max(0, center_y - int(2.55 * radius)):
-                min(region_height, center_y + radius),
-                max(0, center_x - int(1.1 * radius)):
-                min(region_width, center_x + int(1.1 * radius)),
-            ]
-            crops.append(
-                (f"board_r{position.row}_c{position.col}_i{index}", crop)
-            )
-        return crops
+        """Return one health-bar-anchored full-model crop per board unit."""
+        return [
+            (f"board_r{s.row}_c{s.col}_i{s.index}", s.crop)
+            for s in extract_board_unit_crops(frame, self.rois)
+        ]
 
     def _bench_anchor_slot_crops(self, frame: np.ndarray) -> list[np.ndarray]:
         """Return the lower, stable strip used only for landing motion."""

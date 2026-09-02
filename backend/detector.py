@@ -66,7 +66,8 @@ from config import (
     BENCH_CROP_HORIZONTAL_INSET_RATIO,
 )
 from game_data import CHAMPIONS, TRAITS, find_champion_name, find_augment_rating
-from unit_classifier import UnitClassifier
+from board_crops import extract_board_unit_crops
+from unit_classifier import UnitClassifier, UnitPredictionStabilizer
 from game_state import (
     GameState,
     GamePhase,
@@ -88,6 +89,7 @@ CANON_TEMPLATE = 60          # canonical champion patch edge (px)
 CANON_SEARCH = 80            # search-window edge the patch slides within (px)
 MATCH_SCALES = (0.85, 1.0, 1.15)
 _MASK_CACHE: dict[int, np.ndarray] = {}
+BENCH_SLOTS = 9
 
 # Trait symbols are tiny tier-tinted glyphs in the left panel. Matching them needs
 # multi-scale sliding (the glyph fills a varying fraction of its hexagon) and
@@ -306,6 +308,11 @@ class Detector:
         # CNN unit classifier for live 3D models — a no-op until a trained
         # model exists in assets/models/ (see scripts/train_classifier.py).
         self.unit_classifier = UnitClassifier()
+        self.stabilize_unit_predictions = False
+        self._unit_stabilizer = UnitPredictionStabilizer(
+            slot_count=len(BOARD_HEX_GRID) + BENCH_SLOTS,
+            min_confidence=self.unit_classifier.min_confidence,
+        )
 
         # Lobby HP standings — refreshed every N frames (they only change
         # after combats) and served from cache in between.
@@ -350,6 +357,7 @@ class Detector:
             self._last_hp = None   # new game → drop the HP anchor
             self._lobby_cache = [-1] * 8
             self._lobby_age = 10**6
+            self._unit_stabilizer.reset()
             state.detection_ms = (time.time() - t_start) * 1000
             return state
 
@@ -389,7 +397,9 @@ class Detector:
                 # Live mode with a trained model: identify the 3D unit
                 # models directly (one batched ONNX pass for board+bench).
                 state.board_champions, state.bench_champions = (
-                    self._detect_units_cnn(frame)
+                    self._detect_units_cnn(
+                        frame, freeze_board=state.phase == GamePhase.COMBAT
+                    )
                 )
                 state.unit_detection_source = "classifier"
             # Live frames render units as 3D models the portrait templates
@@ -1500,34 +1510,22 @@ class Detector:
         return detected
 
     def _detect_units_cnn(
-        self, frame: np.ndarray
+        self, frame: np.ndarray, freeze_board: bool = False
     ) -> tuple[list[DetectedChampion], list[DetectedChampion]]:
         """
         Identify live 3D unit models on board hexes and bench slots with
         the trained classifier — one batched inference pass for all 37
-        positions. Empty positions fall below the confidence threshold
-        (and, once an _empty class is harvested, are classified outright).
+        positions. Board models are framed from their health bars instead of
+        fixed rectangles, which prevents neighboring hexes from receiving
+        clipped fragments of the same champion.
         """
         h, w = frame.shape[:2]
         crops: list[Optional[np.ndarray]] = []
 
-        # Board hexes: a unit model stands upward from its hex, so the
-        # crop is a portrait-shaped box anchored at the hex center —
-        # framed like the bench training crops. Geometry is a first
-        # approximation; calibrate against a live frame once a model
-        # exists (diagnose_capture.py --dump-hexes).
-        bx, by, bw, bh = self.rois.board.to_pixels(w, h)
-        board_region = frame[by:by+bh, bx:bx+bw]
-        brh, brw = board_region.shape[:2]
-        for hex_pos in BOARD_HEX_GRID:
-            cx = int(hex_pos.cx * brw)
-            cy = int(hex_pos.cy * brh)
-            r = int(hex_pos.radius * brw)
-            crop = board_region[
-                max(0, cy - int(2.55 * r)):min(brh, cy + r),
-                max(0, cx - int(1.1 * r)):min(brw, cx + int(1.1 * r)),
-            ]
-            crops.append(crop)
+        board_crops: list[Optional[np.ndarray]] = [None] * len(BOARD_HEX_GRID)
+        for sample in extract_board_unit_crops(frame, self.rois):
+            board_crops[sample.index] = sample.crop
+        crops.extend(board_crops)
 
         # Bench slots: identical cropping to the harvester, so inference
         # sees exactly what training saw.
@@ -1547,6 +1545,21 @@ class Detector:
             )
 
         results = self.unit_classifier.classify_batch(crops)
+        # No player health bar is strong evidence that a board hex is empty.
+        # Preserve the classifier's ordinary low-confidence None for occupied
+        # crops, but let temporal stabilization clear truly vacated hexes.
+        for index, crop in enumerate(board_crops):
+            if crop is None:
+                results[index] = (None, 1.0)
+        if getattr(self, "stabilize_unit_predictions", False):
+            board_slots = len(BOARD_HEX_GRID)
+            results = self._unit_stabilizer.update(
+                results,
+                update_mask=(
+                    [False] * board_slots + [True] * BENCH_SLOTS
+                    if freeze_board else None
+                ),
+            )
 
         board: list[DetectedChampion] = []
         for hex_pos, (name, conf) in zip(BOARD_HEX_GRID, results):

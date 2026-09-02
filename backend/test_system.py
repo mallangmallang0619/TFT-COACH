@@ -1620,6 +1620,65 @@ def test_bench_crop_geometry():
     return "35%-shorter crops scale across four resolutions; train/inference pixels match"
 
 
+def test_board_health_bar_crop_geometry():
+    """One player health bar yields one full-body crop at the nearest hex."""
+    import cv2
+    import numpy as np
+    from board_crops import extract_board_unit_crops
+    from config import BOARD_HEX_GRID, GameROIs
+
+    height, width = 1440, 2560
+    frame = np.full((height, width, 3), 52, dtype=np.uint8)
+    rois = GameROIs()
+    bx, by, bw, bh = rois.board.to_pixels(width, height)
+    position = BOARD_HEX_GRID[17]
+    foot_x = bx + int(position.cx * bw)
+    foot_y = by + int(position.cy * bh)
+    bar_width = 88
+    bar_y = foot_y - int(round(bar_width * 1.55))
+    bar_x = foot_x - bar_width // 2
+
+    # A bright, asymmetric model silhouette makes clipping measurable.
+    cv2.rectangle(
+        frame,
+        (foot_x - 58, bar_y + 18),
+        (foot_x + 62, foot_y + 18),
+        (220, 70, 210),
+        -1,
+    )
+    cv2.rectangle(
+        frame,
+        (bar_x, bar_y),
+        (bar_x + bar_width, bar_y + 7),
+        (25, 225, 65),
+        -1,
+    )
+
+    # Bench and Little-Legend-like bars must not become board samples.
+    _nx, bench_y, _nw, _nh = rois.champion_bench_capture.to_pixels(width, height)
+    cv2.rectangle(
+        frame, (900, bench_y + 8), (988, bench_y + 15), (25, 225, 65), -1
+    )
+    cv2.rectangle(
+        frame, (1550, bar_y), (1695, bar_y + 10), (25, 225, 65), -1
+    )
+
+    samples = extract_board_unit_crops(frame, rois)
+    assert len(samples) == 1, f"one champion produced {len(samples)} board crops"
+    sample = samples[0]
+    assert (sample.row, sample.col, sample.index) == (
+        position.row, position.col, 17
+    )
+    assert sample.crop.shape[1] >= 140 and sample.crop.shape[0] >= 200
+    # Both extreme sides of the synthetic model remain inside the crop.
+    magenta = (sample.crop[:, :, 0] > 180) & (sample.crop[:, :, 2] > 170)
+    magenta_x = np.flatnonzero(np.any(magenta, axis=0))
+    assert magenta_x.size and magenta_x[0] > 0
+    assert magenta_x[-1] < sample.crop.shape[1] - 1
+
+    return "health-bar anchor gives one full-body nearest-hex crop"
+
+
 def test_bench_harvester_quality_invariants():
     """Collector favors fewer trustworthy labels over ambiguous edge data."""
     import tempfile
@@ -1878,6 +1937,7 @@ def test_manual_training_inbox():
         reject_crop,
         requeue_existing,
         restore_crop,
+        similar_crop_batch,
     )
     from websocket_server import TFTCoachServer
 
@@ -1934,6 +1994,33 @@ def test_manual_training_inbox():
         restored_index = _insert_inbox_path(queue, restored)
         assert queue == list_inbox(inbox)
         assert queue[restored_index] == restored
+
+    # A batch-label shortcut may include only visually similar crops from the
+    # same position and short time window. Different units, positions, and a
+    # later occupant must remain for individual review.
+    with tempfile.TemporaryDirectory() as tmp:
+        inbox = Path(tmp)
+        base = np.full((120, 80, 3), 70, dtype=np.uint8)
+        cv2.circle(base, (40, 65), 24, (180, 80, 210), -1)
+        slight_pose = base.copy()
+        cv2.circle(slight_pose, (43, 65), 5, (185, 85, 215), -1)
+        different = np.full((120, 80, 3), 210, dtype=np.uint8)
+        files = [
+            ("20260901_120000_000000_board_r2_c3_i17.png", base),
+            ("20260901_120006_000000_board_r2_c3_i17.png", slight_pose),
+            ("20260901_120010_000000_board_r2_c3_i17.png", base),
+            ("20260901_120012_000000_board_r2_c3_i17.png", different),
+            ("20260901_120008_000000_board_r2_c4_i18.png", base),
+            ("20260901_120100_000000_board_r2_c3_i17.png", base),
+        ]
+        for filename, image in files:
+            assert cv2.imwrite(str(inbox / filename), image)
+        queue = list_inbox(inbox)
+        current = inbox / files[0][0]
+        grouped = similar_crop_batch(current, queue)
+        assert [path.name for path in grouped] == [
+            files[0][0], files[1][0], files[2][0]
+        ], [path.name for path in grouped]
 
     height, width = 720, 1280
     rois = GameROIs()
@@ -2547,6 +2634,52 @@ def test_unit_classifier_fallback():
     assert np.allclose(got, expected, atol=1e-5), (got, expected)
 
     return "no-model no-op OK, preprocess contract OK"
+
+
+def test_unit_prediction_stabilizer():
+    """Live identities require repeated evidence and survive brief noise."""
+    from unit_classifier import UnitPredictionStabilizer
+
+    tracker = UnitPredictionStabilizer(
+        slot_count=2,
+        min_confidence=0.35,
+        acquire_frames=2,
+        switch_frames=3,
+        clear_frames=3,
+    )
+
+    def names(results):
+        return [name for name, _confidence in results]
+
+    # One frame is not enough to put a possibly-wrong identity on screen.
+    assert names(tracker.update([("Yorick", 0.62), (None, 0.10)])) == [None, None]
+    assert names(tracker.update([("Yorick", 0.66), (None, 0.12)])) == ["Yorick", None]
+
+    # Low-confidence frames are uncertainty, not evidence that the slot is empty.
+    assert names(tracker.update([(None, 0.18), (None, 0.15)])) == ["Yorick", None]
+    assert names(tracker.update([("Sejuani", 0.20), (None, 0.15)])) == ["Yorick", None]
+
+    # A competing label must repeat three times before replacing a stable unit.
+    assert names(tracker.update([("Hecarim", 0.70), ("Kayle", 0.80)])) == ["Yorick", None]
+    assert names(tracker.update([("Hecarim", 0.73), ("Kayle", 0.82)])) == ["Yorick", "Kayle"]
+    assert names(tracker.update([("Hecarim", 0.76), ("Kayle", 0.84)])) == ["Hecarim", "Kayle"]
+
+    # Explicit, confident background must repeat before clearing a slot.
+    for _ in range(2):
+        assert names(tracker.update([(None, 0.80), ("Kayle", 0.82)]))[0] == "Hecarim"
+    assert names(tracker.update([(None, 0.80), ("Kayle", 0.82)]))[0] is None
+
+    # Frozen positions (the moving board during combat) retain the planning read.
+    tracker.update([("Yorick", 0.75), ("Kayle", 0.80)])
+    tracker.update([("Yorick", 0.78), ("Kayle", 0.80)])
+    frozen = tracker.update(
+        [("Sejuani", 0.95), ("Akali", 0.95)], update_mask=[False, True]
+    )
+    assert names(frozen) == ["Yorick", "Kayle"]
+
+    tracker.reset()
+    assert names(tracker.current()) == [None, None]
+    return "confirmation, hysteresis, empty clearing, combat freeze OK"
 
 
 def test_shop_buy_calls():
@@ -3241,6 +3374,7 @@ def main():
     test("Roster tracker", test_roster_tracker)
     test("Bench harvester", test_bench_harvester)
     test("Bench crop geometry", test_bench_crop_geometry)
+    test("Board health-bar crop geometry", test_board_health_bar_crop_geometry)
     test("Bench harvester quality invariants", test_bench_harvester_quality_invariants)
     test("Bench live-capture regressions", test_bench_harvester_live_capture_regressions)
     test("Manual training inbox", test_manual_training_inbox)
@@ -3249,6 +3383,7 @@ def main():
     test("Collection diagnostic schedule", test_collection_diagnostic_schedule)
     test("Classifier data pipeline", test_classifier_data_pipeline)
     test("Unit classifier fallback", test_unit_classifier_fallback)
+    test("Unit prediction stabilizer", test_unit_prediction_stabilizer)
     test("Augment OCR (real frame)", test_augment_ocr_real_frame)
     test("HP OCR (real frames)", test_hp_real_frames)
     test("Component detection (real frames)", test_component_detection_real_frames)

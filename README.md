@@ -324,8 +324,10 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] Meta board layouts (Position tab renders TFT Academy's recommended placement, stars, and items for your comp)
 - [x] Shop-card reading (name-banner OCR + fuzzy roster matching — skin-proof, no art templates)
 - [x] Purchase-tracking roster — shop diffs between frames reveal buys; owned units (with 3-copy star-ups) feed comp direction as held units
-- [x] Manual-inbox training harvester — live mode saves stable board and bench crops to `_training/set18/_inbox` without guessing labels. Same-label duplicates are retained; cross-label collisions remain excluded. Sort crops quickly with `python scripts/sort_training_inbox.py`; raw crops remain local and reversible. Pool sorted crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
+- [x] Manual-inbox training harvester — live mode saves stable board and bench crops to `_training/set18/_inbox` without guessing labels. Same-label duplicates are retained; cross-label collisions remain excluded. Sort crops with `python scripts/sort_training_inbox.py`; Shift+Enter files a conservative visually similar burst and Ctrl+Z restores the whole batch. Raw crops remain local and reversible. Pool sorted crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
 - [ ] Live unit identification — retrain on Set 18 Unreal crops (currently needs a few live games of collected data first)
+- [ ] Star-level classifier — detect whether each board and bench unit is 1-star, 2-star, or 3-star from live crops
+- [ ] Item classifier — detect equipped components, completed items, and artifacts on units from live board crops
 - [ ] Player-HP row tracking — the right-side player list reorders by standing, so the fixed HP ROI reads the wrong row late-game
 - [ ] Opponent scouting + positioning prediction (read enemy boards during combat, suggest counter-positioning)
 - [x] Set 18 data migration — current roster/traits, TFT Academy Set 18 cache, and `DA_*` identifiers
