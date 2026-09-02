@@ -538,6 +538,7 @@ def test_context_comp_scoring():
     """Held components and taken augments boost the comps they fit."""
     from synergy import detect_comp_direction, compute_active_synergies
     from game_data import META_COMPS
+    from game_state import DetectedChampion
 
     board = _dark_star_board()
     synergies = compute_active_synergies(board)
@@ -606,6 +607,89 @@ def test_context_comp_scoring():
         f"one slammed carry item should outweigh one extra unit "
         f"(+{slam_gain:.3f} vs +{unit_gain:.3f})"
     )
+
+    # Context must be applied before the viability cutoff. Early boards have
+    # little trait/unit evidence, so a directly recommended augment should be
+    # able to promote the matching direction over a superficially closer comp.
+    import synergy as synergy_mod
+    synthetic_comps = [
+        {
+            "name": "Augment Direction",
+            "core_units": ["Kayle"],
+            "flex_units": [
+                "Leona", "Rakan", "Ornn", "Xayah", "Sejuani",
+                "Hecarim", "Elise", "LeBlanc", "Varus",
+            ],
+            "target_traits": [("Solar", 10)],
+            "playstyle": "Follow the committed augment.",
+            "_meta_tier": "A",
+            "_meta_layout": [],
+            "_meta_item_names": [],
+            "_meta_augments": ["Solar Trait Augment"],
+            "_meta_carry_items": set(),
+        },
+        {
+            "name": "Unit-Only Direction",
+            "core_units": ["Kayle"],
+            "flex_units": ["Varus"],
+            "target_traits": [],
+            "playstyle": "",
+            "_meta_tier": "A",
+            "_meta_layout": [],
+            "_meta_item_names": [],
+            "_meta_augments": [],
+            "_meta_carry_items": set(),
+        },
+    ]
+    original_get_active_comps = synergy_mod.get_active_comps
+    synergy_mod.get_active_comps = lambda: synthetic_comps
+    try:
+        early_board = [DetectedChampion(
+            name="Kayle", board_row=0, board_col=0, confidence=0.9,
+        )]
+        early = detect_comp_direction(
+            compute_active_synergies(early_board),
+            early_board,
+            selected_augments=["Solar Trait Augment"],
+        )
+        assert early and early[0].name == "Augment Direction", [
+            (suggestion.name, suggestion.match_score) for suggestion in early
+        ]
+    finally:
+        synergy_mod.get_active_comps = original_get_active_comps
+
+    # TFT Academy final boards include summoned plants/objects that our unit
+    # classifier can never identify. They must not dilute overlap scores.
+    cores, flexes = synergy_mod._split_cores_and_flexes(
+        [
+            {"name": "Kayle", "items": []},
+            {"name": "Elderwood 18_Lifeblossom", "items": []},
+        ],
+        "Kayle",
+    )
+    assert cores == ["Kayle"] and flexes == [], (cores, flexes)
+
+
+def test_classifier_roster_fallback():
+    """Purchase history must not contaminate a classifier-observed board."""
+    from game_state import DetectedChampion, GameState
+    from websocket_server import _apply_purchase_roster_fallback
+
+    detected = GameState(
+        board_champions=[DetectedChampion(
+            name="Kayle", board_row=0, board_col=0, confidence=0.9,
+        )],
+        unit_detection_source="classifier",
+    )
+    stale_owned = [DetectedChampion(name="Morgana", star_level=2)]
+    _apply_purchase_roster_fallback(detected, stale_owned)
+    assert detected.bench_champions == []
+    assert detected.unit_detection_source == "classifier"
+
+    missed = GameState(unit_detection_source="unknown")
+    _apply_purchase_roster_fallback(missed, stale_owned)
+    assert [champion.name for champion in missed.bench_champions] == ["Morgana"]
+    assert missed.unit_detection_source == "purchase_roster"
 
 
 def test_tactics_units_and_board_power():
@@ -3087,6 +3171,7 @@ def main():
     test("Set auto-detection", test_set_autodetect)
     test("Set 18 roster + Lux", test_set18_roster_and_lux)
     test("Context comp scoring", test_context_comp_scoring)
+    test("Classifier roster fallback", test_classifier_roster_fallback)
     test("Board strength + tactics.tools", test_tactics_units_and_board_power)
     test("Periodic tactics.tools refresh", test_tactics_periodic_refresh)
     test("Items tier list", test_items_tierlist)

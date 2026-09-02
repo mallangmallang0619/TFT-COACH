@@ -188,7 +188,11 @@ def _split_cores_and_flexes(
     flexes: list[str] = []
     for u in units:
         name = canonical_name(u.get("name") or "")
-        if not name:
+        # TFT Academy final boards also contain summoned plants, training
+        # dummies, and other internal objects. They are not player units and
+        # cannot be emitted by our champion classifier, so including them in
+        # the denominator makes every otherwise-correct comp look weaker.
+        if not name or name not in CHAMPIONS:
             continue
         is_main = main_carry and name == canonical_name(main_carry)
         has_items = bool(u.get("items"))
@@ -439,6 +443,12 @@ def _is_pinned_comp(comp_name: str, tfta_name: str | None, pinned: str | None) -
     return comp_name.strip().lower() == p or (tfta_name or "").strip().lower() == p
 
 
+def _unit_identity(name: str) -> str:
+    """Identity used for comp overlap (all Lux forms are one owned unit)."""
+    data = CHAMPIONS.get(name) or {}
+    return str(data.get("unique_group") or name)
+
+
 def detect_comp_direction(
     synergies: list[ActiveSynergy],
     board_champions: list[DetectedChampion],
@@ -465,6 +475,8 @@ def detect_comp_direction(
         if c.board_row is not None and c.board_col is not None
     }
     bench_names = {c.name for c in (bench_champions or [])}
+    board_identities = {_unit_identity(name) for name in board_names}
+    bench_identities = {_unit_identity(name) for name in bench_names}
 
     suggestions: list[CompSuggestion] = []
 
@@ -474,9 +486,13 @@ def detect_comp_direction(
         targets: list[tuple[str, int]] = comp["target_traits"]
 
         # Unit overlap
-        cores_held   = [u for u in cores  if u in board_names]
-        flexes_held  = [u for u in flexes if u in board_names]
-        cores_bench  = [u for u in cores  if u in bench_names and u not in board_names]
+        cores_held = [u for u in cores if _unit_identity(u) in board_identities]
+        flexes_held = [u for u in flexes if _unit_identity(u) in board_identities]
+        cores_bench = [
+            u for u in cores
+            if _unit_identity(u) in bench_identities
+            and _unit_identity(u) not in board_identities
+        ]
 
         unit_total   = max(1, len(cores) + len(flexes))
         unit_score = (
@@ -512,8 +528,7 @@ def detect_comp_direction(
         # (Dynamic comps are named by their TFT Academy name, which is what
         # the frontend pins.)
         pinned_here = _is_pinned_comp(comp["name"], None, pinned_comp)
-        if match_score < _MIN_VIABLE_SCORE and not pinned_here:
-            continue
+        evidence_score = match_score
 
         # Resolve the TFT Academy entry early — its scraped detail feeds
         # both the context bonuses and the layout payload. Dynamic comps
@@ -567,10 +582,24 @@ def detect_comp_direction(
                 f"{'s are' if aug_matches > 1 else ' is'} recommended for this comp."
             )
 
+        # Context reorders directions that have at least some board evidence;
+        # it must be applied before the cutoff so a committed early augment can
+        # rescue a still-forming comp. An augment alone on an unrelated/empty
+        # board is not enough to invent a direction.
+        if (
+            (evidence_score <= 0.0 or match_score < _MIN_VIABLE_SCORE)
+            and not pinned_here
+        ):
+            continue
+
         # Held vs missing units (board only — bench is "not yet played")
         held = sorted(cores_held + flexes_held, key=lambda n: 0 if n in cores else 1)
-        missing_cores  = [u for u in cores  if u not in board_names]
-        missing_flexes = [u for u in flexes if u not in board_names]
+        missing_cores = [
+            u for u in cores if _unit_identity(u) not in board_identities
+        ]
+        missing_flexes = [
+            u for u in flexes if _unit_identity(u) not in board_identities
+        ]
         missing = missing_cores + missing_flexes
 
         # Progress label like "3/5 Meeple, 1/4 Stargazer"

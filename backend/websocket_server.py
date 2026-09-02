@@ -49,6 +49,22 @@ _COLLECTION_DIAGNOSTIC_KEEP = 12
 _COLLECTION_DIAGNOSTIC_DIR = Path(__file__).parent / "_debug" / "session"
 
 
+def _apply_purchase_roster_fallback(
+    state: GameState,
+    owned_units: list,
+) -> None:
+    """Use purchase history only when the classifier saw no live units.
+
+    Purchase history cannot observe sells. Mixing it into a classifier-read
+    board/bench lets stale units distort comp selection and overwrites the
+    honest detection source.
+    """
+    if state.board_champions or state.bench_champions or not owned_units:
+        return
+    state.bench_champions = list(owned_units)
+    state.unit_detection_source = "purchase_roster"
+
+
 def _collection_diagnostic_due(
     now: float,
     last_saved_at: float,
@@ -666,14 +682,12 @@ class TFTCoachServer:
                     else:
                         self._hp_candidate = None
 
-                # Board/bench unit ID isn't viable on live frames without a
-                # trained model, so the roster is the source for "what units
-                # the player holds" — feed it in as bench champions for comp
-                # direction.
-                if not state.bench_champions:
-                    state.bench_champions = self.roster.owned_units()
-                    if state.bench_champions:
-                        state.unit_detection_source = "purchase_roster"
+                # If live classification saw nothing, purchase history is a
+                # low-confidence comp-direction fallback. Never mix stale
+                # purchase history into a board the model actually observed.
+                _apply_purchase_roster_fallback(
+                    state, self.roster.owned_units()
+                )
 
                 # Run coaching logic
                 state.pinned_comp = self._pinned_comp
