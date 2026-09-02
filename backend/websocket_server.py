@@ -107,7 +107,7 @@ class TFTCoachServer:
         self._selected_augments: list[str] = []
         # Comp the player locked via the UI (None = follow suggestions).
         self._pinned_comp: str | None = None
-        self._initial_clean_crop_count = 0
+        self._initial_reviewed_crop_count = 0
         self._last_capture_method: str | None = None
         self._last_diagnostic_at = 0.0
         self._last_diagnostic_path: str | None = None
@@ -129,7 +129,7 @@ class TFTCoachServer:
         logger.info("Loading template images...")
         self.templates.load()
         crop_count, champion_count, ready_count = training_stats()
-        self._initial_clean_crop_count = (
+        self._initial_reviewed_crop_count = (
             self.harvester.manual_inbox_count()
             if self.harvester.manual_inbox
             else crop_count
@@ -137,7 +137,7 @@ class TFTCoachServer:
         if self.harvester.manual_inbox:
             logger.info(
                 "Manual training inbox active; "
-                f"{self._initial_clean_crop_count} unsorted crops waiting in "
+                f"{self._initial_reviewed_crop_count} unsorted crops waiting in "
                 f"{self.harvester.out_dir / '_inbox'}"
             )
         if self.detector.unit_classifier.available:
@@ -148,7 +148,7 @@ class TFTCoachServer:
             logger.info(
                 "Unit classifier inactive (no trained model); "
                 f"collector has {crop_count} crops across {champion_count} champions, "
-                f"{ready_count} ready at 50+ clean crops"
+                f"{ready_count} ready at 50+ reviewed crops"
             )
 
         # Background refresh of the TFT Academy tier list (cache-checked,
@@ -416,7 +416,8 @@ class TFTCoachServer:
             total_clean_crops=(
                 telemetry["inbox_crops"]
                 if self.harvester.manual_inbox
-                else self._initial_clean_crop_count + telemetry["session_crops_saved"]
+                else self._initial_reviewed_crop_count
+                + telemetry["session_crops_saved"]
             ),
             rejected_crops=telemetry["rejected_crops"],
             rejection_reasons=telemetry["rejection_reasons"],

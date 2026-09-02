@@ -43,6 +43,10 @@ import tactics_live
 _SHRED_NAMES = ", ".join(sorted(SHRED_ITEMS))
 _BURN_NAMES = ", ".join(sorted(BURN_ITEMS))
 
+# A single missed hex should not hide the score, but a transient frame that
+# sees only a fraction of the army must not be presented as a real /100 board.
+_MIN_COMPLETE_BOARD_COVERAGE = 0.70
+
 
 def _norm_item_name(name: str) -> str:
     """Item names differ in punctuation/case between TFT Academy and our
@@ -139,10 +143,30 @@ class Coach:
         TFT Academy remains the source for comp, item, and augment fit.
         """
         purchase_roster_only = state.unit_detection_source == "purchase_roster"
+        expected_board_slots = max(1, state.level)
+        detected_board_slots = sum(
+            max(1, int((CHAMPIONS.get(champion.name) or {}).get("board_slots", 1)))
+            for champion in state.board_champions
+        )
         if state.board_champions:
             units = list(state.board_champions)
-            source = "detected_board"
-            confidence = 0.90
+            board_coverage = min(
+                1.0, detected_board_slots / expected_board_slots
+            )
+            predictions = [
+                champion.confidence
+                for champion in units
+                if 0.0 < champion.confidence <= 1.0
+            ]
+            prediction_confidence = (
+                sum(predictions) / len(predictions) if predictions else 0.80
+            )
+            confidence = prediction_confidence * board_coverage
+            source = (
+                "detected_board"
+                if board_coverage >= _MIN_COMPLETE_BOARD_COVERAGE
+                else "partial_board"
+            )
         elif state.bench_champions and not purchase_roster_only:
             # Until the classifier is trained, the purchase roster is the best
             # available estimate. Score the strongest level-sized subset so a
@@ -273,7 +297,9 @@ class Coach:
             total=round(total, 1),
             label=label,
             source=source,
-            confidence=confidence,
+            confidence=round(confidence, 2),
+            detected_board_slots=detected_board_slots,
+            expected_board_slots=expected_board_slots,
             meta_patch=meta.get("patch"),
             meta_rank=meta.get("rank"),
             meta_games_analyzed=int(meta.get("games_analyzed") or 0),
@@ -289,7 +315,7 @@ class Coach:
     def _board_power_label(total: float, stage: str, source: str) -> str:
         if source == "none":
             return "Unknown"
-        if source == "traits_only":
+        if source in ("traits_only", "partial_board"):
             return "Partial"
         try:
             stage_number = int((stage or "1-1").split("-")[0])
@@ -312,8 +338,17 @@ class Coach:
             return
         if breakdown.source == "traits_only":
             advice.tips.append(
-                f"Full board strength is unavailable until unit classification is "
-                f"active; current traits contribute {breakdown.synergy_bonus:.0f}/20."
+                "Full board strength is unavailable because the board was not "
+                "identified; current traits contribute "
+                f"{breakdown.synergy_bonus:.0f}/20."
+            )
+            return
+        if breakdown.source == "partial_board":
+            advice.tips.append(
+                "Board scan incomplete: detected "
+                f"{breakdown.detected_board_slots}/"
+                f"{breakdown.expected_board_slots} expected slots. "
+                "Waiting for a complete read before showing /100 strength."
             )
             return
         estimate_note = (

@@ -311,7 +311,9 @@ class ShopGeometry:
     card_pitch: float = 0.1002  # horizontal distance between card left edges
     name_y0: float = 0.960      # top of the name banner
     name_y1: float = 0.992      # bottom of the name banner
-    name_pad_x: float = 0.004   # skip the banner's left border
+    # Capture margin before the first nominal card edge. Set 18 names extend
+    # left of the art boundary; a tight crop clipped Kobuko down to "puko".
+    name_pad_x: float = 0.016
     cost_pad_x: float = 0.026   # exclude the cost number on the banner's right
 
 

@@ -174,6 +174,16 @@ def _prep_trait_gray(img: np.ndarray, size: int) -> np.ndarray:
     return _prep_gray(img, size)
 
 
+def _shop_word_slot(
+    left: float,
+    width: float,
+    pitch: float,
+    origin: float,
+) -> int:
+    """Assign an OCR word by its center relative to the first card edge."""
+    return int((left + width / 2.0 - origin) // pitch)
+
+
 class TemplateStore:
     """
     Loads and caches template images for matching.
@@ -1068,7 +1078,8 @@ class Detector:
             return (empty, empty.copy()) if include_wisps else empty
         h, w = frame.shape[:2]
         g = ShopGeometry()
-        x0 = int(g.cards_x0 * w)
+        x0 = int((g.cards_x0 - g.name_pad_x) * w)
+        first_card_x = int(g.cards_x0 * w)
         band = frame[int(g.name_y0 * h):int(g.name_y1 * h),
                      x0:int((g.cards_x0 + 5 * g.card_pitch) * w)]
         if band.size == 0:
@@ -1094,13 +1105,23 @@ class Detector:
             return (empty, empty.copy()) if include_wisps else empty
 
         pitch_px = g.card_pitch * w * scale
+        first_card_offset_px = (first_card_x - x0) * scale
         slot_words: list[list[tuple[int, str]]] = [[] for _ in range(5)]
         for i, raw in enumerate(data.get("text") or []):
             txt = (raw or "").strip()
             # Names are alphabetic (plus ' and .) — drops the cost digits.
-            if not txt or not any(c.isalpha() for c in txt):
+            if (
+                not txt
+                or not any(c.isalpha() for c in txt)
+                or any(c.isdigit() for c in txt)
+            ):
                 continue
-            slot = int(data["left"][i] // pitch_px)
+            slot = _shop_word_slot(
+                data["left"][i],
+                data["width"][i],
+                pitch_px,
+                first_card_offset_px,
+            )
             if 0 <= slot < 5:
                 slot_words[slot].append((data["left"][i], txt))
 

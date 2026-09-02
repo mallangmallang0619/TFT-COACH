@@ -665,14 +665,19 @@ def test_tactics_units_and_board_power():
                 items=items or [],
                 board_row=0 if board else None,
                 board_col=0 if board else None,
+                confidence=0.9,
             )
             state = GameState(
                 phase=GamePhase.PLANNING,
                 stage="2-5",
-                level=4,
+                # A one-unit board is complete at level 1. Larger live boards
+                # are covered separately below so a transient one-unit read at
+                # level 8 cannot be presented as a trustworthy /100 score.
+                level=1 if board else 4,
                 board_champions=[champion] if board else [],
                 bench_champions=[] if board else [champion],
                 selected_augments=augments or [],
+                unit_detection_source="classifier" if board else "unknown",
             )
             return coach.analyze(state)
 
@@ -684,6 +689,31 @@ def test_tactics_units_and_board_power():
             augments=["Heroic Grab Bag"],
         )
         estimated = score("Akali", board=False)
+
+        partial_board = coach.analyze(GameState(
+            phase=GamePhase.PLANNING,
+            stage="4-2",
+            level=8,
+            board_champions=[DetectedChampion(
+                name="Akali", board_row=0, board_col=0, confidence=0.92,
+            )],
+            unit_detection_source="classifier",
+        ))
+        complete_board = coach.analyze(GameState(
+            phase=GamePhase.PLANNING,
+            stage="2-5",
+            level=4,
+            board_champions=[
+                DetectedChampion(
+                    name=name, board_row=0, board_col=index, confidence=confidence,
+                )
+                for index, (name, confidence) in enumerate((
+                    ("Akali", 0.95), ("Camille", 0.85),
+                    ("Karma", 0.75), ("Kobuko", 0.65),
+                ))
+            ],
+            unit_detection_source="classifier",
+        ))
 
         # Purchase tracking is useful for comp direction, but it cannot see
         # sold units. It must not masquerade as a current board and keep an
@@ -709,6 +739,15 @@ def test_tactics_units_and_board_power():
         assert geared.board_power_breakdown.augment_bonus > 0
         assert estimated.board_power_breakdown.source == "roster_estimate"
         assert estimated.board_power_breakdown.confidence < 0.7
+        assert partial_board.board_power_breakdown.source == "partial_board"
+        assert partial_board.board_power_breakdown.label == "Partial"
+        assert partial_board.board_power_breakdown.detected_board_slots == 1
+        assert partial_board.board_power_breakdown.expected_board_slots == 8
+        assert partial_board.board_power_breakdown.confidence < 0.2
+        assert complete_board.board_power_breakdown.source == "detected_board"
+        assert complete_board.board_power_breakdown.detected_board_slots == 4
+        assert complete_board.board_power_breakdown.expected_board_slots == 4
+        assert 0.75 < complete_board.board_power_breakdown.confidence < 0.85
         assert purchase_estimate.board_power_breakdown.source == "traits_only"
         assert purchase_estimate.board_power_breakdown.champion_base == 0
         assert purchase_estimate.board_power_breakdown.composition_bonus == 0
@@ -2255,6 +2294,7 @@ def test_classifier_data_pipeline():
     import cv2
     import numpy as np
     from pathlib import Path
+    from harvest import training_stats
 
     sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
     from train_classifier import (
@@ -2302,6 +2342,10 @@ def test_classifier_data_pipeline():
         inbox.mkdir()
         assert cv2.imwrite(str(inbox / "unsorted.png"), collision)
         (root / "notes.txt").write_text("ignore me")
+
+        # Live startup only needs a quick reviewed-file count. It must not
+        # decode/audit every crop (the full audit remains a training command).
+        assert training_stats(root) == (85, 3, 0)
 
         audited, rejected = audit_dataset(root)
         assert "_inbox" not in audited and "_inbox" not in rejected
@@ -2705,6 +2749,12 @@ def test_hp_real_frames():
 
 def test_shop_ocr_real_frame():
     """Shop card names read correctly from the real fixture screenshot."""
+    from config import ShopGeometry
+    from detector import _shop_word_slot
+    geometry = ShopGeometry()
+    assert geometry.name_pad_x >= 0.016, "first shop name is still clipped"
+    assert _shop_word_slot(500, 200, 513, 0) == 1, \
+        "wide shop names are still assigned by their left edge"
     from game_data import find_champion_name
     assert find_champion_name("Nunu & Willump") == "Nunu"
     import cv2
@@ -2729,6 +2779,15 @@ def test_shop_ocr_real_frame():
     # resolve against the active roster, while overlapping units still do.
     expected = [None, None, "Rek'Sai", None, "Ornn"]
     assert got == expected, f"shop OCR mismatch: {got} != {expected}"
+
+    # Set 18 launch frame: the first title starts left of cards_x0 and Leona
+    # crosses the nominal card boundary. Keep this optional because local
+    # diagnostic captures are intentionally not committed.
+    launch_frame = Path(__file__).parent / "_debug" / "diagnose_20260901_175445.png"
+    if launch_frame.exists():
+        got = d._detect_shop(cv2.imread(str(launch_frame)))
+        expected = ["Kobuko", "Leona", "Rek'Sai", "Cinderling", "Rek'Sai"]
+        assert got == expected, f"Set 18 shop OCR mismatch: {got} != {expected}"
     return f"5 slots read: {got}"
 
 

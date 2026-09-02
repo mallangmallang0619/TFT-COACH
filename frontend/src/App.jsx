@@ -735,8 +735,9 @@ function BoardStrengthCard({ score, breakdown, stage }) {
               {presentation.status}
             </div>
             <div style={{ marginTop: "5px", color: "#8b8fa3", fontSize: "10px", lineHeight: 1.45 }}>
-              Board Strength activates after the Set 18 unit model is trained.
-              Trait OCR remains a supporting signal, but is not shown as a combat score.
+              {breakdown?.source === "partial_board"
+                ? `Detected ${breakdown.detected_board_slots || 0} of ${breakdown.expected_board_slots || 0} expected board slots. Waiting for a complete read before showing /100.`
+                : "Waiting for the Set 18 unit classifier to identify the board. Trait OCR remains a supporting signal, but is not shown as a combat score."}
             </div>
           </div>
         </div>
@@ -748,7 +749,7 @@ function BoardStrengthCard({ score, breakdown, stage }) {
     ? "#2ed573"
     : breakdown.label === "Weak" ? "#ff6348" : isPartial ? ACCENT2 : "#ffa502";
   const fullRows = [
-    { label: "UNITS + STARS", value: breakdown.champion_base || 0, max: 45 },
+    { label: "DETECTED UNITS", value: breakdown.champion_base || 0, max: 45 },
     { label: "UNIT META", value: breakdown.meta_bonus || 0, max: 8, signed: true },
     { label: "ACTIVE TRAITS", value: breakdown.synergy_bonus || 0, max: 20 },
     { label: "COMP FIT", value: breakdown.composition_bonus || 0, max: 10 },
@@ -1637,8 +1638,8 @@ export default function App() {
                 />
                 <div className="card" style={{ color: "#8b8fa3", fontSize: "10px", lineHeight: 1.55 }}>
                   {boardStrengthPresentation.available
-                    ? "The score updates every detected frame. Unit strength is compared with same-cost champions on the latest tactics.tools patch; stars, active traits, TFT Academy comp fit, equipped items, and marked augments add the remaining combat value."
-                    : "Keep collecting clean Set 18 unit crops. Once the classifier is trained and board units are observed directly, this panel will enable the live /100 score automatically."}
+                    ? "The score updates every detected frame using champion identity, cost, active traits, TFT Academy comp fit, marked augments, and same-cost tactics.tools performance. Star levels and equipped-item assignments are not yet read by the unit classifier, so the current score is intentionally conservative."
+                    : "The /100 score appears only after the classifier sees enough of the current board. This prevents one incomplete or obstructed frame from being reported as a weak board."}
                 </div>
               </div>
             )}

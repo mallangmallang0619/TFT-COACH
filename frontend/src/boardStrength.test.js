@@ -49,3 +49,20 @@ test("an observed-board source without a numeric score remains unavailable", () 
     false
   );
 });
+
+test("an incomplete classifier read never exposes a misleading /100 score", () => {
+  assert.deepEqual(
+    getBoardStrengthPresentation(18.2, {
+      source: "partial_board",
+      label: "Partial",
+      detected_board_slots: 1,
+      expected_board_slots: 8,
+    }),
+    {
+      available: false,
+      score: null,
+      tabLabel: "📈 Board Strength",
+      status: "SCANNING 1/8",
+    }
+  );
+});

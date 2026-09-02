@@ -108,13 +108,29 @@ class _BenchFrame:
 
 
 def training_stats(out_dir: Path = TRAINING_DIR) -> tuple[int, int, int]:
-    """Return ``(clean crops, champion classes, champions ready at 50+)``."""
-    accepted, _rejected = audit_training_crops(out_dir)
+    """Return fast reviewed-file counts for startup and overlay status.
+
+    Pixel-quality and cross-label collision auditing is intentionally left to
+    the training/check commands. Running that quadratic audit while the live
+    server starts made every launch and frontend reconnect scan thousands of
+    images before the overlay could connect.
+    """
+    counts: Counter[str] = Counter()
+    if not out_dir.exists():
+        return 0, 0, 0
+    for class_dir in out_dir.iterdir():
+        if not class_dir.is_dir() or class_dir.name in {
+            _MANUAL_INBOX_DIR,
+            _MANUAL_REJECTED_DIR,
+        }:
+            continue
+        label = canonical_training_label(class_dir.name)
+        counts[label] += sum(1 for _ in class_dir.glob("*.png"))
     champion_counts = [
-        len(files) for name, files in accepted.items() if not name.startswith("_")
+        count for name, count in counts.items() if not name.startswith("_")
     ]
     return (
-        sum(len(files) for files in accepted.values()),
+        sum(counts.values()),
         len(champion_counts),
         sum(count >= READY_CROPS_PER_CLASS for count in champion_counts),
     )

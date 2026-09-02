@@ -129,6 +129,8 @@ class BoardPowerBreakdown(BaseModel):
     label: str = "Unknown"
     source: str = "none"
     confidence: float = 0.0
+    detected_board_slots: int = 0
+    expected_board_slots: int = 0
     meta_patch: Optional[str] = None
     meta_rank: Optional[str] = None
     meta_games_analyzed: int = 0
