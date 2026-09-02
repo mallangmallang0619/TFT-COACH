@@ -9,6 +9,7 @@ Processes captured frames to extract game state:
 
 from __future__ import annotations
 import logging
+import difflib
 import os
 import re
 import shutil
@@ -334,6 +335,7 @@ class Detector:
         self._player_hp_cache_age = 10**6
         self._level_cache = -1
         self._level_cache_age = 10**6
+        self._hud_layout_cache = "unknown"
         self._previous_phase = GamePhase.NOT_IN_GAME
 
         # Held completed-item scan cache (change-gated — see
@@ -379,6 +381,7 @@ class Detector:
             self._stage_cache_age = 10**6
             self._player_hp_cache_age = 10**6
             self._level_cache_age = 10**6
+            self._hud_layout_cache = "unknown"
             self._unit_stabilizer.reset()
             state.detection_ms = (time.time() - t_start) * 1000
             return state
@@ -404,7 +407,7 @@ class Detector:
                     self._lobby_cache = lobby
                 self._lobby_age = 0
         state.lobby_hp = self._lobby_cache
-        state.gold = self._ocr_number(frame, self.rois.gold, "Gold")
+        state.gold = self._ocr_gold(frame)
 
         # 3. Item components on bench, plus completed/artifact/radiant
         # items the game hands out that aren't components at all.
@@ -476,7 +479,10 @@ class Detector:
             self._player_hp_cache = self._ocr_player_hp(frame)
             self._player_hp_cache_age = 0
         if phase_changed or self._level_cache_age >= self.LEVEL_REFRESH_FRAMES:
-            self._level_cache = self._ocr_number(frame, self.rois.level, "Level")
+            level, layout = self._ocr_level_and_layout(frame)
+            self._level_cache = level
+            if layout != "unknown":
+                self._hud_layout_cache = layout
             self._level_cache_age = 0
 
         stage, stage_confidence = self._stage_cache
@@ -609,6 +615,84 @@ class Detector:
         except ValueError:
             logger.debug(f"OCR failed for {label}: got '{text}'")
             return -1
+
+    # The standard board and Trials shift the entire bottom HUD horizontally.
+    # Scan one broad band for the literal "Lvl." label; its x position selects
+    # the layout and its adjacent digit is more reliable than OCRing an ROI
+    # that may contain the XP denominator instead.
+    _LEVEL_SCAN = (0.09, 0.78, 0.27, 0.87)  # x1, y1, x2, y2
+
+    def _ocr_level_and_layout(self, frame: np.ndarray) -> tuple[int, str]:
+        if pytesseract is None:
+            return -1, "unknown"
+        h, w = frame.shape[:2]
+        x1r, y1r, x2r, y2r = self._LEVEL_SCAN
+        x1, y1 = int(x1r * w), int(y1r * h)
+        crop = frame[y1:int(y2r * h), x1:int(x2r * w)]
+        if crop.size == 0:
+            return -1, "unknown"
+        scale = 2
+        crop = cv2.resize(
+            crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR
+        )
+        try:
+            data = pytesseract.image_to_data(
+                crop,
+                config="--psm 11 --oem 3",
+                output_type=pytesseract.Output.DICT,
+            )
+        except Exception:
+            return -1, "unknown"
+
+        words = []
+        for index, raw in enumerate(data.get("text") or []):
+            text = (raw or "").strip()
+            if not text:
+                continue
+            left = x1 + int(data["left"][index]) / scale
+            top = y1 + int(data["top"][index]) / scale
+            width = int(data["width"][index]) / scale
+            height = int(data["height"][index]) / scale
+            words.append((text, left, top, width, height))
+
+        for text, left, top, width, height in words:
+            normalized = re.sub(r"[^a-z0-9]", "", text.lower())
+            if "lvl" not in normalized:
+                continue
+            layout = "trials" if (left + width / 2) / w < 0.16 else "standard"
+            suffix = normalized.split("lvl", 1)[1]
+            match = re.match(r"(10|[1-9])", suffix)
+            if match:
+                return int(match.group(1)), layout
+
+            # Standard mode commonly separates "Lvl." and its digit.
+            candidates = []
+            right = left + width
+            center_y = top + height / 2
+            for other, ox, oy, ow, oh in words:
+                number = re.fullmatch(r"10|[1-9]", other)
+                if not number or ox < right - 3 or ox - right > 0.04 * w:
+                    continue
+                if abs((oy + oh / 2) - center_y) > 0.02 * h:
+                    continue
+                candidates.append((ox, int(other)))
+            if candidates:
+                return min(candidates)[1], layout
+            return -1, layout
+        return -1, "unknown"
+
+    def _ocr_gold(self, frame: np.ndarray) -> int:
+        """Read gold from the ROI selected by the detected bottom-HUD layout."""
+        if self._hud_layout_cache == "unknown":
+            _level, layout = self._ocr_level_and_layout(frame)
+            if layout != "unknown":
+                self._hud_layout_cache = layout
+        roi = (
+            self.rois.gold_standard
+            if self._hud_layout_cache == "standard"
+            else self.rois.gold
+        )
+        return self._ocr_number(frame, roi, "Gold")
 
     # The player list's HP-number column at the right edge. Deliberately
     # narrow — it excludes summoner names and background scenery while
@@ -1412,6 +1496,131 @@ class Detector:
         """Matched trait-panel entries as (trait, confidence)."""
         return [(n, conf) for n, conf, _ in self._detect_trait_rows(frame)]
 
+    @staticmethod
+    def _resolve_trait_text(text: str) -> str | None:
+        """Fuzzy-resolve one OCR line against the active-set trait names."""
+        normalized = re.sub(r"[^a-z0-9]", "", text.lower())
+        if len(normalized) < 3:
+            return None
+        index = {
+            re.sub(r"[^a-z0-9]", "", name.lower()): name
+            for name in TRAITS
+        }
+        exact = index.get(normalized)
+        if exact:
+            return exact
+        for key, name in index.items():
+            if len(key) >= 4 and (key in normalized or normalized in key):
+                return name
+        close = difflib.get_close_matches(normalized, list(index), n=1, cutoff=0.68)
+        return index[close[0]] if close else None
+
+    def _read_trait_panel_text(
+        self, frame: np.ndarray
+    ) -> list[tuple[str, int, float]]:
+        """Read shifted trait names and their leftmost current-count value.
+
+        Set 18 vertically centers the panel according to its row count, so
+        fixed glyph sampling drifts between rows. Two complementary page widths
+        prevent Tesseract from dropping either a middle or final row; this is
+        still far cheaper than matching every glyph and launching one OCR call
+        per trait. The text provides both actual centers and current counts.
+        """
+        if pytesseract is None:
+            return []
+        h, w = frame.shape[:2]
+        y0, y1 = int(0.20 * h), int(0.72 * h)
+        scale = 2
+        tokens = []
+        for page_width in (0.14, 0.15):
+            panel = frame[y0:y1, :int(page_width * w)]
+            if panel.size == 0:
+                continue
+            panel = cv2.resize(
+                panel, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC
+            )
+            try:
+                data = pytesseract.image_to_data(
+                    panel,
+                    config="--psm 11 --oem 3",
+                    output_type=pytesseract.Output.DICT,
+                )
+            except Exception as error:
+                logger.debug(f"trait panel text OCR failed: {error}")
+                continue
+            for index, raw in enumerate(data.get("text") or []):
+                text = (raw or "").strip()
+                if not text:
+                    continue
+                x = int(data["left"][index]) / scale
+                y = y0 + int(data["top"][index]) / scale
+                width = int(data["width"][index]) / scale
+                height = int(data["height"][index]) / scale
+                # Ignore glyph-column and arena text; names/progress begin near
+                # 7% of the frame and end before 14%.
+                if not (0.06 * w <= x <= 0.14 * w):
+                    continue
+                token = (x, y, width, height, text)
+                if token not in tokens:
+                    tokens.append(token)
+
+        # Tesseract PSM 11 often assigns each word its own block. Reconstruct
+        # visual lines by y center so multiword traits such as Flora Fatalis
+        # stay together.
+        groups: list[dict] = []
+        for token in sorted(tokens, key=lambda row: (row[1] + row[3] / 2, row[0])):
+            center_y = token[1] + token[3] / 2
+            group = next(
+                (row for row in groups if abs(row["center_y"] - center_y) <= 8),
+                None,
+            )
+            if group is None:
+                group = {"center_y": center_y, "tokens": []}
+                groups.append(group)
+            group["tokens"].append(token)
+            centers = [item[1] + item[3] / 2 for item in group["tokens"]]
+            group["center_y"] = sum(centers) / len(centers)
+        groups.sort(key=lambda row: row["center_y"])
+
+        resolved: list[tuple[str, int, float]] = []
+        seen: set[str] = set()
+        for group_index, group in enumerate(groups):
+            title = " ".join(
+                token[4] for token in sorted(group["tokens"], key=lambda row: row[0])
+            )
+            name = self._resolve_trait_text(title)
+            if not name or name in seen:
+                continue
+
+            count = 1
+            title_y = float(group["center_y"])
+            count_group = next(
+                (
+                    candidate
+                    for candidate in groups[group_index + 1:]
+                    if 16 <= candidate["center_y"] - title_y <= 42
+                ),
+                None,
+            )
+            if count_group is not None:
+                left_tokens = [
+                    token
+                    for token in sorted(count_group["tokens"], key=lambda row: row[0])
+                    if 0.064 * w <= token[0] <= 0.085 * w
+                ]
+                if left_tokens:
+                    raw_count = left_tokens[0][4].strip()
+                    if raw_count and raw_count[0].lower() in "il|\\/v":
+                        count = 1
+                    else:
+                        match = re.match(r"\D*(\d+)", raw_count)
+                        if match:
+                            count = max(1, min(9, int(match.group(1))))
+
+            seen.add(name)
+            resolved.append((name, count, title_y / h))
+        return resolved
+
     def _synergies_from_trait_panel(self, frame: np.ndarray) -> list:
         """
         Build ActiveSynergy entries by reading the HUD trait panel.
@@ -1427,6 +1636,21 @@ class Detector:
 
         h, w = frame.shape[:2]
         p = TraitPanel()
+
+        # The Set 18 text is substantially more reliable than fixed-position
+        # glyph matching and follows the panel when its row count shifts.
+        if (
+            self._trait_cache is not None
+            and self._trait_cache_age < self.TRAIT_ROWS_REFRESH_FRAMES
+        ):
+            self._trait_cache_age += 1
+            return synergies_from_counts(dict(self._trait_cache[1]))
+        text_rows = self._read_trait_panel_text(frame)
+        if text_rows:
+            counts = {name: count for name, count, _cy in text_rows}
+            self._trait_cache = (tuple(counts), dict(counts))
+            self._trait_cache_age = 0
+            return synergies_from_counts(counts)
 
         # Symbol matching is expensive; reuse the last row scan for a few
         # frames (traits change on board edits, which take seconds anyway).

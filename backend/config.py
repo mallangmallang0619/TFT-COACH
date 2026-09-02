@@ -228,14 +228,21 @@ class GameROIs:
         default_factory=lambda: RegionOfInterest(0.901, 0.597, 0.046, 0.034)
     )
 
-    # Gold count — bottom center, excluding the coin icon (its swirl OCRs as 9).
+    # Trials and the standard TFT board place their bottom HUD at different
+    # horizontal offsets. Detector level OCR selects the matching gold ROI.
     gold: RegionOfInterest = field(
         default_factory=lambda: RegionOfInterest(0.475, 0.805, 0.025, 0.045)
     )
+    gold_standard: RegionOfInterest = field(
+        default_factory=lambda: RegionOfInterest(0.530, 0.806, 0.022, 0.040)
+    )
 
-    # Level indicator — bottom-left "Lvl. N" panel (digit-whitelisted OCR).
+    # Trials level location; standard-mode level is farther right.
     level: RegionOfInterest = field(
         default_factory=lambda: RegionOfInterest(0.115, 0.805, 0.060, 0.045)
+    )
+    level_standard: RegionOfInterest = field(
+        default_factory=lambda: RegionOfInterest(0.165, 0.795, 0.100, 0.060)
     )
 
     # Item bench — the component inventory: a slot column on the far LEFT

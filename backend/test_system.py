@@ -1737,14 +1737,13 @@ def test_slow_hud_refresh_schedule():
         calls.hp += 1
         return 87
 
-    def number(_frame, _roi, label=""):
-        assert label == "Level"
+    def level(_frame):
         calls.level += 1
-        return 5
+        return 5, "standard"
 
     detector._ocr_stage = stage
     detector._ocr_player_hp = hp
-    detector._ocr_number = number
+    detector._ocr_level_and_layout = level
 
     for _ in range(10):
         assert detector._read_cached_hud(None, phase_changed=False) == (
@@ -1766,6 +1765,79 @@ def test_slow_hud_refresh_schedule():
     assert ly < int(0.84 * 1440) and gy < int(0.84 * 1440)
 
     return "stage/HP/level caching and Set 18 value ROIs OK"
+
+
+def test_set18_dynamic_hud_and_trait_panel():
+    """Normal TFT and Trials use different HUD positions; trait rows shift."""
+    import cv2
+    from pathlib import Path
+    from detector import Detector, TemplateStore
+
+    debug = Path(__file__).parent / "_debug" / "session"
+    cases = [
+        (
+            "capture_20260902_015416_window.jpg",
+            4,
+            17,
+            "standard",
+            {
+                "Ravager": 2,
+                "Vanguard": 2,
+                "Blackthorn": 1,
+                "Defender": 1,
+                "Lunar": 1,
+                "Coven": 1,
+                "Sprykin": 1,
+            },
+        ),
+        (
+            "capture_20260902_015616_window.jpg",
+            5,
+            10,
+            "standard",
+            {
+                "Defender": 2,
+                "Ravager": 2,
+                "Vanguard": 2,
+                "Flora Fatalis": 1,
+                "Blackthorn": 1,
+                "Lunar": 1,
+                "Spellweaver": 1,
+                "Coven": 1,
+                "Sprykin": 1,
+            },
+        ),
+        ("capture_20260901_224607_window.jpg", 5, 0, "trials", None),
+        ("capture_20260901_224407_window_purchase.jpg", 3, 3, "trials", None),
+    ]
+    detector = Detector(TemplateStore())
+    checked = []
+    for filename, level, gold, layout, expected_traits in cases:
+        if not (debug / filename).exists():
+            continue
+        frame = cv2.imread(str(debug / filename))
+        assert detector._ocr_level_and_layout(frame) == (level, layout)
+        detector._hud_layout_cache = layout
+        assert detector._ocr_gold(frame) == gold
+        if expected_traits is not None:
+            rows = detector._read_trait_panel_text(frame)
+            got = {
+                name: count
+                for name, count, _cy in rows
+            }
+            assert got == expected_traits, f"{filename}: traits {got}"
+            if filename.endswith("015616_window.jpg"):
+                from synergy import synergies_from_counts
+                active = {
+                    synergy.name
+                    for synergy in synergies_from_counts(got)
+                    if synergy.is_active
+                }
+                assert active == {"Defender", "Ravager", "Vanguard"}
+        checked.append(filename)
+
+    assert checked, "Set 18 layout captures unavailable"
+    return f"dynamic HUD + shifted trait text/count rows OK ({len(checked)} frames)"
 
 
 def test_bench_harvester_quality_invariants():
@@ -2028,6 +2100,7 @@ def test_manual_training_inbox():
         restore_crop,
         similar_crop_batch,
         smart_crop_batch,
+        crop_selection_style,
         visual_signature,
     )
     from websocket_server import TFTCoachServer
@@ -2053,6 +2126,12 @@ def test_manual_training_inbox():
     assert SORTER_COMBO_STATE == "readonly", "sorter still accepts typed input"
     assert "Mama Beak" in available_labels(), "sorter is missing Mama Beak"
     assert "Raptor" not in available_labels(), "sorter still exposes the old unit name"
+    included = crop_selection_style(True, "bench_slot2")
+    excluded = crop_selection_style(False, "bench_slot2")
+    assert included["text"].startswith("✓ INCLUDED")
+    assert excluded["text"].startswith("✕ EXCLUDED")
+    assert included["highlightbackground"] != excluded["highlightbackground"]
+    assert included["background"] != excluded["background"]
 
     # Keep the inbox flat for the labeling workflow, but present each bench
     # slot as one consecutive run. Board crops come after every bench slot.
@@ -3527,6 +3606,7 @@ def main():
     test("Bench crop geometry", test_bench_crop_geometry)
     test("Board health-bar crop geometry", test_board_health_bar_crop_geometry)
     test("Slow HUD refresh schedule", test_slow_hud_refresh_schedule)
+    test("Set 18 dynamic HUD + traits", test_set18_dynamic_hud_and_trait_panel)
     test("Bench harvester quality invariants", test_bench_harvester_quality_invariants)
     test("Bench live-capture regressions", test_bench_harvester_live_capture_regressions)
     test("Manual training inbox", test_manual_training_inbox)

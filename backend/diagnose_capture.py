@@ -51,7 +51,9 @@ ROI_COLORS = {
     "stage":          (0, 255, 255),   # yellow
     "player_hp":      (0, 0, 255),     # red
     "gold":           (0, 215, 255),   # gold
+    "gold_standard":  (0, 165, 255),   # orange-gold
     "level":          (255, 0, 255),   # magenta
+    "level_standard": (220, 80, 255),
     "item_bench":     (255, 128, 0),   # orange-blue
     "champion_bench": (255, 0, 0),     # blue
     "champion_bench_capture": (255, 100, 0),

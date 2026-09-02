@@ -430,6 +430,36 @@ def requeue_existing(training_dir: Path = TRAINING_DIR) -> int:
     return moved
 
 
+def crop_selection_style(selected: bool, source: str | None) -> dict[str, object]:
+    """Return a high-contrast visual style for a batch-sorter crop."""
+    source_name = source or "unknown"
+    if selected:
+        return {
+            "text": f"✓ INCLUDED · {source_name}",
+            "background": "#166534",
+            "foreground": "#ffffff",
+            "activebackground": "#15803d",
+            "activeforeground": "#ffffff",
+            "highlightbackground": "#4ade80",
+            "highlightcolor": "#4ade80",
+            "relief": "solid",
+            "borderwidth": 3,
+            "highlightthickness": 4,
+        }
+    return {
+        "text": f"✕ EXCLUDED · {source_name}",
+        "background": "#4c1d24",
+        "foreground": "#ffe4e6",
+        "activebackground": "#7f1d1d",
+        "activeforeground": "#ffffff",
+        "highlightbackground": "#fb7185",
+        "highlightcolor": "#fb7185",
+        "relief": "flat",
+        "borderwidth": 3,
+        "highlightthickness": 4,
+    }
+
+
 def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
     import tkinter as tk
     from tkinter import messagebox, ttk
@@ -474,6 +504,35 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
     suggestion_label = ttk.Label(root, anchor="center")
     suggestion_label.pack(fill="x", padx=12, pady=(0, 6))
 
+    selection_legend = tk.Frame(root, background="#111827")
+    selection_legend.pack(fill="x", padx=12, pady=(0, 4))
+    tk.Label(
+        selection_legend,
+        text="✓ INCLUDED — NEXT ACTION",
+        background="#166534",
+        foreground="#ffffff",
+        font=("Segoe UI Semibold", 10),
+        padx=12,
+        pady=6,
+    ).pack(side="left")
+    tk.Label(
+        selection_legend,
+        text="Click any crop to toggle its selection",
+        background="#111827",
+        foreground="#f3f4f6",
+        font=("Segoe UI", 10),
+        pady=6,
+    ).pack(side="left", expand=True)
+    tk.Label(
+        selection_legend,
+        text="✕ EXCLUDED — STAYS IN INBOX",
+        background="#7f1d1d",
+        foreground="#ffffff",
+        font=("Segoe UI Semibold", 10),
+        padx=12,
+        pady=6,
+    ).pack(side="right")
+
     contact = ttk.Frame(root)
     contact.pack(fill="both", expand=True, padx=12, pady=6)
     for column in range(5):
@@ -511,12 +570,19 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
 
     def update_status() -> None:
         selected_count = len(state["selected"])
+        excluded_count = len(state["group"]) - selected_count
         status.configure(
             text=f"{len(paths)} crops left · review group {len(state['group'])} · "
-            f"selected {selected_count} · "
+            f"INCLUDED {selected_count} / EXCLUDED {excluded_count} · "
             f"sorted this run {sum(len(group) for group in state['history'])}"
             + (f" · {state['last_action']}" if state["last_action"] else "")
         )
+
+    def apply_crop_style(path: Path, button) -> None:
+        button.configure(**crop_selection_style(
+            path in state["selected"],
+            _capture_source(path),
+        ))
 
     def toggle_crop(path: Path) -> None:
         if path in state["selected"]:
@@ -525,11 +591,7 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
             state["selected"].add(path)
         button = state["crop_buttons"].get(path)
         if button is not None:
-            button.configure(
-                relief="sunken" if path in state["selected"] else "raised",
-                text=("✓ " if path in state["selected"] else "")
-                + (_capture_source(path) or "unknown"),
-            )
+            apply_crop_style(path, button)
         update_status()
 
     def refresh() -> None:
@@ -569,11 +631,12 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
             button = tk.Button(
                 contact,
                 image=photo,
-                text="✓ " + (_capture_source(path) or "unknown"),
                 compound="top",
-                relief="sunken",
+                font=("Segoe UI Semibold", 9),
+                cursor="hand2",
                 command=lambda crop=path: toggle_crop(crop),
             )
+            apply_crop_style(path, button)
             button.grid(
                 row=index // 5,
                 column=index % 5,
@@ -642,18 +705,13 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
     def select_all(_event=None) -> None:
         state["selected"] = set(state["group"])
         for path, button in state["crop_buttons"].items():
-            button.configure(
-                relief="sunken",
-                text="✓ " + (_capture_source(path) or "unknown"),
-            )
+            apply_crop_style(path, button)
         update_status()
 
     def select_none(_event=None) -> None:
         state["selected"] = set()
         for path, button in state["crop_buttons"].items():
-            button.configure(
-                relief="raised", text=_capture_source(path) or "unknown"
-            )
+            apply_crop_style(path, button)
         update_status()
 
     def use_suggestion(_event=None) -> None:

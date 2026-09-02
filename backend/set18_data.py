@@ -174,7 +174,9 @@ _TRAIT_BREAKPOINTS: dict[str, list[int]] = {
     "Emerald Aspect": [1],
     "Executioner": [2, 3, 4],
     "Fae": [2, 4],
-    "Flora Fatalis": [1, 2],
+    # The live Set 18 panel shows 1 / 2 as inactive; the API's hidden
+    # one-unit marker is not an activation breakpoint.
+    "Flora Fatalis": [2],
     "Greenfather": [1],
     "Hunter": [2, 3, 4, 5],
     "Inferno": [2, 3, 5, 7],
