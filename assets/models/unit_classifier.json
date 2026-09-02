@@ -70,7 +70,8 @@
     "Zyra",
     "_empty"
   ],
-  "input_size": 128,
+  "input_size": 192,
+  "resize_mode": "letterbox",
   "mean": [
     0.485,
     0.456,
@@ -82,10 +83,14 @@
     0.225
   ],
   "color": "rgb",
-  "min_confidence": 0.35,
-  "val_accuracy": 0.9415,
-  "num_train_crops": 4585,
+  "min_confidence": 0.55,
+  "board_crop_mode": "health_bar_v1",
+  "board_min_confidence": 0.55,
+  "accepted_val_precision": 0.9842,
+  "accepted_val_coverage": 0.6338,
+  "val_accuracy": 0.8868,
+  "num_train_crops": 5205,
   "roster_coverage": 1.0,
   "lux_forms_collapsed": true,
-  "trained_at": "2026-09-01T18:29:56"
+  "trained_at": "2026-09-02T03:38:54"
 }
