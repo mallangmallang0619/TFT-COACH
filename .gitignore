@@ -105,3 +105,4 @@ backend/_debug/session/
 backend/_training/
 backend/_training_rejected/
 frontend/public/game_icons/
+assets/models/experiments/

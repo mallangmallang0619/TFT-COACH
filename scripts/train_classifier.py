@@ -73,6 +73,8 @@ IMAGENET_STD = [0.229, 0.224, 0.225]
 MIN_CROPS_DEFAULT = 50      # reviewed crops required per class
 MIN_ROSTER_COVERAGE_DEFAULT = 0.75
 VAL_FRACTION = 0.15
+SUPPORTED_ARCHITECTURES = ("mobilenet_v3_small", "efficientnet_b0")
+DEFAULT_ARCHITECTURE = "efficientnet_b0"
 CAPTURE_BURST_GAP_SECONDS = 60.0
 _CAPTURE_TIMESTAMP = re.compile(
     r"(?<!\d)(\d{8})_(\d{6})_(\d{6})(?!\d)"
@@ -80,6 +82,58 @@ _CAPTURE_TIMESTAMP = re.compile(
 
 
 # ── Dataset discovery (torch-free) ──────────────────────────────────
+
+def architecture_metadata(name: str) -> dict[str, str]:
+    """Return stable metadata for a supported classifier architecture."""
+    if name == "mobilenet_v3_small":
+        return {
+            "architecture": name,
+            "family": "mobilenet_v3",
+            "size": "small",
+        }
+    if name == "efficientnet_b0":
+        return {
+            "architecture": name,
+            "family": "efficientnet",
+            "size": "b0",
+        }
+    raise ValueError(
+        f"Unsupported classifier architecture {name!r}; choose one of "
+        f"{', '.join(SUPPORTED_ARCHITECTURES)}"
+    )
+
+
+def build_classifier_model(
+    architecture: str,
+    num_classes: int,
+    *,
+    pretrained: bool = True,
+):
+    """Construct a classifier with a replaceable head for controlled A/B runs."""
+    import torch.nn as nn
+    from torchvision.models import (
+        EfficientNet_B0_Weights,
+        MobileNet_V3_Small_Weights,
+        efficientnet_b0,
+        mobilenet_v3_small,
+    )
+
+    architecture_metadata(architecture)
+    if architecture == "mobilenet_v3_small":
+        model = mobilenet_v3_small(
+            weights=MobileNet_V3_Small_Weights.DEFAULT if pretrained else None
+        )
+        model.classifier[3] = nn.Linear(
+            model.classifier[3].in_features, num_classes
+        )
+        return model
+    model = efficientnet_b0(
+        weights=EfficientNet_B0_Weights.DEFAULT if pretrained else None
+    )
+    model.classifier[1] = nn.Linear(
+        model.classifier[1].in_features, num_classes
+    )
+    return model
 
 def audit_dataset(
     train_dir: Path = TRAINING_DIR,
@@ -418,7 +472,6 @@ def train(args: argparse.Namespace) -> int:
     import torch.nn as nn
     from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
     from torchvision import transforms
-    from torchvision.models import MobileNet_V3_Small_Weights, mobilenet_v3_small
 
     usable, _ = discover_dataset(args.data_dir, args.min_crops)
     train_items, val_items, labels = split_dataset(usable)
@@ -479,8 +532,7 @@ def train(args: argparse.Namespace) -> int:
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.DEFAULT)
-    model.classifier[3] = nn.Linear(model.classifier[3].in_features, len(labels))
+    model = build_classifier_model(args.architecture, len(labels))
     model.to(device)
 
     # Backbone fine-tunes at a tenth of the head's rate — the ImageNet
@@ -591,6 +643,7 @@ def train(args: argparse.Namespace) -> int:
         opset_version=18,
     )
     meta = {
+        **architecture_metadata(args.architecture),
         "set_number": SET_NUMBER,
         "set_name": SET_NAME,
         "engine": ENGINE,
@@ -666,6 +719,12 @@ def main() -> int:
     ap.add_argument("--out-dir", type=Path, default=MODELS_DIR,
                     help=f"Where to write the .onnx + .json (default {MODELS_DIR})")
     ap.add_argument("--epochs", type=int, default=40)
+    ap.add_argument(
+        "--architecture",
+        choices=SUPPORTED_ARCHITECTURES,
+        default=DEFAULT_ARCHITECTURE,
+        help=f"Backbone to train (default: {DEFAULT_ARCHITECTURE})",
+    )
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--patience", type=int, default=8,

@@ -264,6 +264,10 @@ python scripts/train_classifier.py --quick-check
 # Full image-quality/cross-label audit before rebuilding:
 python scripts/train_classifier.py --check
 python scripts/training_data.py --stats
+
+# Controlled architecture experiment (does not overwrite production):
+python scripts/train_classifier.py --architecture efficientnet_b0 `
+  --out-dir assets/models/experiments/efficientnet-b0
 ```
 
 The sorter indexes the inbox into contact sheets of up to 20 visually/model-
@@ -280,6 +284,8 @@ training or validation instead of leaking near-duplicates across both sides.
 New models preserve the complete tall sprite with 192px letterboxed input,
 balance board and bench crops within each champion, and calibrate the accepted
 prediction threshold for at least 95% validation precision with a 0.55 floor.
+EfficientNet-B0 is the production backbone; MobileNetV3-Small remains available
+through `--architecture mobilenet_v3_small` for faster comparison runs.
 
 Inbox filtering rejects known quality failures and thins only rapid,
 visually-similar crops from the same board/bench position. Spaced duplicates

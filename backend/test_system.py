@@ -2841,6 +2841,9 @@ def test_classifier_data_pipeline():
 
     sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
     from train_classifier import (
+        DEFAULT_ARCHITECTURE,
+        SUPPORTED_ARCHITECTURES,
+        architecture_metadata,
         audit_dataset,
         calibrate_confidence_threshold,
         fast_dataset_counts,
@@ -2850,6 +2853,27 @@ def test_classifier_data_pipeline():
         split_dataset,
         training_sample_weights,
     )
+
+    assert SUPPORTED_ARCHITECTURES == (
+        "mobilenet_v3_small",
+        "efficientnet_b0",
+    )
+    assert DEFAULT_ARCHITECTURE == "efficientnet_b0"
+    assert architecture_metadata("mobilenet_v3_small") == {
+        "architecture": "mobilenet_v3_small",
+        "family": "mobilenet_v3",
+        "size": "small",
+    }
+    assert architecture_metadata("efficientnet_b0") == {
+        "architecture": "efficientnet_b0",
+        "family": "efficientnet",
+        "size": "b0",
+    }
+    try:
+        architecture_metadata("unknown_model")
+        assert False, "unknown classifier architecture was accepted"
+    except ValueError:
+        pass
 
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
