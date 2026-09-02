@@ -52,6 +52,7 @@ from set18_data import (  # noqa: E402
     ENGINE,
     canonical_training_label,
 )
+from board_crops import BOARD_CROP_MODE  # noqa: E402
 
 TRAINING_DIR = REPO_ROOT / "backend" / "_training" / f"set{SET_NUMBER}"
 MODELS_DIR = REPO_ROOT / "assets" / "models"
@@ -389,6 +390,8 @@ def train(args: argparse.Namespace) -> int:
         "std": IMAGENET_STD,
         "color": "rgb",
         "min_confidence": round(min_confidence, 3),
+        "board_crop_mode": BOARD_CROP_MODE,
+        "board_min_confidence": round(min_confidence, 3),
         "val_accuracy": round(best_acc, 4),
         "num_train_crops": len(train_items),
         "roster_coverage": round(

@@ -5,11 +5,13 @@ Live mode writes visually valid board and bench crops to
 
     python scripts/sort_training_inbox.py
 
-Select a champion from the read-only dropdown and press Enter to file the crop.
-Shift+Enter files a short burst of visually similar crops from the same board
-hex or bench slot. Space defers it, Delete moves it to a recoverable rejected
-folder, and Ctrl+Z undoes the most recent single or batch move. To review crops
-created by the old automatic labeler first, run with ``--requeue-existing``.
+The smart sorter groups up to 20 visually/model-similar crops across every board
+hex and bench slot. Click any outlier to deselect it, choose a champion from the
+read-only dropdown, then press Enter to file the selected contact sheet. ``S``
+accepts the displayed model suggestion (it never files automatically), ``A``
+selects all, ``N`` selects none, Space defers the group, Delete rejects selected
+crops recoverably, and Ctrl+Z undoes the latest batch. To review crops created
+by the old automatic labeler first, run with ``--requeue-existing``.
 
 Use ``--filter-inbox-dry-run`` to preview recoverable quality/burst filtering,
 or ``--filter-inbox`` to quarantine rejects and open the remaining crops.
@@ -40,6 +42,8 @@ DEFAULT_FILTER_VISUAL_CHANGE = 25.0
 DEFAULT_BATCH_WINDOW_SECONDS = 30.0
 DEFAULT_BATCH_VISUAL_CHANGE = 12.0
 DEFAULT_BATCH_LIMIT = 25
+SMART_BATCH_LIMIT = 20
+SMART_VISUAL_DISTANCE = 0.34
 _SOURCE_RE = re.compile(
     r"_(board_r\d_c\d_i\d+|bench_slot\d+)(?:_\d+)?$"
 )
@@ -217,6 +221,111 @@ def similar_crop_batch(
     return [current, *candidates[:max(0, limit - 1)]]
 
 
+def visual_signature(image) -> "object":
+    """Return a compact lighting-tolerant fingerprint for visual grouping.
+
+    This is deliberately not a labeler. It only places likely neighbours on
+    the same contact sheet; the user must still choose the champion and may
+    deselect every outlier before anything is moved.
+    """
+    import cv2
+    import numpy as np
+
+    if image is None or getattr(image, "size", 0) == 0:
+        return np.zeros(112, dtype=np.float32)
+    resized = cv2.resize(image, (32, 48), interpolation=cv2.INTER_AREA)
+    gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255.0
+    gray = (gray - float(gray.mean())) / max(0.08, float(gray.std()))
+    low_frequency = cv2.dct(gray)[:8, :8].reshape(-1)
+    low_frequency /= max(1e-6, float(np.linalg.norm(low_frequency)))
+
+    hsv = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
+    color = cv2.calcHist([hsv], [0, 1], None, [12, 4], [0, 180, 0, 256])
+    color = cv2.normalize(color, None, norm_type=cv2.NORM_L1).reshape(-1)
+    return np.concatenate((low_frequency, color)).astype(np.float32)
+
+
+def build_visual_index(paths: list[Path]) -> dict[Path, "object"]:
+    """Decode inbox crops once and cache their visual fingerprints."""
+    import cv2
+
+    signatures = {}
+    for path in paths:
+        image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+        if image is not None:
+            signatures[path] = visual_signature(image)
+    return signatures
+
+
+def model_suggestions(
+    paths: list[Path],
+    *,
+    batch_size: int = 96,
+) -> dict[Path, tuple[str | None, float]]:
+    """Return non-binding current-model suggestions for sorter grouping."""
+    import cv2
+
+    from unit_classifier import UnitClassifier
+
+    classifier = UnitClassifier()
+    suggestions = {path: (None, 0.0) for path in paths}
+    if not classifier.available:
+        return suggestions
+    for start in range(0, len(paths), max(1, batch_size)):
+        batch_paths = paths[start:start + max(1, batch_size)]
+        images = [cv2.imread(str(path), cv2.IMREAD_COLOR) for path in batch_paths]
+        results = classifier.classify_batch(
+            images,
+            min_confidences=[0.0] * len(images),
+        )
+        suggestions.update(zip(batch_paths, results))
+    return suggestions
+
+
+def smart_crop_batch(
+    current: Path,
+    paths: list[Path],
+    *,
+    signatures: dict[Path, "object"],
+    suggestions: dict[Path, tuple[str | None, float]] | None = None,
+    limit: int = SMART_BATCH_LIMIT,
+    max_visual_distance: float = SMART_VISUAL_DISTANCE,
+) -> list[Path]:
+    """Build a review-only cross-slot group around ``current``.
+
+    A shared model suggestion takes priority because logits are comparatively
+    stable across idle poses. Visual distance orders that bucket and is the
+    fallback when the model is unavailable. No crop is moved by this function.
+    """
+    import numpy as np
+
+    current = Path(current)
+    reference = signatures.get(current)
+    if reference is None:
+        return [current]
+    suggestions = suggestions or {}
+    current_label, current_confidence = suggestions.get(current, (None, 0.0))
+    current_label = current_label if current_confidence >= 0.03 else None
+    ranked: list[tuple[int, float, float, str, Path]] = []
+    for path in paths:
+        if path == current or not path.is_file():
+            continue
+        signature = signatures.get(path)
+        if signature is None or signature.shape != reference.shape:
+            continue
+        distance = float(np.mean(np.abs(reference - signature)))
+        label, confidence = suggestions.get(path, (None, 0.0))
+        label = label if confidence >= 0.03 else None
+        same_suggestion = bool(current_label and label == current_label)
+        if current_label is not None and label is not None and not same_suggestion:
+            continue
+        if not same_suggestion and distance > max(0.0, max_visual_distance):
+            continue
+        ranked.append((0 if same_suggestion else 1, distance, -confidence, path.name, path))
+    ranked.sort(key=lambda row: row[:-1])
+    return [current, *(row[-1] for row in ranked[:max(0, limit - 1)])]
+
+
 def plan_inbox_filter(
     training_dir: Path = TRAINING_DIR,
     *,
@@ -335,20 +444,42 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
         print(f"Inbox is empty: {inbox_dir}")
         return 0
 
+    print(f"Indexing {len(paths)} crops for smart visual batches...")
+    signatures = build_visual_index(paths)
+    suggestions = model_suggestions(paths)
+    paths.sort(key=lambda path: (
+        suggestions.get(path, (None, 0.0))[0] is None,
+        suggestions.get(path, (None, 0.0))[0] or "",
+        -suggestions.get(path, (None, 0.0))[1],
+        _inbox_sort_key(path),
+    ))
+
     labels = available_labels()
-    state = {"index": 0, "photo": None, "history": [], "last_action": ""}
+    state = {
+        "history": [],
+        "last_action": "",
+        "group": [],
+        "selected": set(),
+        "photos": [],
+        "crop_buttons": {},
+    }
 
     root = tk.Tk()
-    root.title("TFT Coach — Sort Training Crops")
-    root.geometry("900x800")
-    root.minsize(720, 640)
+    root.title("TFT Coach — Smart Batch Sorter")
+    root.geometry("1180x930")
+    root.minsize(900, 720)
 
     status = ttk.Label(root, anchor="center")
     status.pack(fill="x", padx=12, pady=(12, 4))
-    image_label = ttk.Label(root, anchor="center")
-    image_label.pack(fill="both", expand=True, padx=12, pady=8)
-    filename_label = ttk.Label(root, anchor="center")
-    filename_label.pack(fill="x", padx=12, pady=4)
+    suggestion_label = ttk.Label(root, anchor="center")
+    suggestion_label.pack(fill="x", padx=12, pady=(0, 6))
+
+    contact = ttk.Frame(root)
+    contact.pack(fill="both", expand=True, padx=12, pady=6)
+    for column in range(5):
+        contact.columnconfigure(column, weight=1)
+    for row in range(4):
+        contact.rowconfigure(row, weight=1)
 
     selected = tk.StringVar()
     combo = ttk.Combobox(
@@ -364,33 +495,94 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
     buttons = ttk.Frame(root)
     buttons.pack(fill="x", padx=20, pady=(4, 16))
 
-    def current_path() -> Path | None:
+    def clean_paths() -> None:
         nonlocal paths
         paths = [path for path in paths if path.exists()]
-        if not paths:
-            return None
-        state["index"] %= len(paths)
-        return paths[state["index"]]
+
+    def rotate_group(group: list[Path]) -> None:
+        nonlocal paths
+        group_set = set(group)
+        paths = [path for path in paths if path.exists() and path not in group_set]
+        paths.extend(path for path in group if path.exists())
+
+    def current_suggestion() -> tuple[str | None, float]:
+        group = state["group"]
+        return suggestions.get(group[0], (None, 0.0)) if group else (None, 0.0)
+
+    def update_status() -> None:
+        selected_count = len(state["selected"])
+        status.configure(
+            text=f"{len(paths)} crops left · review group {len(state['group'])} · "
+            f"selected {selected_count} · "
+            f"sorted this run {sum(len(group) for group in state['history'])}"
+            + (f" · {state['last_action']}" if state["last_action"] else "")
+        )
+
+    def toggle_crop(path: Path) -> None:
+        if path in state["selected"]:
+            state["selected"].remove(path)
+        else:
+            state["selected"].add(path)
+        button = state["crop_buttons"].get(path)
+        if button is not None:
+            button.configure(
+                relief="sunken" if path in state["selected"] else "raised",
+                text=("✓ " if path in state["selected"] else "")
+                + (_capture_source(path) or "unknown"),
+            )
+        update_status()
 
     def refresh() -> None:
-        path = current_path()
-        if path is None:
+        clean_paths()
+        for child in contact.winfo_children():
+            child.destroy()
+        state["photos"] = []
+        state["crop_buttons"] = {}
+        if not paths:
             status.configure(text="Inbox complete — no crops remaining")
-            filename_label.configure(text="")
-            image_label.configure(image="")
-            state["photo"] = None
+            suggestion_label.configure(text="")
+            state["group"] = []
+            state["selected"] = set()
             return
-        image = Image.open(path).convert("RGB")
-        image.thumbnail((680, 590), Image.Resampling.LANCZOS)
-        photo = ImageTk.PhotoImage(image)
-        state["photo"] = photo
-        image_label.configure(image=photo)
-        filename_label.configure(text=path.name)
-        status.configure(
-            text=f"Crop {state['index'] + 1} of {len(paths)} · "
-            f"sorted this run: {sum(len(group) for group in state['history'])}"
-            + (f" · {state['last_action']}" if state['last_action'] else "")
+        group = smart_crop_batch(
+            paths[0],
+            paths,
+            signatures=signatures,
+            suggestions=suggestions,
         )
+        state["group"] = group
+        state["selected"] = set(group)
+        label, confidence = current_suggestion()
+        suggestion_label.configure(text=(
+            f"Model suggestion: {label} ({confidence:.0%}) — press S to use it"
+            if label else
+            "No model suggestion — visually similar crops only"
+        ))
+        for index, path in enumerate(group):
+            try:
+                image = Image.open(path).convert("RGB")
+            except Exception:
+                continue
+            image.thumbnail((190, 155), Image.Resampling.LANCZOS)
+            photo = ImageTk.PhotoImage(image)
+            state["photos"].append(photo)
+            button = tk.Button(
+                contact,
+                image=photo,
+                text="✓ " + (_capture_source(path) or "unknown"),
+                compound="top",
+                relief="sunken",
+                command=lambda crop=path: toggle_crop(crop),
+            )
+            button.grid(
+                row=index // 5,
+                column=index % 5,
+                padx=4,
+                pady=4,
+                sticky="nsew",
+            )
+            state["crop_buttons"][path] = button
+        update_status()
         root.focus_set()
 
     def file_paths(paths_to_file: list[Path]) -> None:
@@ -414,33 +606,62 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
             if len(moved_group) > 1 else "filed 1 crop"
         )
         selected.set(canonical_training_label(selected.get().replace("_", " ")))
+        rotate_group(state["group"])
         refresh()
 
-    def file_current(_event=None) -> None:
-        path = current_path()
-        if path is None:
+    def file_selected(_event=None) -> None:
+        chosen = [
+            path for path in state["group"]
+            if path in state["selected"] and path.exists()
+        ]
+        if not chosen:
+            state["last_action"] = "select at least one crop"
+            update_status()
             return
-        file_paths([path])
+        file_paths(chosen)
 
-    def file_similar(_event=None) -> None:
-        path = current_path()
-        if path is None:
-            return
-        file_paths(similar_crop_batch(path, paths))
-
-    def defer_current(_event=None) -> None:
-        if current_path() is not None:
-            state["index"] += 1
+    def defer_group(_event=None) -> None:
+        if state["group"]:
+            rotate_group(state["group"])
+            state["last_action"] = f"deferred {len(state['group'])} crops"
             refresh()
 
-    def reject_current(_event=None) -> None:
-        path = current_path()
-        if path is None:
+    def reject_selected(_event=None) -> None:
+        chosen = [
+            path for path in state["group"]
+            if path in state["selected"] and path.exists()
+        ]
+        if not chosen:
             return
-        destination = reject_crop(path, rejected_dir)
-        state["history"].append([(destination, path)])
-        state["last_action"] = "rejected 1 crop"
+        moved_group = [(reject_crop(path, rejected_dir), path) for path in chosen]
+        state["history"].append(moved_group)
+        state["last_action"] = f"rejected {len(moved_group)} crop(s)"
+        rotate_group(state["group"])
         refresh()
+
+    def select_all(_event=None) -> None:
+        state["selected"] = set(state["group"])
+        for path, button in state["crop_buttons"].items():
+            button.configure(
+                relief="sunken",
+                text="✓ " + (_capture_source(path) or "unknown"),
+            )
+        update_status()
+
+    def select_none(_event=None) -> None:
+        state["selected"] = set()
+        for path, button in state["crop_buttons"].items():
+            button.configure(
+                relief="raised", text=_capture_source(path) or "unknown"
+            )
+        update_status()
+
+    def use_suggestion(_event=None) -> None:
+        label, _confidence = current_suggestion()
+        if label in labels:
+            selected.set(label)
+            state["last_action"] = f"selected suggestion {label}"
+            update_status()
 
     def undo(_event=None) -> None:
         if not state["history"]:
@@ -450,24 +671,27 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
         for moved, _original in reversed(group):
             if moved.exists():
                 restored_paths.append(restore_crop(moved, inbox_dir))
-        restored_indexes = [
-            _insert_inbox_path(paths, restored) for restored in restored_paths
-        ]
-        if restored_indexes:
-            state["index"] = min(restored_indexes)
+        for restored in restored_paths:
+            if restored not in signatures:
+                import cv2
+                image = cv2.imread(str(restored), cv2.IMREAD_COLOR)
+                if image is not None:
+                    signatures[restored] = visual_signature(image)
+            if restored not in paths:
+                paths.insert(0, restored)
         state["last_action"] = f"restored {len(restored_paths)} crop(s)"
         refresh()
 
-    ttk.Button(buttons, text="File (Enter)", command=file_current).pack(
+    ttk.Button(buttons, text="File selected (Enter)", command=file_selected).pack(
         side="left", expand=True, fill="x", padx=4
     )
-    ttk.Button(
-        buttons, text="File Similar (Shift+Enter)", command=file_similar
-    ).pack(side="left", expand=True, fill="x", padx=4)
-    ttk.Button(buttons, text="Defer (Space)", command=defer_current).pack(
+    ttk.Button(buttons, text="Use suggestion (S)", command=use_suggestion).pack(
         side="left", expand=True, fill="x", padx=4
     )
-    ttk.Button(buttons, text="Reject (Delete)", command=reject_current).pack(
+    ttk.Button(buttons, text="Defer group (Space)", command=defer_group).pack(
+        side="left", expand=True, fill="x", padx=4
+    )
+    ttk.Button(buttons, text="Reject selected (Delete)", command=reject_selected).pack(
         side="left", expand=True, fill="x", padx=4
     )
     ttk.Button(buttons, text="Undo (Ctrl+Z)", command=undo).pack(
@@ -475,11 +699,14 @@ def run_sorter(training_dir: Path = TRAINING_DIR) -> int:
     )
 
     combo.bind("<<ComboboxSelected>>", lambda _event: root.after_idle(root.focus_set))
-    root.bind("<Return>", file_current)
-    root.bind("<Shift-Return>", file_similar)
-    root.bind("<space>", defer_current)
-    root.bind("<Delete>", reject_current)
+    root.bind("<Return>", file_selected)
+    root.bind("<Shift-Return>", file_selected)
+    root.bind("<space>", defer_group)
+    root.bind("<Delete>", reject_selected)
     root.bind("<Control-z>", undo)
+    root.bind("<Key-s>", use_suggestion)
+    root.bind("<Key-a>", select_all)
+    root.bind("<Key-n>", select_none)
     refresh()
     root.mainloop()
     return 0

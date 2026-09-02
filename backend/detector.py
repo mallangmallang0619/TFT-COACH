@@ -66,8 +66,12 @@ from config import (
     BENCH_CROP_HORIZONTAL_INSET_RATIO,
 )
 from game_data import CHAMPIONS, TRAITS, find_champion_name, find_augment_rating
-from board_crops import extract_board_unit_crops
-from unit_classifier import UnitClassifier, UnitPredictionStabilizer
+from board_crops import BOARD_CROP_MODE, extract_board_unit_crops
+from unit_classifier import (
+    LEGACY_BOARD_CROP_MODE,
+    UnitClassifier,
+    UnitPredictionStabilizer,
+)
 from game_state import (
     GameState,
     GamePhase,
@@ -291,8 +295,11 @@ class Detector:
     # every N frames while the detected trait names stay the same. Row
     # (symbol) matching is also cached, at a shorter interval since it is
     # the change detector.
-    TRAIT_COUNT_REFRESH_FRAMES = 6
-    TRAIT_ROWS_REFRESH_FRAMES = 3
+    TRAIT_COUNT_REFRESH_FRAMES = 12
+    TRAIT_ROWS_REFRESH_FRAMES = 8
+    STAGE_REFRESH_FRAMES = 6
+    PLAYER_HP_REFRESH_FRAMES = 4
+    LEVEL_REFRESH_FRAMES = 8
 
     def __init__(self, templates: Optional[TemplateStore] = None):
         self.templates = templates or TemplateStore()
@@ -318,6 +325,16 @@ class Detector:
         # after combats) and served from cache in between.
         self._lobby_cache: list[int] = [-1] * 8
         self._lobby_age = 10**6
+
+        # Slow-changing HUD values do not justify separate Tesseract processes
+        # on every frame. Gold stays live because buys and rerolls change it.
+        self._stage_cache: tuple[str, float] = ("?", 0.0)
+        self._stage_cache_age = 10**6
+        self._player_hp_cache = -1
+        self._player_hp_cache_age = 10**6
+        self._level_cache = -1
+        self._level_cache_age = 10**6
+        self._previous_phase = GamePhase.NOT_IN_GAME
 
         # Held completed-item scan cache (change-gated — see
         # _detect_held_items).
@@ -352,18 +369,27 @@ class Detector:
 
         # 1. Detect game phase first — it determines which other detections to run
         state.phase, state.phase_confidence = self._detect_phase(frame)
+        phase_changed = state.phase != self._previous_phase
+        self._previous_phase = state.phase
 
         if state.phase == GamePhase.NOT_IN_GAME:
             self._last_hp = None   # new game → drop the HP anchor
             self._lobby_cache = [-1] * 8
             self._lobby_age = 10**6
+            self._stage_cache_age = 10**6
+            self._player_hp_cache_age = 10**6
+            self._level_cache_age = 10**6
             self._unit_stabilizer.reset()
             state.detection_ms = (time.time() - t_start) * 1000
             return state
 
         # 2. Core stats (always detect these during a game)
-        state.stage, state.stage_confidence = self._ocr_stage(frame)
-        state.player_hp = self._ocr_player_hp(frame)
+        (
+            state.stage,
+            state.stage_confidence,
+            state.player_hp,
+            state.level,
+        ) = self._read_cached_hud(frame, phase_changed)
 
         # Lobby standings (all players' HP, sorted by standing) — context
         # for the coach. A full read costs ~0.7-1.1s, but standings shift
@@ -379,7 +405,6 @@ class Detector:
                 self._lobby_age = 0
         state.lobby_hp = self._lobby_cache
         state.gold = self._ocr_number(frame, self.rois.gold, "Gold")
-        state.level = self._ocr_number(frame, self.rois.level, "Level")
 
         # 3. Item components on bench, plus completed/artifact/radiant
         # items the game hands out that aren't components at all.
@@ -432,6 +457,30 @@ class Detector:
             self._save_debug_frame(frame, state)
 
         return state
+
+    def _read_cached_hud(
+        self, frame: np.ndarray, phase_changed: bool = False
+    ) -> tuple[str, float, int, int]:
+        """Refresh slow HUD values periodically and on phase transitions."""
+        self._stage_cache_age += 1
+        self._player_hp_cache_age += 1
+        self._level_cache_age += 1
+
+        if phase_changed or self._stage_cache_age >= self.STAGE_REFRESH_FRAMES:
+            self._stage_cache = self._ocr_stage(frame)
+            self._stage_cache_age = 0
+        if (
+            phase_changed
+            or self._player_hp_cache_age >= self.PLAYER_HP_REFRESH_FRAMES
+        ):
+            self._player_hp_cache = self._ocr_player_hp(frame)
+            self._player_hp_cache_age = 0
+        if phase_changed or self._level_cache_age >= self.LEVEL_REFRESH_FRAMES:
+            self._level_cache = self._ocr_number(frame, self.rois.level, "Level")
+            self._level_cache_age = 0
+
+        stage, stage_confidence = self._stage_cache
+        return stage, stage_confidence, self._player_hp_cache, self._level_cache
 
     # ── Phase Detection ───────────────────────────────────────────────────────
 
@@ -1515,16 +1564,35 @@ class Detector:
         """
         Identify live 3D unit models on board hexes and bench slots with
         the trained classifier — one batched inference pass for all 37
-        positions. Board models are framed from their health bars instead of
-        fixed rectangles, which prevents neighboring hexes from receiving
-        clipped fragments of the same champion.
+        positions. Board geometry follows the model metadata. Health-bar-
+        anchored full-body crops are the Set 18 default; an explicitly tagged
+        legacy model can still request its original fixed-hex framing.
         """
         h, w = frame.shape[:2]
         crops: list[Optional[np.ndarray]] = []
 
         board_crops: list[Optional[np.ndarray]] = [None] * len(BOARD_HEX_GRID)
-        for sample in extract_board_unit_crops(frame, self.rois):
-            board_crops[sample.index] = sample.crop
+        board_crop_mode = getattr(
+            self.unit_classifier, "board_crop_mode", LEGACY_BOARD_CROP_MODE
+        )
+        if board_crop_mode == BOARD_CROP_MODE:
+            for sample in extract_board_unit_crops(frame, self.rois):
+                board_crops[sample.index] = sample.crop
+        else:
+            bx, by, bw, bh = self.rois.board.to_pixels(w, h)
+            board_region = frame[by:by + bh, bx:bx + bw]
+            brh, brw = board_region.shape[:2]
+            for index, position in enumerate(BOARD_HEX_GRID):
+                cx = int(position.cx * brw)
+                cy = int(position.cy * brh)
+                radius = max(1, int(position.radius * brw))
+                x1 = max(0, cx - int(round(radius * 1.10)))
+                x2 = min(brw, cx + int(round(radius * 1.10)))
+                y1 = max(0, cy - int(round(radius * 2.55)))
+                y2 = min(brh, cy + radius)
+                crop = board_region[y1:y2, x1:x2]
+                if crop.size:
+                    board_crops[index] = crop
         crops.extend(board_crops)
 
         # Bench slots: identical cropping to the harvester, so inference
@@ -1544,13 +1612,25 @@ class Detector:
                 ]
             )
 
-        results = self.unit_classifier.classify_batch(crops)
+        board_min_confidence = float(getattr(
+            self.unit_classifier,
+            "board_min_confidence",
+            self.unit_classifier.min_confidence,
+        ))
+        confidence_floors = (
+            [board_min_confidence] * len(BOARD_HEX_GRID)
+            + [self.unit_classifier.min_confidence] * BENCH_SLOTS
+        )
+        results = self.unit_classifier.classify_batch(
+            crops, min_confidences=confidence_floors
+        )
         # No player health bar is strong evidence that a board hex is empty.
         # Preserve the classifier's ordinary low-confidence None for occupied
         # crops, but let temporal stabilization clear truly vacated hexes.
-        for index, crop in enumerate(board_crops):
-            if crop is None:
-                results[index] = (None, 1.0)
+        if board_crop_mode == BOARD_CROP_MODE:
+            for index, crop in enumerate(board_crops):
+                if crop is None:
+                    results[index] = (None, 1.0)
         if getattr(self, "stabilize_unit_predictions", False):
             board_slots = len(BOARD_HEX_GRID)
             results = self._unit_stabilizer.update(
@@ -1559,6 +1639,7 @@ class Detector:
                     [False] * board_slots + [True] * BENCH_SLOTS
                     if freeze_board else None
                 ),
+                min_confidences=confidence_floors,
             )
 
         board: list[DetectedChampion] = []

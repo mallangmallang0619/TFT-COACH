@@ -31,6 +31,9 @@ logger = logging.getLogger(__name__)
 MODELS_DIR = ASSETS_DIR / "models"
 MODEL_PATH = MODELS_DIR / "unit_classifier.onnx"
 META_PATH = MODELS_DIR / "unit_classifier.json"
+LEGACY_BOARD_CROP_MODE = "legacy_hex_v1"
+DEFAULT_BOARD_CROP_MODE = "health_bar_v1"
+DEFAULT_OCCUPIED_BOARD_MIN_CONFIDENCE = 0.08
 
 
 class UnitPredictionStabilizer:
@@ -73,6 +76,7 @@ class UnitPredictionStabilizer:
         self,
         results: list[tuple[Optional[str], float]],
         update_mask: Optional[list[bool]] = None,
+        min_confidences: Optional[list[float]] = None,
     ) -> list[tuple[Optional[str], float]]:
         if len(results) != self.slot_count:
             raise ValueError(
@@ -82,13 +86,23 @@ class UnitPredictionStabilizer:
             raise ValueError(
                 f"Expected {self.slot_count} update flags, got {len(update_mask)}"
             )
+        if min_confidences is not None and len(min_confidences) != self.slot_count:
+            raise ValueError(
+                f"Expected {self.slot_count} confidence floors, "
+                f"got {len(min_confidences)}"
+            )
 
         for i, (name, confidence) in enumerate(results):
             if update_mask is not None and not update_mask[i]:
                 continue
 
             stable_name = self._names[i]
-            confident = confidence >= self.min_confidence
+            confidence_floor = (
+                min_confidences[i]
+                if min_confidences is not None
+                else self.min_confidence
+            )
+            confident = confidence >= confidence_floor
             if name is not None and not confident:
                 name = None
 
@@ -170,6 +184,11 @@ class UnitClassifier:
         self.labels: list[str] = []
         self.display_names: list[Optional[str]] = []
         self.min_confidence = 0.60
+        # A health bar independently establishes board occupancy, letting the
+        # classifier use a lower identity floor there while still requiring
+        # temporal agreement. Bench predictions retain the global floor.
+        self.board_crop_mode = DEFAULT_BOARD_CROP_MODE
+        self.board_min_confidence = DEFAULT_OCCUPIED_BOARD_MIN_CONFIDENCE
 
         if not (model_path.exists() and meta_path.exists()):
             logger.debug("Unit classifier model not present — CNN unit ID disabled.")
@@ -202,6 +221,17 @@ class UnitClassifier:
             self._mean = np.array(meta["mean"], dtype=np.float32).reshape(3, 1, 1)
             self._std = np.array(meta["std"], dtype=np.float32).reshape(3, 1, 1)
             self.min_confidence = float(meta.get("min_confidence", 0.60))
+            self.board_crop_mode = str(
+                meta.get("board_crop_mode", DEFAULT_BOARD_CROP_MODE)
+            )
+            default_board_floor = (
+                DEFAULT_OCCUPIED_BOARD_MIN_CONFIDENCE
+                if "board_crop_mode" not in meta
+                else self.min_confidence
+            )
+            self.board_min_confidence = float(
+                meta.get("board_min_confidence", default_board_floor)
+            )
             self._session = ort.InferenceSession(
                 str(model_path), providers=["CPUExecutionProvider"]
             )
@@ -231,7 +261,9 @@ class UnitClassifier:
         )
 
     def classify_batch(
-        self, crops: list[np.ndarray]
+        self,
+        crops: list[np.ndarray],
+        min_confidences: Optional[list[float]] = None,
     ) -> list[tuple[Optional[str], float]]:
         """
         Classify BGR crops in one session run. Returns one (name,
@@ -240,6 +272,11 @@ class UnitClassifier:
         """
         if not self.available or not crops:
             return [(None, 0.0)] * len(crops)
+        if min_confidences is not None and len(min_confidences) != len(crops):
+            raise ValueError(
+                f"Expected {len(crops)} confidence floors, "
+                f"got {len(min_confidences)}"
+            )
 
         valid = [i for i, c in enumerate(crops) if c is not None and c.size > 0]
         results: list[tuple[Optional[str], float]] = [(None, 0.0)] * len(crops)
@@ -259,7 +296,12 @@ class UnitClassifier:
             k = int(probs[row].argmax())
             conf = float(probs[row, k])
             name = self.display_names[k]
-            if name is not None and conf >= self.min_confidence:
+            confidence_floor = (
+                min_confidences[i]
+                if min_confidences is not None
+                else self.min_confidence
+            )
+            if name is not None and conf >= confidence_floor:
                 results[i] = (name, conf)
             else:
                 results[i] = (None, conf)

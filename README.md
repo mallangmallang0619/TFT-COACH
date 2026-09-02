@@ -262,11 +262,13 @@ python scripts/train_classifier.py --check
 python scripts/training_data.py --stats
 ```
 
-In the sorter, choose a champion from the read-only dropdown and press Enter.
-Space defers a crop, Delete moves it to a recoverable rejected folder, and
-Ctrl+Z undoes the latest move. Requeued files retain their previous guessed
-label in the filename only as a hint; you still choose the class. Lux's forms
-are automatically pooled into `Lux`.
+The sorter indexes the inbox into contact sheets of up to 20 visually/model-
+similar crops across every slot. Click outliers to deselect them, choose a
+champion, and press Enter to file the selected batch. `S` uses the displayed
+model suggestion but never files automatically; `A` selects all, `N` selects
+none, Space defers the group, Delete rejects selected crops recoverably, and
+Ctrl+Z undoes the latest batch. Requeued files retain their previous guessed
+label in the filename only as a hint. Lux's forms are pooled into `Lux`.
 
 Inbox filtering rejects known quality failures and thins only rapid,
 visually-similar crops from the same board/bench position. Spaced duplicates
@@ -324,7 +326,7 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] Meta board layouts (Position tab renders TFT Academy's recommended placement, stars, and items for your comp)
 - [x] Shop-card reading (name-banner OCR + fuzzy roster matching — skin-proof, no art templates)
 - [x] Purchase-tracking roster — shop diffs between frames reveal buys; owned units (with 3-copy star-ups) feed comp direction as held units
-- [x] Manual-inbox training harvester — live mode saves stable board and bench crops to `_training/set18/_inbox` without guessing labels. Same-label duplicates are retained; cross-label collisions remain excluded. Sort crops with `python scripts/sort_training_inbox.py`; Shift+Enter files a conservative visually similar burst and Ctrl+Z restores the whole batch. Raw crops remain local and reversible. Pool sorted crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
+- [x] Manual-inbox training harvester — live mode saves stable, visually novel board and bench crops to `_training/set18/_inbox` without guessing labels, while retaining a periodic duplicate for variation. The smart contact-sheet sorter files up to 20 reviewed neighbours at once, supports outlier deselection and batch undo, and never auto-labels. Raw crops remain local and reversible. Pool sorted crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
 - [ ] Live unit identification — retrain on Set 18 Unreal crops (currently needs a few live games of collected data first)
 - [ ] Star-level classifier — detect whether each board and bench unit is 1-star, 2-star, or 3-star from live crops
 - [ ] Item classifier — detect equipped components, completed items, and artifacts on units from live board crops

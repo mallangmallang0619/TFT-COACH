@@ -16,6 +16,8 @@ import numpy as np
 
 from config import BOARD_HEX_GRID, GameROIs
 
+BOARD_CROP_MODE = "health_bar_v1"
+
 
 @dataclass
 class BoardUnitCrop:

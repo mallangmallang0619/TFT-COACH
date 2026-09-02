@@ -59,6 +59,9 @@ _TRACK_TOP_CHANGE_LIMIT = 10.0  # board units/effects entering above the bench
 READY_CROPS_PER_CLASS = 50
 _DUPLICATE_THUMB_MAD = 1.0      # <= this is effectively the same pose/frame
 _MANUAL_STABILITY_THUMB_MAD = 12.0
+_MANUAL_NOVELTY_THUMB_MAD = 5.0
+_MANUAL_NOVELTY_REFRESH_SECONDS = 60.0
+_MANUAL_NOVELTY_MEMORY = 12
 _CROSS_LABEL_THUMB_MAD = 5.0    # same model must never survive under two labels
 _CROP_MIN_STD = 18.0
 _CROP_MIN_LAPLACIAN = 500.0
@@ -224,6 +227,9 @@ class BenchHarvester:
         manual_max_crops_per_session: Optional[int] = None,
         manual_max_inbox: Optional[int] = None,
         manual_stability_threshold: Optional[float] = _MANUAL_STABILITY_THUMB_MAD,
+        manual_novelty_threshold: float = _MANUAL_NOVELTY_THUMB_MAD,
+        manual_novelty_refresh_seconds: float = _MANUAL_NOVELTY_REFRESH_SECONDS,
+        manual_novelty_memory: int = _MANUAL_NOVELTY_MEMORY,
         manual_clock: Callable[[], float] = time.monotonic,
     ):
         self.out_dir = out_dir
@@ -244,11 +250,18 @@ class BenchHarvester:
             None if manual_max_inbox is None else max(1, manual_max_inbox)
         )
         self.manual_stability_threshold = manual_stability_threshold
+        self.manual_novelty_threshold = max(0.0, manual_novelty_threshold)
+        self.manual_novelty_refresh_seconds = max(
+            0.0, manual_novelty_refresh_seconds
+        )
+        self.manual_novelty_memory = max(1, manual_novelty_memory)
         self._manual_clock = manual_clock
         self._manual_frame_count = 0
         self._manual_game_saved = 0
         self._manual_last_saved_by_source: dict[str, float] = {}
         self._manual_previous_by_source: dict[str, np.ndarray] = {}
+        self._manual_saved_thumbs_by_source: dict[str, deque[np.ndarray]] = {}
+        self._manual_last_diversity_save_by_source: dict[str, float] = {}
         # Keep a short bench history so delayed shop confirmation can recover
         # the exact frame where a unit landed instead of requiring perfect
         # timing between OCR and animation.
@@ -387,6 +400,8 @@ class BenchHarvester:
         self._manual_game_saved = 0
         self._manual_last_saved_by_source.clear()
         self._manual_previous_by_source.clear()
+        self._manual_saved_thumbs_by_source.clear()
+        self._manual_last_diversity_save_by_source.clear()
         self._suspended = False
 
     def suspend_observation(self, reason: str = "capture is not trusted") -> None:
@@ -421,10 +436,50 @@ class BenchHarvester:
             "manual_game_crops": self._manual_game_saved,
             "manual_game_cap": self.manual_max_crops_per_session,
             "manual_inbox_cap": self.manual_max_inbox,
+            "manual_novelty_threshold": self.manual_novelty_threshold,
+            "manual_novelty_refresh_seconds": self.manual_novelty_refresh_seconds,
         }
 
     def manual_inbox_count(self) -> int:
         return sum(1 for _ in (self.out_dir / _MANUAL_INBOX_DIR).glob("*.png"))
+
+    def _manual_crop_is_novel(
+        self,
+        source: str,
+        thumb: np.ndarray,
+        now: float,
+    ) -> bool:
+        """Keep diverse poses while retaining one periodic duplicate."""
+        if self.manual_novelty_threshold <= 0:
+            return True
+        history = self._manual_saved_thumbs_by_source.get(source)
+        if not history:
+            return True
+        last_save = self._manual_last_diversity_save_by_source.get(source)
+        if (
+            last_save is None
+            or now - last_save >= self.manual_novelty_refresh_seconds
+        ):
+            return True
+        nearest = min(
+            float(np.mean(cv2.absdiff(thumb, previous)))
+            for previous in history
+            if previous.shape == thumb.shape
+        )
+        return nearest >= self.manual_novelty_threshold
+
+    def _remember_manual_crop(
+        self,
+        source: str,
+        thumb: np.ndarray,
+        now: float,
+    ) -> None:
+        history = self._manual_saved_thumbs_by_source.get(source)
+        if history is None:
+            history = deque(maxlen=self.manual_novelty_memory)
+            self._manual_saved_thumbs_by_source[source] = history
+        history.append(thumb.copy())
+        self._manual_last_diversity_save_by_source[source] = now
 
     def _collect_manual_inbox(self, frame: np.ndarray) -> int:
         """Save visible units without assigning champion names."""
@@ -437,7 +492,13 @@ class BenchHarvester:
                 "Manual inbox paused: this game reached its crop limit"
             )
             return 0
-        inbox_count = self.manual_inbox_count()
+        # The live collector is uncapped. Avoid enumerating thousands of
+        # existing files on every processed frame unless a cap needs checking.
+        inbox_count = (
+            self.manual_inbox_count()
+            if self.manual_max_inbox is not None
+            else 0
+        )
         if (
             self.manual_max_inbox is not None
             and inbox_count >= self.manual_max_inbox
@@ -490,10 +551,14 @@ class BenchHarvester:
             ):
                 self.skip_counts["manual_source_cooldown"] += 1
                 continue
+            if not self._manual_crop_is_novel(source, thumb, now):
+                self.skip_counts["manual_not_novel"] += 1
+                continue
             if self._write_manual_crop(crop, source):
                 saved += 1
                 self._manual_game_saved += 1
                 self._manual_last_saved_by_source[source] = now
+                self._remember_manual_crop(source, thumb, now)
                 if (
                     (
                         self.manual_max_crops_per_session is not None

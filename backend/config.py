@@ -230,12 +230,12 @@ class GameROIs:
 
     # Gold count — bottom center, excluding the coin icon (its swirl OCRs as 9).
     gold: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.530, 0.806, 0.022, 0.040)
+        default_factory=lambda: RegionOfInterest(0.475, 0.805, 0.025, 0.045)
     )
 
     # Level indicator — bottom-left "Lvl. N" panel (digit-whitelisted OCR).
     level: RegionOfInterest = field(
-        default_factory=lambda: RegionOfInterest(0.188, 0.810, 0.035, 0.040)
+        default_factory=lambda: RegionOfInterest(0.115, 0.805, 0.060, 0.045)
     )
 
     # Item bench — the component inventory: a slot column on the far LEFT

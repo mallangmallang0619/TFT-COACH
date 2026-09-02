@@ -1602,7 +1602,10 @@ def test_bench_crop_geometry():
     from detector import Detector
 
     class RecordingClassifier:
-        def classify_batch(self, model_crops):
+        min_confidence = 0.35
+        board_min_confidence = 0.08
+
+        def classify_batch(self, model_crops, min_confidences=None):
             self.crops = model_crops
             return [(None, 0.0)] * len(model_crops)
 
@@ -1676,7 +1679,93 @@ def test_board_health_bar_crop_geometry():
     assert magenta_x.size and magenta_x[0] > 0
     assert magenta_x[-1] < sample.crop.shape[1] - 1
 
+    # Health-bar mode uses these exact crops. Explicit legacy metadata retains
+    # fixed framing for any older model that needs it.
+    from detector import Detector
+
+    class RecordingClassifier:
+        def __init__(self, mode):
+            self.board_crop_mode = mode
+            self.board_min_confidence = 0.08
+            self.min_confidence = 0.35
+
+        def classify_batch(self, crops, min_confidences=None):
+            self.crops = crops
+            self.min_confidences = min_confidences
+            return [(None, 0.0)] * len(crops)
+
+    detector = object.__new__(Detector)
+    detector.rois = rois
+    detector.stabilize_unit_predictions = False
+    health_bar_classifier = RecordingClassifier("health_bar_v1")
+    detector.unit_classifier = health_bar_classifier
+    detector._detect_units_cnn(frame)
+    assert np.array_equal(health_bar_classifier.crops[17], sample.crop)
+    assert sum(crop is not None for crop in health_bar_classifier.crops[:28]) == 1
+    assert health_bar_classifier.min_confidences[:28] == [0.08] * 28
+    assert health_bar_classifier.min_confidences[28:] == [0.35] * 9
+
+    legacy_classifier = RecordingClassifier("legacy_hex_v1")
+    detector.unit_classifier = legacy_classifier
+    detector._detect_units_cnn(frame)
+    assert all(crop is not None for crop in legacy_classifier.crops[:28])
+
     return "health-bar anchor gives one full-body nearest-hex crop"
+
+
+def test_slow_hud_refresh_schedule():
+    """Slow-changing HUD OCR is cached while gold remains live each frame."""
+    from types import SimpleNamespace
+    from detector import Detector
+    from config import GameROIs
+
+    detector = object.__new__(Detector)
+    detector.rois = GameROIs()
+    detector._stage_cache = ("?", 0.0)
+    detector._stage_cache_age = 10**6
+    detector._player_hp_cache = -1
+    detector._player_hp_cache_age = 10**6
+    detector._level_cache = -1
+    detector._level_cache_age = 10**6
+    calls = SimpleNamespace(stage=0, hp=0, level=0)
+
+    def stage(_frame):
+        calls.stage += 1
+        return "1-5", 0.85
+
+    def hp(_frame):
+        calls.hp += 1
+        return 87
+
+    def number(_frame, _roi, label=""):
+        assert label == "Level"
+        calls.level += 1
+        return 5
+
+    detector._ocr_stage = stage
+    detector._ocr_player_hp = hp
+    detector._ocr_number = number
+
+    for _ in range(10):
+        assert detector._read_cached_hud(None, phase_changed=False) == (
+            "1-5", 0.85, 87, 5
+        )
+    assert (calls.stage, calls.hp, calls.level) == (2, 3, 2)
+
+    detector._read_cached_hud(None, phase_changed=True)
+    assert (calls.stage, calls.hp, calls.level) == (3, 4, 3)
+
+    # Set 18 HUD coordinates include the visible value and exclude the nearby
+    # XP/resource counters that produced level=20 and the wrong gold value.
+    lx, ly, lw, lh = detector.rois.level.to_pixels(2560, 1440)
+    gx, gy, gw, gh = detector.rois.gold.to_pixels(2560, 1440)
+    assert lx <= int(0.135 * 2560) <= lx + lw
+    assert lx + lw < int(0.185 * 2560)
+    assert gx <= int(0.485 * 2560) <= gx + gw
+    assert gx + gw < int(0.51 * 2560)
+    assert ly < int(0.84 * 1440) and gy < int(0.84 * 1440)
+
+    return "stage/HP/level caching and Set 18 value ROIs OK"
 
 
 def test_bench_harvester_quality_invariants():
@@ -1938,6 +2027,8 @@ def test_manual_training_inbox():
         requeue_existing,
         restore_crop,
         similar_crop_batch,
+        smart_crop_batch,
+        visual_signature,
     )
     from websocket_server import TFTCoachServer
 
@@ -2021,6 +2112,43 @@ def test_manual_training_inbox():
         assert [path.name for path in grouped] == [
             files[0][0], files[1][0], files[2][0]
         ], [path.name for path in grouped]
+
+    # Smart batches cross slot boundaries and use visual/model similarity,
+    # never timestamp adjacency. The suggested label only groups candidates;
+    # the human still chooses what gets filed.
+    with tempfile.TemporaryDirectory() as tmp:
+        inbox = Path(tmp)
+        champion_a = np.full((120, 80, 3), 45, dtype=np.uint8)
+        cv2.rectangle(champion_a, (20, 22), (60, 105), (190, 55, 210), -1)
+        champion_a_pose = champion_a.copy()
+        cv2.circle(champion_a_pose, (55, 45), 8, (210, 75, 225), -1)
+        champion_b = np.full((120, 80, 3), 200, dtype=np.uint8)
+        cv2.circle(champion_b, (40, 62), 28, (20, 180, 45), -1)
+        images = {
+            inbox / "20260901_120000_000000_bench_slot0.png": champion_a,
+            inbox / "20260901_120008_000000_board_r1_c2_i9.png": champion_a_pose,
+            inbox / "20260901_120016_000000_bench_slot7.png": champion_a,
+            inbox / "20260901_120024_000000_bench_slot1.png": champion_b,
+        }
+        for path, image in images.items():
+            assert cv2.imwrite(str(path), image)
+        signatures = {
+            path: visual_signature(image) for path, image in images.items()
+        }
+        suggestions = {
+            path: (("Lux", 0.72) if index < 3 else ("Ivern", 0.68))
+            for index, path in enumerate(images)
+        }
+        first = next(iter(images))
+        grouped = smart_crop_batch(
+            first,
+            list(images),
+            signatures=signatures,
+            suggestions=suggestions,
+            limit=20,
+        )
+        assert set(grouped) == set(list(images)[:3])
+        assert grouped[0] == first
 
     height, width = 720, 1280
     rois = GameROIs()
@@ -2186,16 +2314,23 @@ def test_manual_training_inbox():
 
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
+        now = [0.0]
         collector = BenchHarvester(
             out_dir=root,
             manual_inbox=True,
             manual_collect_board=False,
             manual_source_interval=0,
             manual_stability_threshold=None,
+            manual_clock=lambda: now[0],
         )
         assert collector.process(frame([0]), []) == 1
+        assert collector.process(frame([0]), []) == 0
+        assert collector.skip_counts["manual_not_novel"] == 1
+        now[0] = 60.0
         assert collector.process(frame([0]), []) == 1
-        assert len(list((root / "_inbox").glob("*.png"))) == 2
+        now[0] = 61.0
+        assert collector.process(frame([0], seed=999), []) == 1
+        assert len(list((root / "_inbox").glob("*.png"))) == 3
 
     # Live collection has no per-game or inbox-count cap. Explicit caps remain
     # supported for focused tests/tools.
@@ -2215,6 +2350,9 @@ def test_manual_training_inbox():
         collector._manual_game_saved = 250
         assert collector.telemetry()["manual_game_cap"] is None
         assert collector.telemetry()["manual_inbox_cap"] is None
+        def unexpected_inbox_scan():
+            raise AssertionError("uncapped collection scanned the whole inbox")
+        collector.manual_inbox_count = unexpected_inbox_scan
         assert collector.process(frame([0]), []) == 1
         assert len(list(inbox.glob("*.png"))) == 751
 
@@ -2615,6 +2753,8 @@ def test_unit_classifier_fallback():
         model_path=Path("_nonexistent.onnx"), meta_path=Path("_nonexistent.json")
     )
     assert clf.available is False
+    assert clf.board_crop_mode == "health_bar_v1"
+    assert clf.board_min_confidence == 0.08
     crops = [np.zeros((30, 20, 3), dtype=np.uint8)] * 3
     assert clf.classify_batch(crops) == [(None, 0.0)] * 3
     assert clf.classify_batch([]) == []
@@ -2679,6 +2819,17 @@ def test_unit_prediction_stabilizer():
 
     tracker.reset()
     assert names(tracker.current()) == [None, None]
+
+    # A health bar independently proves a board slot is occupied, so its
+    # identity may use a lower floor while an unanchored bench prediction may
+    # not. It still needs two agreeing frames before appearing.
+    floors = [0.08, 0.35]
+    assert names(tracker.update(
+        [("Hecarim", 0.25), ("Kayle", 0.25)], min_confidences=floors
+    )) == [None, None]
+    assert names(tracker.update(
+        [("Hecarim", 0.26), ("Kayle", 0.26)], min_confidences=floors
+    )) == ["Hecarim", None]
     return "confirmation, hysteresis, empty clearing, combat freeze OK"
 
 
@@ -3375,6 +3526,7 @@ def main():
     test("Bench harvester", test_bench_harvester)
     test("Bench crop geometry", test_bench_crop_geometry)
     test("Board health-bar crop geometry", test_board_health_bar_crop_geometry)
+    test("Slow HUD refresh schedule", test_slow_hud_refresh_schedule)
     test("Bench harvester quality invariants", test_bench_harvester_quality_invariants)
     test("Bench live-capture regressions", test_bench_harvester_live_capture_regressions)
     test("Manual training inbox", test_manual_training_inbox)
