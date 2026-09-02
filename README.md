@@ -258,6 +258,10 @@ python scripts/sort_training_inbox.py
 python scripts/sort_training_inbox.py --filter-inbox-dry-run
 python scripts/sort_training_inbox.py --filter-inbox
 
+# Instant filename-only threshold check:
+python scripts/train_classifier.py --quick-check
+
+# Full image-quality/cross-label audit before rebuilding:
 python scripts/train_classifier.py --check
 python scripts/training_data.py --stats
 ```
@@ -269,6 +273,10 @@ model suggestion but never files automatically; `A` selects all, `N` selects
 none, Space defers the group, Delete rejects selected crops recoverably, and
 Ctrl+Z undoes the latest batch. Requeued files retain their previous guessed
 label in the filename only as a hint. Lux's forms are pooled into `Lux`.
+
+Classifier rebuilding uses a deterministic, capture-burst-aware validation
+split. Adjacent frames from the same idle-animation sequence stay together in
+training or validation instead of leaking near-duplicates across both sides.
 
 Inbox filtering rejects known quality failures and thins only rapid,
 visually-similar crops from the same board/bench position. Spaced duplicates

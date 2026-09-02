@@ -2744,7 +2744,9 @@ def test_classifier_data_pipeline():
     sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
     from train_classifier import (
         audit_dataset,
+        fast_dataset_counts,
         discover_dataset,
+        print_fast_readiness,
         print_readiness,
         split_dataset,
     )
@@ -2806,6 +2808,18 @@ def test_classifier_data_pipeline():
         assert print_readiness(20, root, min_coverage=0.0) is True
         assert print_readiness(20, root) is False
 
+        # The quick preflight only counts reviewed files. It must pool Lux
+        # forms, ignore the inbox, and avoid the expensive pixel audit.
+        counts = fast_dataset_counts(root)
+        assert counts == {
+            "Gwen": 27,
+            "Lux": 24,
+            "Zed": 4,
+            "_empty": 30,
+        }, counts
+        assert print_fast_readiness(20, root, min_coverage=0.0) is True
+        assert print_fast_readiness(20, root) is False
+
         train, val, labels = split_dataset(usable, val_fraction=0.15)
         assert labels == ["Gwen", "Lux", "_empty"]  # forms pooled, background kept
         assert len(train) + len(val) == 79
@@ -2814,11 +2828,44 @@ def test_classifier_data_pipeline():
         assert val_classes == {0, 1, 2}, "each class needs a val sample"
         assert not set(p for p, _ in train) & set(p for p, _ in val)
 
+        # Adjacent crops from one capture burst must not leak across train and
+        # validation. Otherwise near-identical animation frames inflate the
+        # reported accuracy and make a rebuilt classifier look healthier than
+        # it is in a new game.
+        bursty = {
+            "Gwen": [
+                root / "Gwen" / f"20260901_1200{i:02d}_000001_bench_slot2.png"
+                for i in range(8)
+            ] + [
+                root / "Gwen" / f"20260901_1230{i:02d}_000001_bench_slot2.png"
+                for i in range(8)
+            ],
+            "_empty": [
+                root / "_empty" / f"20260901_1300{i:02d}_000001_bench_slot0.png"
+                for i in range(8)
+            ] + [
+                root / "_empty" / f"20260901_1330{i:02d}_000001_bench_slot0.png"
+                for i in range(8)
+            ],
+        }
+        burst_train, burst_val, burst_labels = split_dataset(
+            bursty, val_fraction=0.25, seed=18
+        )
+        assert burst_labels == ["Gwen", "_empty"]
+        train_paths = {path for path, _label in burst_train}
+        val_paths = {path for path, _label in burst_val}
+        for files in bursty.values():
+            for burst in (files[:8], files[8:]):
+                assert set(burst) <= train_paths or set(burst) <= val_paths
+        assert split_dataset(bursty, val_fraction=0.25, seed=18) == (
+            burst_train, burst_val, burst_labels
+        ), "classifier split must be reproducible"
+
         # Missing directory → empty, not an error.
         usable, skipped = discover_dataset(root / "nope", min_crops=20)
         assert usable == {} and skipped == {}
 
-    return "discovery, min-crop gate, stratified split OK"
+    return "fast preflight, audited discovery, burst-safe split OK"
 
 
 def test_unit_classifier_fallback():

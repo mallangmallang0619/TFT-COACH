@@ -7,8 +7,9 @@ scripts/sort_training_inbox.py moves reviewed images into each champion folder.
 This script turns those sorted crops into the classifier that ships in
 the repo — users never train, they just get assets/models/.
 
-    python scripts/train_classifier.py --check     # is the data ready?
-    python scripts/train_classifier.py             # train + export ONNX
+    python scripts/train_classifier.py --quick-check  # immediate raw counts
+    python scripts/train_classifier.py --check        # full quality audit
+    python scripts/train_classifier.py                # train + export ONNX
 
 Outputs (committed to the repo):
     assets/models/unit_classifier.onnx   the network (MobileNetV3-small)
@@ -34,6 +35,7 @@ import argparse
 import datetime
 import json
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -66,6 +68,10 @@ IMAGENET_STD = [0.229, 0.224, 0.225]
 MIN_CROPS_DEFAULT = 50      # reviewed crops required per class
 MIN_ROSTER_COVERAGE_DEFAULT = 0.75
 VAL_FRACTION = 0.15
+CAPTURE_BURST_GAP_SECONDS = 60.0
+_CAPTURE_TIMESTAMP = re.compile(
+    r"(?<!\d)(\d{8})_(\d{6})_(\d{6})(?!\d)"
+)
 
 
 # ── Dataset discovery (torch-free) ──────────────────────────────────
@@ -107,15 +113,118 @@ def discover_dataset(
     return _apply_minimum(audited, min_crops)
 
 
+def fast_dataset_counts(train_dir: Path = TRAINING_DIR) -> dict[str, int]:
+    """Count reviewed crops without decoding images or running the audit."""
+    counts: dict[str, int] = {}
+    train_dir = Path(train_dir)
+    if not train_dir.exists():
+        return counts
+    for label_dir in sorted(train_dir.iterdir()):
+        if not label_dir.is_dir() or label_dir.name in {
+            "_inbox", "_rejected_manual"
+        }:
+            continue
+        label = canonical_training_label(label_dir.name)
+        count = sum(1 for _path in label_dir.glob("*.png"))
+        if count:
+            counts[label] = counts.get(label, 0) + count
+    return counts
+
+
+def _readiness_gate(
+    counts: dict[str, int], min_crops: int, min_coverage: float
+) -> tuple[bool, int, int, float]:
+    ready_labels = {
+        label for label, count in counts.items() if count >= min_crops
+    }
+    real_labels = {label for label in ready_labels if not label.startswith("_")}
+    roster_labels = {canonical_training_label(name) for name in CHAMPIONS}
+    required = math.ceil(len(roster_labels) * min_coverage)
+    coverage = len(real_labels) / max(1, len(roster_labels))
+    ready = "_empty" in ready_labels and len(real_labels) >= required
+    return ready, len(real_labels), required, coverage
+
+
+def print_fast_readiness(
+    min_crops: int,
+    train_dir: Path = TRAINING_DIR,
+    min_coverage: float = MIN_ROSTER_COVERAGE_DEFAULT,
+) -> bool:
+    """Print an immediate raw-count preflight before the full crop audit."""
+    counts = fast_dataset_counts(train_dir)
+    if not counts:
+        print(f"No training data in {train_dir} — play games with live mode running.")
+        return False
+    ready, real_count, required, coverage = _readiness_gate(
+        counts, min_crops, min_coverage
+    )
+    roster_count = len({canonical_training_label(name) for name in CHAMPIONS})
+    print(
+        f"Quick classifier preflight (raw reviewed files; need >= {min_crops} "
+        "per class):"
+    )
+    print(
+        f"  {real_count}/{roster_count} champions at threshold "
+        f"({coverage:.0%}); _empty={counts.get('_empty', 0)}"
+    )
+    waiting = sorted(
+        (label, count)
+        for label, count in counts.items()
+        if not label.startswith("_") and count < min_crops
+    )
+    if waiting:
+        preview = ", ".join(f"{label}={count}" for label, count in waiting[:12])
+        suffix = f" (+{len(waiting) - 12} more)" if len(waiting) > 12 else ""
+        print(f"  Below threshold: {preview}{suffix}")
+    if counts.get("_empty", 0) < min_crops:
+        print(f"  Need _empty with at least {min_crops} reviewed crops.")
+    if real_count < required:
+        print(f"  Need at least {required}/{roster_count} champions at threshold.")
+    print("  Full pixel-quality and label-collision audit has not run yet.")
+    return ready
+
+
+def _capture_time(path: Path) -> datetime.datetime | None:
+    match = _CAPTURE_TIMESTAMP.search(path.stem)
+    if not match:
+        return None
+    try:
+        return datetime.datetime.strptime(
+            "".join(match.groups()), "%Y%m%d%H%M%S%f"
+        )
+    except ValueError:
+        return None
+
+
+def _capture_bursts(
+    files: list[Path], max_gap_seconds: float = CAPTURE_BURST_GAP_SECONDS
+) -> list[list[Path]]:
+    """Keep adjacent frames from one collection burst in a single split."""
+    timestamped = sorted(
+        ((stamp, path) for path in files if (stamp := _capture_time(path)) is not None),
+        key=lambda item: (item[0], item[1].name),
+    )
+    unknown = [[path] for path in files if _capture_time(path) is None]
+    bursts: list[list[Path]] = []
+    previous: datetime.datetime | None = None
+    for stamp, path in timestamped:
+        gap = (stamp - previous).total_seconds() if previous is not None else None
+        if not bursts or gap is None or gap > max_gap_seconds:
+            bursts.append([])
+        bursts[-1].append(path)
+        previous = stamp
+    return bursts + unknown
+
+
 def split_dataset(
     usable: dict[str, list[Path]],
     val_fraction: float = VAL_FRACTION,
     seed: int = SET_NUMBER,
 ) -> tuple[list[tuple[Path, int]], list[tuple[Path, int]], list[str]]:
     """
-    Stratified train/val split. Returns (train, val, labels) where train
-    and val are (path, class_index) pairs and labels[i] is the class name
-    for index i. Every class keeps at least one validation sample.
+    Stratified, capture-burst-aware train/val split. Adjacent animation frames
+    stay together so validation accuracy is not inflated by near-duplicates.
+    Returns (train, val, labels), and keeps both splits populated per class.
     """
     import random
 
@@ -125,10 +234,34 @@ def split_dataset(
     val: list[tuple[Path, int]] = []
     for idx, name in enumerate(labels):
         files = list(usable[name])
-        rng.shuffle(files)
-        n_val = max(1, round(len(files) * val_fraction))
-        val.extend((f, idx) for f in files[:n_val])
-        train.extend((f, idx) for f in files[n_val:])
+        target = min(len(files) - 1, max(1, round(len(files) * val_fraction)))
+        bursts = _capture_bursts(files)
+        rng.shuffle(bursts)
+        if len(bursts) < 2:
+            # A class collected in only one continuous burst cannot provide a
+            # session-independent validation sample. Preserve the old safe
+            # fallback so training can still proceed.
+            shuffled = list(files)
+            rng.shuffle(shuffled)
+            val_files = shuffled[:target]
+            train_files = shuffled[target:]
+        else:
+            val_bursts = [bursts.pop()]
+            val_count = len(val_bursts[0])
+            # Add a whole burst only when it moves us closer to the requested
+            # validation size. At least one burst remains for training.
+            while len(bursts) > 1:
+                candidate = bursts[-1]
+                if abs((val_count + len(candidate)) - target) >= abs(
+                    val_count - target
+                ):
+                    break
+                val_bursts.append(bursts.pop())
+                val_count += len(candidate)
+            val_files = [path for burst in val_bursts for path in burst]
+            train_files = [path for burst in bursts for path in burst]
+        val.extend((path, idx) for path in val_files)
+        train.extend((path, idx) for path in train_files)
     return train, val, labels
 
 
@@ -429,8 +562,14 @@ def train(args: argparse.Namespace) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--check", action="store_true",
-                    help="Report data readiness and exit (no torch needed)")
+    checks = ap.add_mutually_exclusive_group()
+    checks.add_argument("--check", action="store_true",
+                        help="Run the full audited readiness report and exit")
+    checks.add_argument(
+        "--quick-check",
+        action="store_true",
+        help="Count reviewed files without decoding/auditing every crop",
+    )
     ap.add_argument("--min-crops", type=int, default=MIN_CROPS_DEFAULT,
                     help=f"Skip champions with fewer crops (default {MIN_CROPS_DEFAULT})")
     ap.add_argument(
@@ -453,6 +592,10 @@ def main() -> int:
                     help="Early-stop after this many epochs without val improvement")
     args = ap.parse_args()
 
+    if args.quick_check:
+        return 0 if print_fast_readiness(
+            args.min_crops, args.data_dir, args.min_coverage
+        ) else 1
     if args.check:
         return 0 if print_readiness(
             args.min_crops, args.data_dir, args.min_coverage
