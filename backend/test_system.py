@@ -1024,6 +1024,63 @@ def test_augment_pick_context():
     return f"pick={picks[0]['name']} (score {picks[0]['context_score']}), reasons OK"
 
 
+def test_automatic_augment_selection():
+    """A confirmed augment-screen exit maps the final game click to its card."""
+    from types import SimpleNamespace
+    from augment_tracker import AugmentSelectionTracker, PointerClick
+    from game_state import DetectedAugment, GamePhase
+
+    window = SimpleNamespace(
+        x=100, y=50, width=1000, height=800, hwnd=99,
+    )
+    options = [
+        DetectedAugment(name="Birthday Present", slot_index=0),
+        DetectedAugment(name="Heart of the Swarm", slot_index=1),
+        DetectedAugment(name="Band of Thieves II", slot_index=2),
+    ]
+    tracker = AugmentSelectionTracker(exit_confirmations=2)
+
+    assert tracker.observe(
+        GamePhase.AUGMENT_SELECT, options, 10.0, [], window,
+    ) is None
+    middle_click = PointerClick(
+        timestamp=10.5, x=600, y=450, foreground_hwnd=99,
+    )
+    # One bad phase read cannot commit a choice.
+    assert tracker.observe(
+        GamePhase.PLANNING, [], 11.0, [middle_click], window,
+    ) is None
+    assert tracker.observe(
+        GamePhase.PLANNING, [], 12.0, [middle_click], window,
+    ) == "Heart of the Swarm"
+
+    # Rerolls can click one card before the eventual choice. The final valid
+    # card click is the selected augment when the screen actually exits.
+    tracker.observe(GamePhase.AUGMENT_SELECT, options, 20.0, [], window)
+    clicks = [
+        PointerClick(20.4, 387, 680, 99),
+        PointerClick(21.0, 813, 450, 99),
+    ]
+    tracker.observe(GamePhase.PLANNING, [], 21.5, clicks, window)
+    assert tracker.observe(
+        GamePhase.PLANNING, [], 22.0, clicks, window,
+    ) == "Band of Thieves II"
+
+    # Never guess from clicks belonging to another foreground window or from
+    # clicks outside the three card rectangles.
+    tracker.observe(GamePhase.AUGMENT_SELECT, options, 30.0, [], window)
+    invalid = [
+        PointerClick(30.5, 600, 450, 1234),
+        PointerClick(30.7, 1050, 820, 99),
+    ]
+    tracker.observe(GamePhase.PLANNING, [], 31.0, invalid, window)
+    assert tracker.observe(
+        GamePhase.PLANNING, [], 32.0, invalid, window,
+    ) is None
+
+    return "screen-exit confirmation, final-click choice, false-click guards OK"
+
+
 def test_roster_tracker():
     """Shop-diff purchase tracking: buys, rerolls, star-ups, guards, reset."""
     from roster import RosterTracker
@@ -3179,6 +3236,7 @@ def main():
     test("Shop buy calls", test_shop_buy_calls)
     test("Tempo tips", test_tempo_tips)
     test("Augment pick context", test_augment_pick_context)
+    test("Automatic augment selection", test_automatic_augment_selection)
     test("Pinned comp", test_pinned_comp)
     test("Roster tracker", test_roster_tracker)
     test("Bench harvester", test_bench_harvester)

@@ -2228,7 +2228,7 @@ export default function App() {
                     <div style={{ fontSize: "9px", color: augmentRatings.length > 0 ? "#2ed573" : "#8b8fa3", fontFamily: "var(--mono)", letterSpacing: "2px", marginBottom: "10px" }}>
                       {augmentRatings.length > 0
                         ? "● AUGMENT SELECTION DETECTED"
-                        : "LAST AUGMENT OPTIONS — MARK YOUR PICK"}
+                        : "LAST AUGMENT OPTIONS — PICK TRACKING AUTO · CLICK TO CORRECT"}
                     </div>
                     {shownAugmentRatings.map((aug, i) => {
                       const tierColor = aug.tier === "Prismatic" ? "#ff4757" : aug.tier === "Gold" ? "#ffd32a" : "#c0c0c0";

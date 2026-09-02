@@ -26,6 +26,7 @@ from detector import Detector, TemplateStore
 from coach import Coach
 from harvest import BenchHarvester, training_stats
 from roster import RosterTracker
+from augment_tracker import AugmentSelectionTracker, WindowsClickMonitor
 from game_state import GameState, GamePhase, TrainingCollectionStatus
 from game_data import (
     ACTIVE_ENGINE,
@@ -103,6 +104,8 @@ class TFTCoachServer:
         # Collect many unlabeled board/bench crops instead; the developer sorts
         # them afterward with scripts/sort_training_inbox.py.
         self.harvester = BenchHarvester(manual_inbox=True)
+        self.augment_click_monitor = WindowsClickMonitor()
+        self.augment_selection_tracker = AugmentSelectionTracker()
 
         # Hex template matching can't identify live 3D unit models and eats
         # ~2.3s/frame — turn it off so the loop runs at real capture FPS.
@@ -136,6 +139,7 @@ class TFTCoachServer:
         self._not_in_game_frames = 0
         self._tracking_session_active = False
         self._selected_augments.clear()
+        self.augment_selection_tracker.reset()
 
     async def start(self):
         """Start the WebSocket server and capture loop."""
@@ -177,21 +181,29 @@ class TFTCoachServer:
         )
         tactics_live.schedule_periodic_refresh(initial_delay_seconds=3.0)
 
-        # Start WebSocket server and capture loop concurrently
+        # Start WebSocket server and capture loop concurrently. The click
+        # monitor is read-only and exists solely to map a confirmed augment
+        # screen exit back to one of the three OCR'd card slots.
+        if self.augment_click_monitor.start():
+            logger.info("Automatic augment selection tracking active")
         self.is_running = True
-        async with websockets.serve(
-            self._handle_client,
-            WEBSOCKET_HOST,
-            WEBSOCKET_PORT,
-            ping_interval=20,
-            ping_timeout=10,
-        ):
-            logger.info("WebSocket server started. Waiting for frontend connection...")
-            await self._capture_loop()
+        try:
+            async with websockets.serve(
+                self._handle_client,
+                WEBSOCKET_HOST,
+                WEBSOCKET_PORT,
+                ping_interval=20,
+                ping_timeout=10,
+            ):
+                logger.info("WebSocket server started. Waiting for frontend connection...")
+                await self._capture_loop()
+        finally:
+            self.augment_click_monitor.stop()
 
     async def stop(self):
         """Gracefully shut down the server."""
         self.is_running = False
+        self.augment_click_monitor.stop()
         self.capture.close()
         for client in self.clients.copy():
             await client.close()
@@ -688,6 +700,22 @@ class TFTCoachServer:
                 _apply_purchase_roster_fallback(
                     state, self.roster.owned_units()
                 )
+
+                auto_augment = self.augment_selection_tracker.observe(
+                    state.phase,
+                    state.augment_options,
+                    state.timestamp,
+                    self.augment_click_monitor.recent(),
+                    self.capture.window,
+                )
+                if (
+                    auto_augment
+                    and auto_augment not in self._selected_augments
+                ):
+                    self._selected_augments.append(auto_augment)
+                    logger.info(
+                        f"Augment selected automatically: {auto_augment}"
+                    )
 
                 # Run coaching logic
                 state.pinned_comp = self._pinned_comp
