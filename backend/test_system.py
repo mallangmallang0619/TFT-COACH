@@ -186,6 +186,37 @@ def test_active_synergies():
     return "Set 18 traits, Avatar +2, form dedupe, bench exclusion OK"
 
 
+def test_trait_panel_authority():
+    """Live synergies come only from activated rows in the left HUD panel."""
+    import numpy as np
+    from coach import Coach
+    from detector import Detector, TemplateStore
+    from game_state import DetectedChampion, GamePhase, GameState
+
+    detector = Detector(TemplateStore())
+    detector._read_trait_panel_text = lambda _frame: [
+        ("Defender", 2, 0.30),
+        ("Brawler", 1, 0.36),
+    ]
+    panel = detector._synergies_from_trait_panel(
+        np.zeros((720, 1280, 3), dtype=np.uint8)
+    )
+    assert [(entry.name, entry.count) for entry in panel] == [("Defender", 2)]
+
+    # An authoritative panel with zero activated rows must remain empty. The
+    # coach cannot invent traits from noisy board-classifier identities.
+    state = GameState(
+        phase=GamePhase.PLANNING,
+        synergy_detection_source="trait_panel",
+        board_champions=[DetectedChampion(
+            name="Rek'Sai", board_row=0, board_col=0, confidence=0.9,
+        )],
+    )
+    Coach().analyze(state)
+    assert state.active_synergies == []
+    return "left-panel active rows authoritative; board fallback suppressed"
+
+
 def test_comp_detection():
     """detect_comp_direction picks the right comp for a partial board."""
     from game_state import DetectedChampion
@@ -1818,6 +1849,23 @@ def test_set18_dynamic_hud_and_trait_panel():
     debug = Path(__file__).parent / "_debug" / "session"
     cases = [
         (
+            "capture_20260902_152133_window.jpg",
+            8,
+            65,
+            "standard",
+            {
+                "Rival": 1,
+                "Caustic": 1,
+                "Brawler": 4,
+                "Adaptor": 3,
+                "Blossom": 2,
+                "Blackthorn": 1,
+                "Invoker": 1,
+                "Primal": 1,
+                "Elderwood": 1,
+            },
+        ),
+        (
             "capture_20260902_015416_window.jpg",
             4,
             17,
@@ -1876,6 +1924,14 @@ def test_set18_dynamic_hud_and_trait_panel():
                     if synergy.is_active
                 }
                 assert active == {"Defender", "Ravager", "Vanguard"}
+            if filename.endswith("152133_window.jpg"):
+                from synergy import synergies_from_counts
+                active = {
+                    synergy.name
+                    for synergy in synergies_from_counts(got)
+                    if synergy.is_active
+                }
+                assert active == {"Rival", "Caustic", "Brawler", "Adaptor"}
         checked.append(filename)
 
     assert checked, "Set 18 layout captures unavailable"
@@ -3716,6 +3772,7 @@ def main():
     test("Coaching engine", test_coach)
     test("Coach edge cases", test_coach_edge_cases)
     test("Active synergies", test_active_synergies)
+    test("Trait panel authority", test_trait_panel_authority)
     test("Comp detection", test_comp_detection)
     test("Coach comp direction", test_coach_comp_direction)
     test("TFT Academy enrichment", test_tftacademy_enrichment)

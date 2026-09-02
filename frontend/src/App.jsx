@@ -1310,7 +1310,9 @@ export default function App() {
   );
   const lobbyHp = isLive ? (gameState?.lobby_hp || []) : [];
   const heldItems = isLive ? (gameState?.held_items || []) : [];
-  const activeSynergies = isLive ? (gameState?.active_synergies || []) : [];
+  const activeSynergies = isLive
+    ? (gameState?.active_synergies || []).filter((synergy) => synergy.is_active)
+    : [];
   const collectionStatus = isConnected ? (gameState?.collection_status || null) : null;
   const captureMethod = isConnected && gameState
     ? (gameState.capture_method || "screen_untrusted")

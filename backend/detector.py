@@ -438,8 +438,15 @@ class Detector:
             # (synthetic sim frames have no panel and fall back to the
             # board-derived synergies in the coach).
             panel_synergies = self._synergies_from_trait_panel(frame)
-            if panel_synergies:
+            if not self.match_board_units:
+                # Live mode trusts only the left HUD panel. An empty list is
+                # meaningful: it means no trait has reached its breakpoint,
+                # not permission to infer traits from classifier guesses.
                 state.active_synergies = panel_synergies
+                state.synergy_detection_source = "trait_panel"
+            elif panel_synergies:
+                state.active_synergies = panel_synergies
+                state.synergy_detection_source = "trait_panel"
 
             # Shop card names — feeds the purchase-tracking roster, which
             # is the reliable source of "what units does the player own"
@@ -1533,7 +1540,7 @@ class Detector:
         y0, y1 = int(0.20 * h), int(0.72 * h)
         scale = 2
         tokens = []
-        for page_width in (0.14, 0.15):
+        for page_width in (0.14, 0.18):
             panel = frame[y0:y1, :int(page_width * w)]
             if panel.size == 0:
                 continue
@@ -1586,8 +1593,12 @@ class Detector:
         resolved: list[tuple[str, int, float]] = []
         seen: set[str] = set()
         for group_index, group in enumerate(groups):
+            title_tokens = [
+                token for token in group["tokens"]
+                if token[0] >= 0.065 * w
+            ]
             title = " ".join(
-                token[4] for token in sorted(group["tokens"], key=lambda row: row[0])
+                token[4] for token in sorted(title_tokens, key=lambda row: row[0])
             )
             name = self._resolve_trait_text(title)
             if not name or name in seen:
@@ -1595,19 +1606,36 @@ class Detector:
 
             count = 1
             title_y = float(group["center_y"])
-            count_group = next(
-                (
-                    candidate
-                    for candidate in groups[group_index + 1:]
-                    if 16 <= candidate["center_y"] - title_y <= 42
-                ),
-                None,
-            )
-            if count_group is not None:
+            # Activated rows display the current count in a badge immediately
+            # left of the title. Read that before the lower breakpoint text;
+            # e.g. Adaptor 3 has "2 / 3 / 4" below it, and taking the first
+            # lower digit incorrectly reports 2.
+            badge_tokens = [
+                token for token in group["tokens"]
+                if 0.055 * w <= token[0] < 0.065 * w
+            ]
+            badge_count = None
+            for token in badge_tokens:
+                match = re.search(r"([1-9])", token[4])
+                if match:
+                    badge_count = int(match.group(1))
+                    break
+            if badge_count is not None:
+                count = badge_count
+            else:
+                count_group = next(
+                    (
+                        candidate
+                        for candidate in groups[group_index + 1:]
+                        if 16 <= candidate["center_y"] - title_y <= 42
+                    ),
+                    None,
+                )
+            if badge_count is None and count_group is not None:
                 left_tokens = [
                     token
                     for token in sorted(count_group["tokens"], key=lambda row: row[0])
-                    if 0.064 * w <= token[0] <= 0.085 * w
+                    if 0.055 * w <= token[0] <= 0.090 * w
                 ]
                 if left_tokens:
                     raw_count = left_tokens[0][4].strip()
@@ -1635,6 +1663,13 @@ class Detector:
         from synergy import synergies_from_counts
         from game_data import TRAITS
 
+        def active_rows(counts: dict[str, int]) -> list:
+            return [
+                synergy
+                for synergy in synergies_from_counts(counts)
+                if synergy.is_active
+            ]
+
         h, w = frame.shape[:2]
         p = TraitPanel()
 
@@ -1645,13 +1680,13 @@ class Detector:
             and self._trait_cache_age < self.TRAIT_ROWS_REFRESH_FRAMES
         ):
             self._trait_cache_age += 1
-            return synergies_from_counts(dict(self._trait_cache[1]))
+            return active_rows(dict(self._trait_cache[1]))
         text_rows = self._read_trait_panel_text(frame)
         if text_rows:
             counts = {name: count for name, count, _cy in text_rows}
             self._trait_cache = (tuple(counts), dict(counts))
             self._trait_cache_age = 0
-            return synergies_from_counts(counts)
+            return active_rows(counts)
 
         # Symbol matching is expensive; reuse the last row scan for a few
         # frames (traits change on board edits, which take seconds anyway).
@@ -1676,7 +1711,7 @@ class Detector:
             and self._trait_cache_age < self.TRAIT_COUNT_REFRESH_FRAMES
         ):
             self._trait_cache_age += 1
-            return synergies_from_counts(dict(self._trait_cache[1]))
+            return active_rows(dict(self._trait_cache[1]))
 
         counts: dict[str, int] = {}
         for name, _conf, cy in rows:
@@ -1714,7 +1749,7 @@ class Detector:
 
         self._trait_cache = (row_names, dict(counts))
         self._trait_cache_age = 0
-        return synergies_from_counts(counts)
+        return active_rows(counts)
 
     def _detect_board_champions(self, frame: np.ndarray) -> list[DetectedChampion]:
         """Detect champions on the board by sampling each hex position."""

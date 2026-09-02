@@ -98,7 +98,11 @@ class Coach:
         # The detector doesn't populate synergies yet — derive them from the
         # board champions so downstream logic (board power, comp direction,
         # tips) all sees a consistent view.
-        if not state.active_synergies and state.board_champions:
+        if (
+            state.synergy_detection_source != "trait_panel"
+            and not state.active_synergies
+            and state.board_champions
+        ):
             state.active_synergies = compute_active_synergies(state.board_champions)
 
         # ── Comp Direction ────────────────────────────────────────────────────

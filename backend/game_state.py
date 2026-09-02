@@ -249,6 +249,9 @@ class GameState(BaseModel):
 
     # Synergies
     active_synergies: list[ActiveSynergy] = Field(default_factory=list)
+    # The live left HUD panel is authoritative even when it has zero activated
+    # rows; this prevents noisy champion guesses from inventing synergies.
+    synergy_detection_source: str = "unknown"
 
     # Augments (only during selection)
     augment_options: list[DetectedAugment] = Field(default_factory=list)
