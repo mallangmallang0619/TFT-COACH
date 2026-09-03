@@ -36,6 +36,31 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   getShareMode: () => ipcRenderer.invoke("get-share-mode"),
 
+  getBackendInfo: () => ipcRenderer.invoke("get-backend-info"),
+
+  restartBackend: () => ipcRenderer.invoke("restart-backend"),
+
+  onBackendStatus: (callback) => {
+    const listener = (event, info) => callback(info);
+    ipcRenderer.on("backend-status", listener);
+    return () => ipcRenderer.removeListener("backend-status", listener);
+  },
+
+  getOverlayVisibility: () => ipcRenderer.invoke("get-overlay-visibility"),
+  setOverlayVisibility: (visible) =>
+    ipcRenderer.invoke("set-overlay-visibility", visible),
+  onOverlayVisibility: (callback) => {
+    const listener = (event, visible) => callback(visible);
+    ipcRenderer.on("overlay-visibility", listener);
+    return () => ipcRenderer.removeListener("overlay-visibility", listener);
+  },
+  minimizeControlCenter: () => ipcRenderer.send("minimize-control-center"),
+  quitApplication: () => ipcRenderer.invoke("quit-application"),
+  runDiagnostic: () => ipcRenderer.invoke("run-diagnostic"),
+  openDiagnosticsFolder: () => ipcRenderer.invoke("open-diagnostics-folder"),
+  openLogsFolder: () => ipcRenderer.invoke("open-logs-folder"),
+  exportSupportBundle: () => ipcRenderer.invoke("export-support-bundle"),
+
   // Listen for interaction mode changes from main process
   onInteractionMode: (callback) =>
     ipcRenderer.on("interaction-mode", (event, isInteractive) =>

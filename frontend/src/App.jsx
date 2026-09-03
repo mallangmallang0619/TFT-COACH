@@ -1234,7 +1234,10 @@ function devBtnStyle(color) {
 // ─── MAIN APP ────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const { gameState, gameData, backendProtocol, isConnected, isDemo, demoInfo, serverStats, sendCommand } = useCoachSocket();
+  const {
+    gameState, gameData, backendProtocol, isConnected, isDemo, demoInfo,
+    serverStats, backendRuntime, sendCommand, restartBackend,
+  } = useCoachSocket();
   const [devOpen, setDevOpen] = useState(false);
 
   // Electron overlay: hover-to-interact. The window is click-through by
@@ -1451,6 +1454,15 @@ export default function App() {
             </span>
           )}
           {!collapsed && <ConnectionBadge isConnected={isConnected} isDemo={isDemo} />}
+          {!collapsed && inElectron && backendRuntime.status === "starting" && (
+            <span style={{
+              fontFamily: "var(--mono)", fontSize: "9px", fontWeight: 700,
+              letterSpacing: "1px", padding: "3px 8px", borderRadius: "5px",
+              color: "#ffa502", border: "1px solid #ffa50255", background: "#ffa50210",
+            }}>
+              ◌ ENGINE STARTING
+            </span>
+          )}
           {!collapsed && isConnected && !isDemo && collectionStatus && (
             <span
               title={collectionStatus.reason || "Training-data collection status"}
@@ -1538,6 +1550,31 @@ export default function App() {
           </button>
         </div>
       </div>
+
+      {!collapsed && inElectron && backendRuntime.status === "failed" && (
+        <div style={{
+          padding: "10px 16px", display: "flex", alignItems: "center",
+          justifyContent: "space-between", gap: "12px", background: "#ff475712",
+          borderBottom: "1px solid #ff475744", color: "#ff8a95",
+          fontFamily: "var(--mono)", fontSize: "10px",
+        }}>
+          <span>
+            <strong>Detection engine failed.</strong>{" "}
+            {backendRuntime.message || "Check the application log for details."}
+          </span>
+          <button
+            onClick={restartBackend}
+            style={{
+              flexShrink: 0, padding: "5px 10px", borderRadius: "5px",
+              border: "1px solid #ff475766", background: "#ff475718",
+              color: "#ff8a95", cursor: "pointer", fontFamily: "var(--mono)",
+              fontSize: "9px", fontWeight: 800, letterSpacing: "1px",
+            }}
+          >
+            RETRY
+          </button>
+        </div>
+      )}
 
       {!collapsed && isDemo && (
         <DevPanel
