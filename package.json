@@ -52,5 +52,8 @@
     "linux": {
       "target": "AppImage"
     }
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.18"
   }
 }

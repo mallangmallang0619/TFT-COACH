@@ -7,6 +7,7 @@ const {
   BackendManager,
   buildBackendLaunch,
   findAvailablePort,
+  probePort,
 } = require("./backendManager");
 
 test("findAvailablePort returns a port that can be bound locally", async () => {
@@ -19,6 +20,32 @@ test("findAvailablePort returns a port that can be bound locally", async () => {
     server.once("error", reject);
     server.listen(port, "127.0.0.1", () => server.close(resolve));
   });
+});
+
+test("readiness probe requires a WebSocket handshake, not merely an open TCP port", async () => {
+  const server = net.createServer((socket) => socket.on("data", () => {}));
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = server.address().port;
+  try {
+    assert.equal(await probePort(port, "127.0.0.1", 50), false);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("readiness probe recognizes a successful WebSocket upgrade", async () => {
+  const server = net.createServer((socket) => {
+    socket.once("data", () => {
+      socket.end("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n");
+    });
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const port = server.address().port;
+  try {
+    assert.equal(await probePort(port, "127.0.0.1", 200), true);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test("development launch runs backend/main.py without a shell", () => {

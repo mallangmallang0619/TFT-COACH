@@ -12,12 +12,20 @@
  *   - Hotkey to show/hide overlay (Ctrl+Shift+H)
  */
 
-const { app, BrowserWindow, globalShortcut, ipcMain, screen } = require("electron");
+const { app, BrowserWindow, dialog, globalShortcut, ipcMain, screen, shell } = require("electron");
+const { spawn } = require("node:child_process");
+const fs = require("node:fs");
 const path = require("path");
 const { BackendManager } = require("./backendManager");
+const {
+  buildDiagnosticLaunch,
+  createSupportBundle,
+  getSupportPaths,
+} = require("./supportTools");
 const { getOverlayBounds } = require("./windowSizing");
 
 let overlayWindow = null;
+let controlWindow = null;
 let backendManager = null;
 let backendStoppedForQuit = false;
 let isQuitting = false;
@@ -30,6 +38,32 @@ let expandedBounds = null;
 // hover — needed when clicking game UI that sits underneath it (the
 // player list used for scouting other boards is right below the panel).
 let hoverLocked = false;
+
+function loadFrontendView(window, view) {
+  const isDev = process.env.NODE_ENV === "development";
+  if (isDev) {
+    const query = view ? `?view=${encodeURIComponent(view)}` : "";
+    window.loadURL(`http://localhost:5173/${query}`);
+    window.webContents.once("did-fail-load", () => {
+      console.warn(
+        "[TFT Coach] Vite dev server not reachable on :5173 — loading frontend/dist."
+      );
+      window.loadFile(path.join(__dirname, "../frontend/dist/index.html"), {
+        query: view ? { view } : {},
+      });
+    });
+  } else {
+    window.loadFile(path.join(__dirname, "../frontend/dist/index.html"), {
+      query: view ? { view } : {},
+    });
+  }
+}
+
+function sendToWindow(window, channel, payload) {
+  if (window && !window.isDestroyed() && !window.webContents.isDestroyed()) {
+    window.webContents.send(channel, payload);
+  }
+}
 
 function createOverlayWindow() {
   const initialBounds = getOverlayBounds(screen.getPrimaryDisplay().workArea, false);
@@ -68,25 +102,7 @@ function createOverlayWindow() {
   // Enable click-through initially
   setClickThrough(true);
 
-  // Load the React frontend
-  // In development, load from Vite dev server
-  // In production, load the built index.html
-  const isDev = process.env.NODE_ENV === "development";
-  if (isDev) {
-    overlayWindow.loadURL("http://localhost:5173");
-    // Dev server not running → fall back to the built bundle instead of a
-    // blank window. The bundle may be older than src/ — the in-app
-    // BACKEND/OVERLAY version badge surfaces real mismatches.
-    overlayWindow.webContents.once("did-fail-load", () => {
-      console.warn(
-        "[overlay] Vite dev server not reachable on :5173 — loading frontend/dist. " +
-        "Run `npm run dev:frontend` for live code, or `npm run build:frontend` to refresh the bundle."
-      );
-      overlayWindow.loadFile(path.join(__dirname, "../frontend/dist/index.html"));
-    });
-  } else {
-    overlayWindow.loadFile(path.join(__dirname, "../frontend/dist/index.html"));
-  }
+  loadFrontendView(overlayWindow, null);
 
   // Keep window on top even when it loses focus
   overlayWindow.setAlwaysOnTop(true, "screen-saver");
@@ -103,12 +119,59 @@ function createOverlayWindow() {
     overlayWindow = null;
   });
 
+  overlayWindow.on("show", () => {
+    isVisible = true;
+    sendToWindow(controlWindow, "overlay-visibility", true);
+  });
+  overlayWindow.on("hide", () => {
+    isVisible = false;
+    sendToWindow(controlWindow, "overlay-visibility", false);
+  });
+
   console.log("[TFT Coach] Overlay window created");
   console.log("[TFT Coach] Hotkeys:");
   console.log("  Ctrl+Shift+G  — Ghost lock (overlay never captures the mouse — scout freely)");
   console.log("  Ctrl+Shift+T  — Toggle click-through (interact with overlay)");
   console.log("  Ctrl+Shift+H  — Show/Hide overlay");
   console.log("  Ctrl+Shift+Q  — Quit TFT Coach");
+}
+
+function createControlWindow() {
+  controlWindow = new BrowserWindow({
+    width: 980,
+    height: 700,
+    minWidth: 760,
+    minHeight: 560,
+    title: "TFT Coach Control Center",
+    backgroundColor: "#0d0e12",
+    autoHideMenuBar: true,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+  controlWindow.setContentProtection(true);
+  loadFrontendView(controlWindow, "control");
+  controlWindow.once("ready-to-show", () => controlWindow?.show());
+  controlWindow.on("close", (event) => {
+    if (isQuitting) return;
+    event.preventDefault();
+    controlWindow.minimize();
+  });
+  controlWindow.on("closed", () => {
+    controlWindow = null;
+  });
+}
+
+function setOverlayVisibility(visible) {
+  if (!overlayWindow) return false;
+  if (visible) overlayWindow.show();
+  else overlayWindow.hide();
+  isVisible = visible;
+  sendToWindow(controlWindow, "overlay-visibility", isVisible);
+  return isVisible;
 }
 
 function setCompactMode(compact) {
@@ -202,13 +265,7 @@ function registerHotkeys() {
 
   // Show/hide overlay
   register("Ctrl+Shift+H", () => {
-    if (isVisible) {
-      overlayWindow.hide();
-      isVisible = false;
-    } else {
-      overlayWindow.show();
-      isVisible = true;
-    }
+    setOverlayVisibility(!isVisible);
     console.log(`[TFT Coach] Overlay ${isVisible ? "shown" : "hidden"}`);
   });
 
@@ -232,11 +289,11 @@ if (!hasSingleInstanceLock) {
 }
 
 app.on("second-instance", () => {
-  if (!overlayWindow) return;
-  if (overlayWindow.isMinimized()) overlayWindow.restore();
-  overlayWindow.show();
-  overlayWindow.focus();
-  isVisible = true;
+  if (controlWindow) {
+    if (controlWindow.isMinimized()) controlWindow.restore();
+    controlWindow.show();
+    controlWindow.focus();
+  }
 });
 
 app.whenReady().then(() => {
@@ -248,14 +305,20 @@ app.whenReady().then(() => {
     userDataPath: app.getPath("userData"),
   });
   backendManager.on("status", (info) => {
-    overlayWindow?.webContents.send("backend-status", info);
+    sendToWindow(overlayWindow, "backend-status", info);
+    sendToWindow(controlWindow, "backend-status", info);
   });
 
   createOverlayWindow();
+  createControlWindow();
   registerHotkeys();
   overlayWindow.webContents.on("did-finish-load", () => {
     overlayWindow.webContents.send("share-mode", isShareMode);
     overlayWindow.webContents.send("backend-status", backendManager.info);
+  });
+  controlWindow.webContents.on("did-finish-load", () => {
+    controlWindow.webContents.send("backend-status", backendManager.info);
+    controlWindow.webContents.send("overlay-visibility", isVisible);
   });
   backendManager.start().catch((error) => {
     console.error(`[TFT Coach] Detection engine failed: ${error.message}`);
@@ -378,3 +441,86 @@ ipcMain.handle("restart-backend", async () => {
     return backendManager.info;
   }
 });
+
+ipcMain.handle("get-overlay-visibility", () => isVisible);
+ipcMain.handle("set-overlay-visibility", (event, visible) => (
+  setOverlayVisibility(Boolean(visible))
+));
+ipcMain.on("minimize-control-center", () => controlWindow?.minimize());
+ipcMain.on("quit-application", () => {
+  isQuitting = true;
+  app.quit();
+});
+
+function currentSupportPaths() {
+  return getSupportPaths({
+    appPath: app.getAppPath(),
+    userDataPath: app.getPath("userData"),
+  });
+}
+
+async function openSupportDirectory(kind) {
+  const paths = currentSupportPaths();
+  const candidates = kind === "logs" ? paths.logDirs : paths.diagnosticDirs;
+  const directory = app.isPackaged ? candidates[1] : candidates[0];
+  fs.mkdirSync(directory, { recursive: true });
+  const error = await shell.openPath(directory);
+  return error ? { ok: false, message: error } : { ok: true, path: directory };
+}
+
+ipcMain.handle("open-diagnostics-folder", () => openSupportDirectory("diagnostics"));
+ipcMain.handle("open-logs-folder", () => openSupportDirectory("logs"));
+
+ipcMain.handle("export-support-bundle", async () => {
+  const stamp = new Date().toISOString().replaceAll(":", "-").slice(0, 19);
+  const choice = await dialog.showSaveDialog(controlWindow, {
+    title: "Export TFT Coach support bundle",
+    defaultPath: path.join(app.getPath("documents"), `tft-coach-support-${stamp}.zip`),
+    filters: [{ name: "ZIP archive", extensions: ["zip"] }],
+  });
+  if (choice.canceled || !choice.filePath) return { canceled: true };
+  const result = createSupportBundle({
+    outputPath: choice.filePath,
+    paths: currentSupportPaths(),
+    appVersion: app.getVersion(),
+  });
+  return { canceled: false, ...result };
+});
+
+ipcMain.handle("run-diagnostic", () => new Promise((resolve) => {
+  const launch = buildDiagnosticLaunch({
+    appPath: app.getAppPath(),
+    isPackaged: app.isPackaged,
+    resourcesPath: process.resourcesPath,
+  });
+  let stdout = "";
+  let stderr = "";
+  let settled = false;
+  const child = spawn(launch.command, launch.args, launch.options);
+  const finish = (result) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeout);
+    resolve(result);
+  };
+  child.stdout?.on("data", (chunk) => { stdout += String(chunk); });
+  child.stderr?.on("data", (chunk) => { stderr += String(chunk); });
+  child.once("error", (error) => finish({ ok: false, message: error.message }));
+  child.once("exit", (code) => {
+    const match = stdout.match(/Annotated frame:\s*(.+\.png)\s*$/m);
+    if (code === 0) {
+      finish({
+        ok: true,
+        path: match?.[1]?.trim() || null,
+        message: "Diagnostic capture completed",
+      });
+    } else {
+      const detail = stderr.trim().split(/\r?\n/).at(-1) || stdout.trim() || `Exited with code ${code}`;
+      finish({ ok: false, message: detail });
+    }
+  });
+  const timeout = setTimeout(() => {
+    try { child.kill(); } catch {}
+    finish({ ok: false, message: "Diagnostic timed out after two minutes" });
+  }, 120000);
+}));

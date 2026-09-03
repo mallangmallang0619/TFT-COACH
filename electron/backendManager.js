@@ -22,6 +22,7 @@ function probePort(port, host = HOST, timeoutMs = 250) {
   return new Promise((resolve) => {
     const socket = net.createConnection({ host, port });
     let settled = false;
+    let response = "";
     const finish = (ready) => {
       if (settled) return;
       settled = true;
@@ -29,7 +30,23 @@ function probePort(port, host = HOST, timeoutMs = 250) {
       resolve(ready);
     };
     socket.setTimeout(timeoutMs);
-    socket.once("connect", () => finish(true));
+    socket.once("connect", () => {
+      socket.write(
+        `GET / HTTP/1.1\r\n` +
+        `Host: ${host}:${port}\r\n` +
+        "Upgrade: websocket\r\n" +
+        "Connection: Upgrade\r\n" +
+        "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n" +
+        "Sec-WebSocket-Version: 13\r\n\r\n"
+      );
+    });
+    socket.on("data", (chunk) => {
+      response += String(chunk);
+      if (response.includes("\r\n\r\n")) {
+        finish(/^HTTP\/1\.1 101\b/.test(response));
+      }
+    });
+    socket.once("end", () => finish(/^HTTP\/1\.1 101\b/.test(response)));
     socket.once("timeout", () => finish(false));
     socket.once("error", () => finish(false));
   });

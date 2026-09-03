@@ -88,10 +88,19 @@ def main():
         help="Seconds to show each board in --sim mode (default: 6)"
     )
     parser.add_argument("--port", type=int, default=None, help="WebSocket port override")
+    parser.add_argument(
+        "--diagnose", action="store_true",
+        help="Capture one annotated diagnostic frame and exit",
+    )
     args = parser.parse_args()
 
     setup_logging(debug=args.debug)
     logger = logging.getLogger("tft-coach")
+
+    if args.diagnose:
+        from diagnose_capture import main as diagnose_main
+        sys.argv = [sys.argv[0]]
+        return diagnose_main()
 
     if args.port:
         import config
@@ -148,4 +157,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main() or 0)

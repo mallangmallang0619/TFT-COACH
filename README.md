@@ -104,6 +104,12 @@ The desktop app chooses a free local port for its backend, prevents duplicate
 instances, and stops the backend when the app exits. If the detection engine
 cannot start or crashes, the overlay shows the reason and a **Retry** button.
 
+Launching the desktop app also opens a normal **Control Center** window. Use it
+outside the game to show or hide the overlay, restart detection, run an annotated
+diagnostic capture, open logs or screenshots, and export a support ZIP containing
+recent diagnostic images, logs, and model metadata. Closing the Control Center
+minimizes it to the taskbar; use **Quit TFT Coach** to stop the entire application.
+
 The overlay is click-through ("ghost mode") by default so game clicks pass
 underneath — **hover over the panel to interact with it**; move the cursor
 off and it goes back to ghost mode. The badge in the header shows the

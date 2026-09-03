@@ -39,6 +39,8 @@ and release engineering—not a UI rewrite.
 - Dynamic localhost WebSocket port passed safely to React
 - Single-instance application lock
 - Visible detection-engine startup and failure states with retry
+- Separate Control Center for out-of-game status, overlay management,
+  diagnostics, logs, and privacy-scoped support ZIP exports
 - Unified `npm run dev`, `npm run dev:sim`, and `npm run dev:live` process flow
 
 ## Recommended Architecture
