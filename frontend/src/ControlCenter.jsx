@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useCoachSocket } from "./useCoachSocket";
 
 const COLORS = {
-  bg: "#0d0f14",
+  bg: "#000000",
   panel: "#151821",
   border: "#282d3a",
   text: "#eef0f6",
@@ -26,7 +26,7 @@ function StatusCard({ label, value, detail, tone = COLORS.cyan }) {
   );
 }
 
-function ActionButton({ icon, title, detail, onClick, busy, disabled, accent = COLORS.cyan }) {
+function ActionButton({ title, detail, onClick, busy, disabled, accent = COLORS.cyan }) {
   return (
     <button
       className="cc-action"
@@ -34,7 +34,6 @@ function ActionButton({ icon, title, detail, onClick, busy, disabled, accent = C
       disabled={busy || disabled}
       style={{ "--action-accent": accent }}
     >
-      <span className="cc-action-icon">{busy ? "…" : icon}</span>
       <span>
         <strong>{busy ? `${title}…` : title}</strong>
         <small>{detail}</small>
@@ -132,13 +131,10 @@ export default function ControlCenter() {
         html, body, #root { background: ${COLORS.bg} !important; overflow: auto !important; }
         * { box-sizing: border-box; }
         button { font: inherit; }
-        .cc-shell { min-height: 100vh; color: ${COLORS.text}; background:
-          radial-gradient(circle at 78% -10%, #173c4655, transparent 34%), ${COLORS.bg}; }
+        .cc-shell { min-height: 100vh; color: ${COLORS.text}; background: #000; }
         .cc-topbar { height: 66px; padding: 0 30px; display: flex; align-items: center;
           justify-content: space-between; border-bottom: 1px solid ${COLORS.border}; background: #101219dd; }
         .cc-brand { display: flex; align-items: center; gap: 12px; }
-        .cc-mark { width: 34px; height: 34px; border: 1px solid #45dccd88; border-radius: 10px;
-          display: grid; place-items: center; color: ${COLORS.cyan}; font-weight: 900; background: #42d9c812; }
         .cc-brand strong { display: block; letter-spacing: .12em; font-size: 14px; }
         .cc-brand span { display: block; color: ${COLORS.muted}; font-size: 11px; margin-top: 2px; }
         .cc-window-actions { display: flex; gap: 8px; }
@@ -160,13 +156,11 @@ export default function ControlCenter() {
         .cc-section-title span { color: ${COLORS.muted}; font-size: 11px; }
         .cc-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
         .cc-action { --action-accent: ${COLORS.cyan}; position: relative; display: grid;
-          grid-template-columns: 38px 1fr 18px; gap: 12px; align-items: center; text-align: left;
+          grid-template-columns: 1fr 18px; gap: 12px; align-items: center; text-align: left;
           padding: 14px; color: ${COLORS.text}; background: #151821; border: 1px solid ${COLORS.border};
           border-radius: 11px; cursor: pointer; transition: transform .12s, border-color .12s, background .12s; }
         .cc-action:hover:not(:disabled) { transform: translateY(-1px); border-color: var(--action-accent); background: #191d27; }
         .cc-action:disabled { opacity: .52; cursor: wait; }
-        .cc-action-icon { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center;
-          background: color-mix(in srgb, var(--action-accent) 12%, transparent); color: var(--action-accent); font-size: 17px; }
         .cc-action strong { display: block; font-size: 13px; }
         .cc-action small { display: block; color: ${COLORS.muted}; font-size: 11px; margin-top: 4px; line-height: 1.35; }
         .cc-chevron { color: #697083; font-size: 22px; }
@@ -181,7 +175,6 @@ export default function ControlCenter() {
 
       <header className="cc-topbar">
         <div className="cc-brand">
-          <div className="cc-mark">T</div>
           <div><strong>TFT COACH</strong><span>Control Center</span></div>
         </div>
         <div className="cc-window-actions">
@@ -224,14 +217,12 @@ export default function ControlCenter() {
         </div>
         <section className="cc-actions">
           <ActionButton
-            icon={overlayVisible ? "◫" : "▣"}
             title={overlayVisible ? "Hide overlay" : "Show overlay"}
             detail="Toggle the in-game coaching window"
             onClick={toggleOverlay}
             busy={busyAction === "overlay"}
           />
           <ActionButton
-            icon="↻"
             title="Restart detection engine"
             detail="Use this if capture or live data stops updating"
             onClick={restart}
@@ -239,7 +230,6 @@ export default function ControlCenter() {
             accent={COLORS.amber}
           />
           <ActionButton
-            icon="◎"
             title="Run diagnostic capture"
             detail="Capture and annotate the current TFT window"
             onClick={runDiagnostic}
@@ -247,21 +237,18 @@ export default function ControlCenter() {
             accent={COLORS.green}
           />
           <ActionButton
-            icon="ZIP"
             title="Export support ZIP"
             detail="Package recent diagnostics, logs, and model metadata"
             onClick={exportBundle}
             busy={busyAction === "export"}
           />
           <ActionButton
-            icon="▤"
             title="Open diagnostics folder"
             detail="Review screenshots and annotated captures"
             onClick={() => runAction("diagnostics-folder", () => api.openDiagnosticsFolder?.(), () => "Opened diagnostics folder.")}
             busy={busyAction === "diagnostics-folder"}
           />
           <ActionButton
-            icon="≡"
             title="Open logs folder"
             detail="Inspect backend startup and detection messages"
             onClick={() => runAction("logs-folder", () => api.openLogsFolder?.(), () => "Opened logs folder.")}
