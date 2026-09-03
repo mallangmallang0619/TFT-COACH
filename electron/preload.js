@@ -55,7 +55,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     return () => ipcRenderer.removeListener("overlay-visibility", listener);
   },
   minimizeControlCenter: () => ipcRenderer.send("minimize-control-center"),
-  quitApplication: () => ipcRenderer.send("quit-application"),
+  quitApplication: () => ipcRenderer.invoke("quit-application"),
   runDiagnostic: () => ipcRenderer.invoke("run-diagnostic"),
   openDiagnosticsFolder: () => ipcRenderer.invoke("open-diagnostics-folder"),
   openLogsFolder: () => ipcRenderer.invoke("open-logs-folder"),

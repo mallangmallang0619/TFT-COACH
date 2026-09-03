@@ -127,7 +127,7 @@ export default function ControlCenter() {
   return (
     <div className="cc-shell">
       <style>{`
-        :root { color-scheme: dark; font-family: Inter, "Segoe UI", system-ui, sans-serif; }
+        :root { color-scheme: dark; font-family: Bahnschrift, "Segoe UI", sans-serif; }
         html, body, #root { background: ${COLORS.bg} !important; overflow: auto !important; }
         * { box-sizing: border-box; }
         button { font: inherit; }

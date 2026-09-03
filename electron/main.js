@@ -16,6 +16,7 @@ const { app, BrowserWindow, dialog, globalShortcut, ipcMain, screen, shell } = r
 const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("path");
+const { registerQuitHandler } = require("./applicationLifecycle");
 const { BackendManager } = require("./backendManager");
 const {
   buildDiagnosticLaunch,
@@ -447,7 +448,7 @@ ipcMain.handle("set-overlay-visibility", (event, visible) => (
   setOverlayVisibility(Boolean(visible))
 ));
 ipcMain.on("minimize-control-center", () => controlWindow?.minimize());
-ipcMain.on("quit-application", () => {
+registerQuitHandler(ipcMain, () => {
   isQuitting = true;
   app.quit();
 });
