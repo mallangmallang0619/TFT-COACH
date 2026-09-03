@@ -14,9 +14,13 @@
 
 const { app, BrowserWindow, globalShortcut, ipcMain, screen } = require("electron");
 const path = require("path");
+const { BackendManager } = require("./backendManager");
 const { getOverlayBounds } = require("./windowSizing");
 
 let overlayWindow = null;
+let backendManager = null;
+let backendStoppedForQuit = false;
+let isQuitting = false;
 let isInteractive = false;
 let isVisible = true;
 let isShareMode = process.env.TFT_COACH_SHARE_MODE === "1";
@@ -89,6 +93,7 @@ function createOverlayWindow() {
 
   // Prevent the window from being closed accidentally
   overlayWindow.on("close", (event) => {
+    if (isQuitting) return;
     event.preventDefault();
     overlayWindow.hide();
     isVisible = false;
@@ -214,23 +219,64 @@ function registerHotkeys() {
   // Quit
   register("Ctrl+Shift+Q", () => {
     console.log("[TFT Coach] Quitting...");
-    overlayWindow.destroy();
+    isQuitting = true;
     app.quit();
   });
 }
 
 // ── App Lifecycle ────────────────────────────────────────────────────────────
 
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+if (!hasSingleInstanceLock) {
+  app.quit();
+}
+
+app.on("second-instance", () => {
+  if (!overlayWindow) return;
+  if (overlayWindow.isMinimized()) overlayWindow.restore();
+  overlayWindow.show();
+  overlayWindow.focus();
+  isVisible = true;
+});
+
 app.whenReady().then(() => {
+  if (!hasSingleInstanceLock) return;
+  backendManager = new BackendManager({
+    appPath: app.getAppPath(),
+    isPackaged: app.isPackaged,
+    resourcesPath: process.resourcesPath,
+    userDataPath: app.getPath("userData"),
+  });
+  backendManager.on("status", (info) => {
+    overlayWindow?.webContents.send("backend-status", info);
+  });
+
   createOverlayWindow();
   registerHotkeys();
   overlayWindow.webContents.on("did-finish-load", () => {
     overlayWindow.webContents.send("share-mode", isShareMode);
+    overlayWindow.webContents.send("backend-status", backendManager.info);
+  });
+  backendManager.start().catch((error) => {
+    console.error(`[TFT Coach] Detection engine failed: ${error.message}`);
   });
 });
 
 app.on("will-quit", () => {
   globalShortcut.unregisterAll();
+});
+
+app.on("before-quit", (event) => {
+  isQuitting = true;
+  if (!backendManager || backendStoppedForQuit) return;
+
+  event.preventDefault();
+  backendManager.stop().catch((error) => {
+    console.warn(`[TFT Coach] Could not stop detection engine cleanly: ${error.message}`);
+  }).finally(() => {
+    backendStoppedForQuit = true;
+    app.quit();
+  });
 });
 
 app.on("window-all-closed", () => {
@@ -315,3 +361,20 @@ ipcMain.on("set-share-mode", (event, enabled) => {
 });
 
 ipcMain.handle("get-share-mode", () => isShareMode);
+
+ipcMain.handle("get-backend-info", () => backendManager?.info || ({
+  status: "starting",
+  wsUrl: null,
+  port: null,
+  message: "Desktop application is starting",
+}));
+
+ipcMain.handle("restart-backend", async () => {
+  if (!backendManager) throw new Error("Detection engine is not initialized");
+  try {
+    return await backendManager.restart();
+  } catch (error) {
+    console.error(`[TFT Coach] Detection engine restart failed: ${error.message}`);
+    return backendManager.info;
+  }
+});

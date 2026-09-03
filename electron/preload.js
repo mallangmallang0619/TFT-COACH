@@ -36,6 +36,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   getShareMode: () => ipcRenderer.invoke("get-share-mode"),
 
+  getBackendInfo: () => ipcRenderer.invoke("get-backend-info"),
+
+  restartBackend: () => ipcRenderer.invoke("restart-backend"),
+
+  onBackendStatus: (callback) => {
+    const listener = (event, info) => callback(info);
+    ipcRenderer.on("backend-status", listener);
+    return () => ipcRenderer.removeListener("backend-status", listener);
+  },
+
   // Listen for interaction mode changes from main process
   onInteractionMode: (callback) =>
     ipcRenderer.on("interaction-mode", (event, isInteractive) =>

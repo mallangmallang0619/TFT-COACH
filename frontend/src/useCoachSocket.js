@@ -9,8 +9,12 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  DEFAULT_BACKEND_INFO,
+  normalizeBackendInfo,
+  resolveBackendInfo,
+} from "./backendConnection.js";
 
-const WS_URL = "ws://localhost:8765";
 const RECONNECT_DELAY_MS = 2000;
 const MAX_RECONNECT_ATTEMPTS = 50;
 
@@ -46,19 +50,28 @@ export function useCoachSocket() {
   const [serverStats, setServerStats] = useState(null);
   const [isDemo, setIsDemo] = useState(false);
   const [demoInfo, setDemoInfo] = useState(null);  // { scenarios, current_scenario, paused, tick_ms, tick_bounds }
+  const [backendRuntime, setBackendRuntime] = useState(DEFAULT_BACKEND_INFO);
 
   const wsRef = useRef(null);
+  const backendUrlRef = useRef(DEFAULT_BACKEND_INFO.wsUrl);
   const reconnectAttempts = useRef(0);
   const reconnectTimer = useRef(null);
 
-  const connect = useCallback(() => {
+  const connect = useCallback((requestedUrl) => {
+    const socketUrl = typeof requestedUrl === "string"
+      ? requestedUrl
+      : backendUrlRef.current;
+    if (!socketUrl) return;
+
     // Clean up existing connection
     if (wsRef.current) {
+      wsRef.current.onclose = null;
       wsRef.current.close();
     }
+    if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
 
     try {
-      const ws = new WebSocket(WS_URL);
+      const ws = new WebSocket(socketUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -114,12 +127,36 @@ export function useCoachSocket() {
     }
   }, []);
 
-  // Connect on mount, cleanup on unmount
+  // Resolve the port chosen by the desktop application. Browser-only
+  // development keeps using the conventional localhost:8765 address.
   useEffect(() => {
-    connect();
+    let active = true;
+    const electronAPI = typeof window !== "undefined" ? window.electronAPI : undefined;
+
+    const applyBackendInfo = (rawInfo) => {
+      if (!active) return;
+      const info = normalizeBackendInfo(rawInfo);
+      setBackendRuntime(info);
+      if (info.wsUrl && info.wsUrl !== backendUrlRef.current) {
+        backendUrlRef.current = info.wsUrl;
+        reconnectAttempts.current = 0;
+        connect(info.wsUrl);
+      } else if (info.wsUrl && !wsRef.current) {
+        connect(info.wsUrl);
+      }
+    };
+
+    const unsubscribe = electronAPI?.onBackendStatus?.(applyBackendInfo);
+    resolveBackendInfo(electronAPI).then(applyBackendInfo);
+
     return () => {
+      active = false;
+      if (typeof unsubscribe === "function") unsubscribe();
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-      if (wsRef.current) wsRef.current.close();
+      if (wsRef.current) {
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+      }
     };
   }, [connect]);
 
@@ -160,6 +197,21 @@ export function useCoachSocket() {
     [sendCommand]
   );
 
+  const restartBackend = useCallback(async () => {
+    const electronAPI = typeof window !== "undefined" ? window.electronAPI : undefined;
+    if (!electronAPI?.restartBackend) {
+      connect();
+      return;
+    }
+    setBackendRuntime((current) => ({
+      ...current,
+      status: "starting",
+      message: "Restarting detection engine…",
+    }));
+    const info = normalizeBackendInfo(await electronAPI.restartBackend());
+    setBackendRuntime(info);
+  }, [connect]);
+
   return {
     gameState,
     gameData,
@@ -168,10 +220,12 @@ export function useCoachSocket() {
     isDemo,
     demoInfo,
     serverStats,
+    backendRuntime,
     sendCommand,
     overrideStage,
     overrideComponents,
     reconnect: connect,
+    restartBackend,
   };
 }
 

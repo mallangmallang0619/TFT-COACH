@@ -42,6 +42,11 @@ TFT client ──screen capture──► Python backend ──ws://localhost:876
  `main.js`     | Creates transparent, always-on-top overlay window 
  `preload.js`  | Exposes IPC bridge to renderer                    
 
+The repository currently provides a developer-run Electron overlay rather than
+a self-contained public installer. See the
+[desktop application roadmap](docs/APPLICATION_ROADMAP.md) for the packaging,
+backend lifecycle, installer, and release plan.
+
 ### React Frontend (`frontend/`)
 
 Adapted from the prototype — receives game state via WebSocket and renders coaching UI.
@@ -74,14 +79,14 @@ cd frontend && npm install && cd ..
 python backend/fetch_templates.py
 
 # 5. Verify everything works
-python backend/test_system.py
+npm run verify
 ```
 
 ### Running
 
 ```bash
 # Demo mode — fabricated game data, no game or CV deps needed.
-# Starts the Vite frontend + demo backend + Electron overlay together:
+# Electron starts and owns the demo backend automatically:
 npm run dev
 
 # Sim mode — the REAL detector + coach running on synthesized board frames:
@@ -90,11 +95,14 @@ npm run dev:sim
 # Live mode — capture the actual game (TFT must be running):
 npm run dev:live
 
-# Equivalent three-terminal setup:
+# Browser-only development (without Electron):
 python backend/main.py        # terminal 1
-npm run dev:frontend          # terminal 2
-npm start                     # terminal 3 (Electron overlay)
+npm run dev:frontend          # terminal 2, then open localhost:5173
 ```
+
+The desktop app chooses a free local port for its backend, prevents duplicate
+instances, and stops the backend when the app exits. If the detection engine
+cannot start or crashes, the overlay shows the reason and a **Retry** button.
 
 The overlay is click-through ("ghost mode") by default so game clicks pass
 underneath — **hover over the panel to interact with it**; move the cursor
