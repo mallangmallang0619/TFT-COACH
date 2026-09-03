@@ -66,6 +66,18 @@ def _apply_purchase_roster_fallback(
     state.unit_detection_source = "purchase_roster"
 
 
+def _coaching_state_with_roster_fallback(
+    state: GameState,
+    owned_units: list,
+) -> GameState:
+    """Return a coaching-only roster estimate without changing live UI data."""
+    if state.board_champions or state.bench_champions or not owned_units:
+        return state
+    coaching_state = state.model_copy(deep=True)
+    _apply_purchase_roster_fallback(coaching_state, owned_units)
+    return coaching_state
+
+
 def _collection_diagnostic_due(
     now: float,
     last_saved_at: float,
@@ -695,13 +707,6 @@ class TFTCoachServer:
                     else:
                         self._hp_candidate = None
 
-                # If live classification saw nothing, purchase history is a
-                # low-confidence comp-direction fallback. Never mix stale
-                # purchase history into a board the model actually observed.
-                _apply_purchase_roster_fallback(
-                    state, self.roster.owned_units()
-                )
-
                 auto_augment = self.augment_selection_tracker.observe(
                     state.phase,
                     state.augment_options,
@@ -721,7 +726,13 @@ class TFTCoachServer:
                 # Run coaching logic
                 state.pinned_comp = self._pinned_comp
                 state.selected_augments = list(self._selected_augments)
-                advice = self.coach.analyze(state)
+                # Purchase history cannot observe sells or board placement.
+                # It may keep comp advice useful during a one-frame classifier
+                # miss, but must never be broadcast as detected bench units.
+                coaching_state = _coaching_state_with_roster_fallback(
+                    state, self.roster.owned_units()
+                )
+                advice = self.coach.analyze(coaching_state)
                 state.advice = advice
 
                 # Update latest state

@@ -853,9 +853,9 @@ def test_conditional_comps_and_item_first_direction():
 
 
 def test_classifier_roster_fallback():
-    """Purchase history must not contaminate a classifier-observed board."""
+    """Purchase history may guide coaching but never fake the visible bench."""
     from game_state import DetectedChampion, GameState
-    from websocket_server import _apply_purchase_roster_fallback
+    from websocket_server import _coaching_state_with_roster_fallback
 
     detected = GameState(
         board_champions=[DetectedChampion(
@@ -864,14 +864,24 @@ def test_classifier_roster_fallback():
         unit_detection_source="classifier",
     )
     stale_owned = [DetectedChampion(name="Morgana", star_level=2)]
-    _apply_purchase_roster_fallback(detected, stale_owned)
+    detected_for_coaching = _coaching_state_with_roster_fallback(
+        detected, stale_owned
+    )
     assert detected.bench_champions == []
     assert detected.unit_detection_source == "classifier"
+    assert detected_for_coaching is detected
 
-    missed = GameState(unit_detection_source="unknown")
-    _apply_purchase_roster_fallback(missed, stale_owned)
-    assert [champion.name for champion in missed.bench_champions] == ["Morgana"]
-    assert missed.unit_detection_source == "purchase_roster"
+    missed = GameState(unit_detection_source="classifier")
+    missed_for_coaching = _coaching_state_with_roster_fallback(
+        missed, stale_owned
+    )
+    assert missed.bench_champions == [], "broadcast state invented bench units"
+    assert missed.unit_detection_source == "classifier"
+    assert missed_for_coaching is not missed
+    assert [
+        champion.name for champion in missed_for_coaching.bench_champions
+    ] == ["Morgana"]
+    assert missed_for_coaching.unit_detection_source == "purchase_roster"
 
 
 def test_tactics_units_and_board_power():
