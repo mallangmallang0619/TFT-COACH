@@ -1937,6 +1937,37 @@ def test_board_health_bar_crop_geometry():
     return "board crop + bench occupancy gate prevent board/bench spillover"
 
 
+def test_set18_board_hex_alignment():
+    """Grid centers follow the visible UE5 hexes in a normal-game frame."""
+    from config import BOARD_HEX_GRID, GameROIs
+
+    width, height = 2560, 1440
+    bx, by, bw, bh = GameROIs().board.to_pixels(width, height)
+    # Measured by registering a clear view of the same arena onto
+    # diagnose_20260901_222602.png. First/last centers capture both the row
+    # offset and its perspective-dependent horizontal pitch.
+    expected_rows = (
+        (754, 1665, 598, 48),
+        (813, 1756, 692, 55),
+        (717, 1692, 792, 57),
+        (774, 1794, 898, 59),
+    )
+    for row, (expected_first, expected_last, expected_y, expected_radius) in enumerate(
+        expected_rows
+    ):
+        positions = [position for position in BOARD_HEX_GRID if position.row == row]
+        actual_first = bx + int(positions[0].cx * bw)
+        actual_last = bx + int(positions[-1].cx * bw)
+        actual_y = by + int(positions[3].cy * bh)
+        actual_radius = int(positions[3].radius * bw)
+        assert abs(actual_first - expected_first) <= 3, (row, actual_first)
+        assert abs(actual_last - expected_last) <= 3, (row, actual_last)
+        assert abs(actual_y - expected_y) <= 3, (row, actual_y)
+        assert abs(actual_radius - expected_radius) <= 3, (row, actual_radius)
+
+    return "four perspective rows align with the normal-game UE5 hex grid"
+
+
 def test_slow_hud_refresh_schedule():
     """Slow-changing HUD OCR is cached while gold remains live each frame."""
     from types import SimpleNamespace
@@ -2787,9 +2818,12 @@ def test_manual_training_inbox():
         radius = int(position.radius * bw)
         x1, x2 = center_x - int(1.1 * radius), center_x + int(1.1 * radius)
         y1, y2 = center_y - int(2.55 * radius), center_y + radius
-        board[y1:y2, x1:x2] = np.random.default_rng(901).integers(
-            20, 220, (y2 - y1, x2 - x1, 3), dtype=np.uint8
+        # Use detailed grayscale texture so random HSV-green pixels cannot
+        # merge into the synthetic health bar as row crop sizes change.
+        texture = np.random.default_rng(901).integers(
+            20, 220, (y2 - y1, x2 - x1), dtype=np.uint8
         )
+        board[y1:y2, x1:x2] = np.repeat(texture[:, :, None], 3, axis=2)
         cv2.rectangle(
             board,
             (x1 + (x2 - x1) // 6, y1 + (y2 - y1) // 12),
@@ -4006,6 +4040,7 @@ def main():
     test("Bench harvester", test_bench_harvester)
     test("Bench crop geometry", test_bench_crop_geometry)
     test("Board health-bar crop geometry", test_board_health_bar_crop_geometry)
+    test("Set 18 board hex alignment", test_set18_board_hex_alignment)
     test("Slow HUD refresh schedule", test_slow_hud_refresh_schedule)
     test("Set 18 dynamic HUD + traits", test_set18_dynamic_hud_and_trait_panel)
     test("Set 18 standard trait counts", test_set18_standard_trait_panel_counts)

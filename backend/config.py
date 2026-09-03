@@ -341,28 +341,34 @@ class HexPosition:
     radius: float = 0.04
 
 
-# Per-row hex geometry, calibrated against a real 2560x1440 planning frame
-# (18 Jul 2026, units on known hexes + platform edges). The board renders
-# in PERSPECTIVE: far rows sit higher with tighter spacing, so the 4x7
-# grid is a trapezoid — a uniform brick layout can't match it. Values are
-# ratios of the board ROI; odd rows shift +half a pitch (stagger).
-_HEX_ROW_CY = (0.132, 0.365, 0.608, 0.859)          # hex-center y per row
-_HEX_ROW_PITCH = (0.1328, 0.1352, 0.1375, 0.1406)   # column spacing per row
-_HEX_CENTER_CX = 0.462                              # column 3, all rows
+# Per-row UE5 geometry measured from diagnose_20260901_222602.png. A clear
+# view of the same arena was feature-registered onto that normal-game frame,
+# then each visible teal hex outline was fitted independently. Perspective
+# changes not only pitch and radius but also nudges the apparent row center
+# left toward the camera, so all four values are row-specific. Values are
+# ratios of the board ROI; odd rows still shift +half a pitch (stagger).
+_HEX_ROW_CY = (0.11136, 0.32500, 0.55227, 0.79318)
+_HEX_ROW_PITCH = (0.11862, 0.12279, 0.12695, 0.13281)
+_HEX_ROW_CENTER_CX = (0.44492, 0.44212, 0.44102, 0.43672)
+_HEX_ROW_RADIUS = (0.03750, 0.04297, 0.04453, 0.04609)
 
 
-def generate_hex_grid(radius: float = 0.041) -> list[HexPosition]:
+def generate_hex_grid(radius: float | None = None) -> list[HexPosition]:
     """The 28 hex positions (4 rows × 7 cols) of our board half, as a
     perspective trapezoid — see the calibration tables above."""
     hexes = []
     for row in range(4):
         cy = _HEX_ROW_CY[row]
         pitch = _HEX_ROW_PITCH[row]
+        center_cx = _HEX_ROW_CENTER_CX[row]
+        row_radius = _HEX_ROW_RADIUS[row] if radius is None else radius
         for col in range(7):
-            cx = _HEX_CENTER_CX + (col - 3) * pitch
+            cx = center_cx + (col - 3) * pitch
             if row % 2 == 1:
                 cx += pitch / 2
-            hexes.append(HexPosition(row=row, col=col, cx=cx, cy=cy, radius=radius))
+            hexes.append(
+                HexPosition(row=row, col=col, cx=cx, cy=cy, radius=row_radius)
+            )
     return hexes
 
 
