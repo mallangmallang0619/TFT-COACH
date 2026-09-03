@@ -701,6 +701,157 @@ def test_context_comp_scoring():
     assert cores == ["Kayle"] and flexes == [], (cores, flexes)
 
 
+def test_conditional_comps_and_item_first_direction():
+    """Unplayable special comps stay hidden; committed items drive direction."""
+    import synergy as synergy_mod
+    from game_state import DetectedChampion
+    from synergy import compute_active_synergies, detect_comp_direction
+
+    def comp(
+        name,
+        *,
+        tier="A",
+        cores=None,
+        items=None,
+        augments=None,
+        carry_items=None,
+    ):
+        return {
+            "name": name,
+            "core_units": cores or ["Kayle"],
+            "flex_units": [],
+            "target_traits": [],
+            "playstyle": "",
+            "_meta_tier": tier,
+            "_meta_layout": [],
+            "_meta_item_names": items or [],
+            "_meta_augments": augments or [],
+            "_meta_carry_items": set(carry_items or []),
+        }
+
+    conditional = [
+        comp(
+            "Dark Mages",
+            tier="X",
+            augments=["Consuming Flora"],
+        ),
+        comp("Solar Kayle Copy", tier="S", augments=["Cursed Crown"]),
+        comp("Trait Ladder", tier="S", augments=["Trait Ladder"]),
+        comp("Unknown X Tech", tier="X", augments=["Generic Economy"]),
+    ]
+    original_get_active_comps = synergy_mod.get_active_comps
+    board = [DetectedChampion(name="Kayle", board_row=0, board_col=0)]
+    synergies = compute_active_synergies(board)
+    try:
+        synergy_mod.get_active_comps = lambda: conditional
+        names = {
+            suggestion.name
+            for suggestion in detect_comp_direction(synergies, board, top_n=10)
+        }
+        assert not names, f"conditional comps leaked without prerequisites: {names}"
+
+        # Consuming Flora being recommended by the guide is not enough to
+        # make the Veigar line playable: Veigar must actually have the Flora
+        # Fatalis emblem.
+        consuming_only = {
+            suggestion.name
+            for suggestion in detect_comp_direction(
+                synergies,
+                board,
+                top_n=10,
+                selected_augments=["Consuming Flora"],
+            )
+        }
+        assert "Dark Mages" not in consuming_only
+
+        emblem_enabled = {
+            suggestion.name
+            for suggestion in detect_comp_direction(
+                synergies,
+                board,
+                top_n=10,
+                held_items=["Flora Fatalis Emblem"],
+            )
+        }
+        assert "Dark Mages" in emblem_enabled
+
+        for name, required in (
+            ("Solar Kayle Copy", "Cursed Crown"),
+            ("Trait Ladder", "Trait Ladder"),
+        ):
+            names = {
+                suggestion.name
+                for suggestion in detect_comp_direction(
+                    synergies,
+                    board,
+                    top_n=10,
+                    selected_augments=[required],
+                )
+            }
+            assert name in names, (name, required, names)
+
+        # A generic recommendation is not proof that an unknown X-tier line
+        # is actually enabled.
+        names = {
+            suggestion.name
+            for suggestion in detect_comp_direction(
+                synergies,
+                board,
+                top_n=10,
+                selected_augments=["Generic Economy"],
+            )
+        }
+        assert "Unknown X Tech" not in names
+
+        # TFT Academy detail can retain a stale display name even though its
+        # API id is current.  Comp matching must speak the same canonical name
+        # as live augment OCR.
+        assert synergy_mod._augment_names_from_detail({
+            "augments": [{
+                "apiName": "DA_18_FloraFatalisAugment",
+                "name": "Flora Fatalis Augment",
+            }]
+        }) == ["Consuming Flora"]
+
+        item_comp = comp(
+            "Item Direction",
+            cores=["Kayle", "Varus", "Xayah", "Ashe"],
+            items=["Guinsoo's Rageblade"],
+            carry_items=["Guinsoo's Rageblade"],
+        )
+        unit_comp = comp("Unit Direction", cores=["Kayle", "Leona"])
+        synergy_mod.get_active_comps = lambda: [item_comp, unit_comp]
+        geared_board = [
+            DetectedChampion(
+                name="Kayle",
+                items=["Guinsoo's Rageblade"],
+                board_row=0,
+                board_col=0,
+            ),
+            DetectedChampion(name="Leona", board_row=0, board_col=1),
+        ]
+        geared = detect_comp_direction(
+            compute_active_synergies(geared_board), geared_board, top_n=2
+        )
+        assert geared[0].name == "Item Direction", [
+            (suggestion.name, suggestion.match_score) for suggestion in geared
+        ]
+
+        # Completed items on the item bench are also committed direction,
+        # even before the player equips them to a detected unit.
+        held = detect_comp_direction(
+            compute_active_synergies(board),
+            board,
+            top_n=2,
+            held_items=["Guinsoo's Rageblade"],
+        )
+        assert held and held[0].name == "Item Direction"
+    finally:
+        synergy_mod.get_active_comps = original_get_active_comps
+
+    return "conditional gates + item-first comp direction OK"
+
+
 def test_classifier_roster_fallback():
     """Purchase history must not contaminate a classifier-observed board."""
     from game_state import DetectedChampion, GameState
@@ -1934,8 +2085,38 @@ def test_set18_dynamic_hud_and_trait_panel():
                 assert active == {"Rival", "Caustic", "Brawler", "Adaptor"}
         checked.append(filename)
 
-    assert checked, "Set 18 layout captures unavailable"
+    if not checked:
+        return "optional local layout captures unavailable"
     return f"dynamic HUD + shifted trait text/count rows OK ({len(checked)} frames)"
+
+
+def test_set18_standard_trait_panel_counts():
+    """The active count badge must win over the lower breakpoint ladder."""
+    import cv2
+    from pathlib import Path
+    from detector import Detector, TemplateStore
+
+    fixture = Path(__file__).parent / "fixtures" / "set18_trait_panel_standard.png"
+    frame = cv2.imread(str(fixture))
+    assert frame is not None, f"missing trait-panel fixture: {fixture}"
+    expected = {
+        "Bounty Seeker": 1,
+        "Emerald Aspect": 1,
+        "Greenfather": 1,
+        "Old Growth": 1,
+        "Elderwood": 3,
+        "Executioner": 2,
+        "Inferno": 2,
+        "Brawler": 2,
+        "Juggernaut": 2,
+    }
+    detector = Detector(TemplateStore())
+    for width, height in ((2560, 1440), (1920, 1080), (1280, 720)):
+        resized = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
+        rows = detector._read_trait_panel_text(resized)
+        got = {name: count for name, count, _cy in rows}
+        assert got == expected, ((width, height), got)
+    return "standard-game left panel counts match at 1440p, 1080p, and 720p"
 
 
 def test_bench_harvester_quality_invariants():
@@ -3807,6 +3988,10 @@ def main():
     test("Set auto-detection", test_set_autodetect)
     test("Set 18 roster + Lux", test_set18_roster_and_lux)
     test("Context comp scoring", test_context_comp_scoring)
+    test(
+        "Conditional comps + item-first direction",
+        test_conditional_comps_and_item_first_direction,
+    )
     test("Classifier roster fallback", test_classifier_roster_fallback)
     test("Board strength + tactics.tools", test_tactics_units_and_board_power)
     test("Periodic tactics.tools refresh", test_tactics_periodic_refresh)
@@ -3823,6 +4008,7 @@ def main():
     test("Board health-bar crop geometry", test_board_health_bar_crop_geometry)
     test("Slow HUD refresh schedule", test_slow_hud_refresh_schedule)
     test("Set 18 dynamic HUD + traits", test_set18_dynamic_hud_and_trait_panel)
+    test("Set 18 standard trait counts", test_set18_standard_trait_panel_counts)
     test("Bench harvester quality invariants", test_bench_harvester_quality_invariants)
     test("Bench live-capture regressions", test_bench_harvester_live_capture_regressions)
     test("Manual training inbox", test_manual_training_inbox)

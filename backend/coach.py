@@ -786,6 +786,7 @@ class Coach:
             state.board_champions,
             state.bench_champions,
             component_ids=state.component_ids,
+            held_items=state.held_items,
             selected_augments=state.selected_augments,
             pinned_comp=state.pinned_comp,
         )

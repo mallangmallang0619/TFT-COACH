@@ -1606,6 +1606,7 @@ class Detector:
 
             count = 1
             title_y = float(group["center_y"])
+            breakpoints = (TRAITS.get(name) or {}).get("breakpoints") or [1]
             # Activated rows display the current count in a badge immediately
             # left of the title. Read that before the lower breakpoint text;
             # e.g. Adaptor 3 has "2 / 3 / 4" below it, and taking the first
@@ -1645,6 +1646,27 @@ class Detector:
                         match = re.match(r"\D*(\d+)", raw_count)
                         if match:
                             count = max(1, min(9, int(match.group(1))))
+
+            # The real current-count badge sits left of the title at about
+            # 5-7% of screen width.  The page-level OCR often drops that
+            # isolated digit and then mistakes a later breakpoint (for
+            # example Juggernaut's 4) for the live count.  Re-read the exact
+            # badge after the title row gives us its vertical center.
+            if breakpoints == [1]:
+                # Unique traits always contribute exactly one; their tiny
+                # 1/1 text is especially prone to being read as 9 or 171.
+                count = 1
+            else:
+                badge_y_half = max(12, int(round(0.020 * h)))
+                badge = frame[
+                    max(0, int(title_y) - badge_y_half):
+                    min(h, int(title_y) + badge_y_half),
+                    int(0.052 * w):int(0.072 * w),
+                ]
+                badge_text = self._ocr_region(badge, whitelist="0123456789")
+                badge_match = re.search(r"([1-9])", badge_text)
+                if badge_match:
+                    count = int(badge_match.group(1))
 
             seen.add(name)
             resolved.append((name, count, title_y / h))

@@ -249,7 +249,20 @@ def _item_names_from_detail(detail: dict) -> list[str]:
 
 def _augment_names_from_detail(detail: dict) -> list[str]:
     """Recommended augment display names from a scraped comp detail."""
-    return [a["name"] for a in (detail or {}).get("augments") or [] if a.get("name")]
+    names: list[str] = []
+    for augment in (detail or {}).get("augments") or []:
+        api_name = augment.get("apiName") or ""
+        name = augment.get("name") or ""
+        # TFT Academy's detail payload retained the launch/internal name,
+        # while the live augment endpoint and OCR use Consuming Flora.
+        if api_name in {
+            "DA_18_FloraFatalisAugment",
+            "DA_18_FloraFatalisAugmentPlus",
+        } or name == "Flora Fatalis Augment":
+            name = "Consuming Flora"
+        if name:
+            names.append(name)
+    return names
 
 
 def _carry_items_from_detail(detail: dict) -> set[str]:
@@ -399,9 +412,9 @@ def _augment_fit(
 # shop, but a slammed item is permanent — itemization decides the comp.
 # One slammed build-item is worth roughly 2-3 core units of score; carry
 # items count double again.
-_ITEM_FIT_BONUS_MAX   = 0.25   # held components that build into the comp's items
-_SLAMMED_ITEM_BONUS   = 0.12   # each completed item on our units the comp builds
-_SLAMMED_ITEM_CAP     = 0.36
+_ITEM_FIT_BONUS_MAX   = 0.40   # held components that build into the comp's items
+_SLAMMED_ITEM_BONUS   = 0.18   # each completed/held item the comp builds
+_SLAMMED_ITEM_CAP     = 0.54
 _CARRY_ITEM_WEIGHT    = 2.0    # slammed items for the comp's CARRY count double
 _AUGMENT_MATCH_BONUS  = 0.15   # per taken augment the comp recommends
 _AUGMENT_BONUS_CAP    = 0.30
@@ -412,6 +425,7 @@ def _slammed_item_fit(
     carry_items: set[str],
     board_champions: list[DetectedChampion],
     bench_champions: list[DetectedChampion] | None,
+    held_items: list[str] | None = None,
 ) -> tuple[float, list[str]]:
     """
     Score the completed items already sitting on the player's units against
@@ -421,6 +435,8 @@ def _slammed_item_fit(
     for champ in list(board_champions) + list(bench_champions or []):
         for item in champ.items or []:
             have[item] += 1
+    for item in held_items or []:
+        have[item] += 1
     if not have or not comp_item_names:
         return 0.0, []
 
@@ -449,12 +465,45 @@ def _unit_identity(name: str) -> str:
     return str(data.get("unique_group") or name)
 
 
+def _conditional_comp_is_enabled(
+    name: str,
+    tier: str | None,
+    selected_augments: list[str],
+    owned_items: list[str],
+) -> bool:
+    """Require the game-specific enabler before surfacing special comps."""
+    comp_key = _normalize_augment_name(name)
+    augment_keys = {_normalize_augment_name(value) for value in selected_augments}
+    item_keys = {_normalize_augment_name(value) for value in owned_items}
+
+    if "traitladder" in comp_key:
+        return "traitladder" in augment_keys
+    if comp_key in {"solarkaylecopy", "cursedcrownkayle"}:
+        return "cursedcrown" in augment_keys
+    if comp_key == "darkmages" or (
+        "veigar" in comp_key and ("consum" in comp_key or "flora" in comp_key)
+    ):
+        # Consuming Flora can be recommended alongside this line, but the
+        # actual hard requirement is the Flora Fatalis emblem on Veigar.
+        return any(
+            ("florafatalis" in item and "emblem" in item)
+            or "fioraemblem" in item
+            for item in item_keys
+        )
+
+    # TFT Academy's X bucket is explicitly situational.  Unknown future X
+    # lines stay hidden until their enabling condition is encoded rather than
+    # being presented as an ordinary playable direction.
+    return tier != "X"
+
+
 def detect_comp_direction(
     synergies: list[ActiveSynergy],
     board_champions: list[DetectedChampion],
     bench_champions: list[DetectedChampion] | None = None,
     top_n: int = 3,
     component_ids: list[str] | None = None,
+    held_items: list[str] | None = None,
     selected_augments: list[str] | None = None,
     pinned_comp: str | None = None,
 ) -> list[CompSuggestion]:
@@ -477,6 +526,11 @@ def detect_comp_direction(
     bench_names = {c.name for c in (bench_champions or [])}
     board_identities = {_unit_identity(name) for name in board_names}
     bench_identities = {_unit_identity(name) for name in bench_names}
+    owned_items = list(held_items or []) + [
+        item
+        for champion in list(board_champions) + list(bench_champions or [])
+        for item in (champion.items or [])
+    ]
 
     suggestions: list[CompSuggestion] = []
 
@@ -552,13 +606,26 @@ def detect_comp_direction(
             comp_augments = _augment_names_from_detail(detail)
             carry_items = _carry_items_from_detail(detail)
 
+        meta_tier = meta.get("tier") if meta else None
+        if not _conditional_comp_is_enabled(
+            comp["name"],
+            meta_tier,
+            selected_augments or [],
+            owned_items,
+        ):
+            continue
+
         # Context boosts. Itemization comes first and weighs heaviest:
         # completed items already slammed on our units are commitments the
         # comp must honor, held components are strong hints, and augments
         # confirm the direction.
         context_notes: list[str] = []
         slam_bonus, slammed = _slammed_item_fit(
-            comp_item_names, carry_items, board_champions, bench_champions
+            comp_item_names,
+            carry_items,
+            board_champions,
+            bench_champions,
+            held_items,
         )
         if slam_bonus > 0:
             match_score = min(1.0, match_score + slam_bonus)

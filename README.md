@@ -131,19 +131,19 @@ window or region; if one box is off, that ROI needs recalibrating in
 The overlay header also reports `DATA INBOX`, `DATA WAITING`, or `DATA PAUSED`.
 Live mode collects visually valid board and bench crops without guessing unit
 names. Collection runs only during planning, requires two stable observations,
-waits eight seconds before saving the same position again, and stops at 250
-crops per game or 750 unsorted crops. Direct UE5 window capture may be
-unavailable; the collector automatically uses a trusted screen fallback while
-`TFT.exe` is foreground.
+and waits eight seconds before saving the same position again. Collection is
+uncapped by default; filtering and the manual sorter keep large inboxes
+manageable. Direct UE5 window capture may be unavailable; the collector
+automatically uses a trusted screen fallback while `TFT.exe` is foreground.
 Recent annotated session frames are kept in `backend/_debug/session/`, and
 the persistent backend log is `backend/_logs/tft-coach.log`.
 
-**Known limitation — unit identification:** board and bench units render as
-3D models, which the CDN portrait templates cannot match, so unit names are
-currently only detected in sim mode. Live games still get synergies (read
-from the HUD trait panel), HP/gold/stage/level OCR, and item advice. The
-path to live unit ID is collecting in-game crops via `--dump-hexes` and
-building a per-set template library from them.
+**Unit identification:** live Set 18 board and bench units are classified with
+the bundled EfficientNet-B0 ONNX model. The detector first anchors board crops
+to health bars and verifies bench occupancy independently, then applies
+confidence and temporal-stability gates. The left HUD trait panel remains the
+source of truth for active synergies because classifier misses must not invent
+or remove traits.
 
 ### Template Images
 
@@ -236,8 +236,9 @@ Wisp purchase from becoming a false champion purchase or a poisoned ML label.
 
 Lux's nine Avatar origins remain distinct gameplay identities because the
 chosen origin contributes two trait points. For vision training, all nine are
-intentionally pooled into the single `Lux` class: their Unreal models differ
-only slightly, while the live trait HUD supplies the exact origin.
+pooled into the single `Lux` class. Their Unreal models can differ substantially,
+so every form needs crops from multiple sessions; the live trait HUD supplies
+the exact origin while the classifier identifies the shared Lux unit.
 
 The Unreal unit classifier dataset is isolated at
 `backend/_training/set18/`. New live crops first enter `_inbox` with board/bench
@@ -309,7 +310,20 @@ OCR on the stage indicator region (top-center of screen). Tesseract extracts the
 OCR on fixed UI regions. Digits are extracted and parsed.
 
 ### Board State Detection
-The hex grid is mapped to pixel coordinates. Each hex is sampled for champion portraits via template matching.
+Health bars locate occupied board hexes and define full-sprite crops for the
+EfficientNet-B0 ONNX classifier. Bench slots use the same crop geometry as
+training and require an independent health-bar occupancy check. Predictions
+must clear confidence and temporal-stability gates before entering game state.
+
+### Comp Direction
+
+Comp direction combines the authoritative left-panel synergies, detected and
+purchase-tracked units, completed items, held components, and selected
+augments. Item commitments outweigh replaceable unit matches. Situational TFT
+Academy lines are hidden until their hard prerequisite is observed: for
+example, Dark Mages needs the Flora Fatalis emblem, Solar Kayle
+Copy needs Cursed Crown, and Trait Ladder needs the Trait Ladder augment.
+Unknown X-tier lines default to hidden until an explicit enabling rule is added.
 
 ### Augment Screen Detection
 Detects the augment selection overlay and reads augment names via OCR.
@@ -344,7 +358,7 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] Shop-card reading (name-banner OCR + fuzzy roster matching — skin-proof, no art templates)
 - [x] Purchase-tracking roster — shop diffs between frames reveal buys; owned units (with 3-copy star-ups) feed comp direction as held units
 - [x] Manual-inbox training harvester — live mode saves stable, visually novel board and bench crops to `_training/set18/_inbox` without guessing labels, while retaining a periodic duplicate for variation. The smart contact-sheet sorter files up to 20 reviewed neighbours at once, supports outlier deselection and batch undo, and never auto-labels. Raw crops remain local and reversible. Pool sorted crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
-- [ ] Live unit identification — retrain on Set 18 Unreal crops (currently needs a few live games of collected data first)
+- [x] Live unit identification — EfficientNet-B0 ONNX classifier with health-bar occupancy and temporal-stability gates
 - [ ] Star-level classifier — detect whether each board and bench unit is 1-star, 2-star, or 3-star from live crops
 - [ ] Item classifier — detect equipped components, completed items, and artifacts on units from live board crops
 - [ ] Player-HP row tracking — the right-side player list reorders by standing, so the fixed HP ROI reads the wrong row late-game
