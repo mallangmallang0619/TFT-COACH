@@ -377,10 +377,25 @@ npm run dev:live
 ```
 
 Do not place these crops into the champion sorter. Star crops will be reviewed
-into `1`, `2`, or `3`; item crops require multi-label annotations rather than a
-single folder name. A labeling/training command and held-out evaluation gate are
-the next step before either model is allowed to influence board strength or
-comp direction.
+into `1`, `2`, or `3`; item crops use multi-label annotations rather than a
+class for every possible item combination. Open the dedicated sorters with:
+
+```powershell
+npm run sort:stars
+npm run sort:items
+```
+
+Star mode displays visually similar batches: click outliers to exclude them,
+then press `1`, `2`, or `3`. Item mode displays the matching full champion crop
+and an item catalog covering components, craftables, artifacts, radiant items,
+and emblems from the local TFT Academy cache. Ctrl+click up to three items and
+press Enter, or press `0` for no items. `A` selects the whole visual batch, `N`
+selects none, Space defers, Delete rejects recoverably, and Ctrl+Z undoes the
+latest label or rejection. Item annotations are written to
+`backend/_training/set18_details/items/labels.json`.
+
+A training command and held-out evaluation gate are still required before
+either model is allowed to influence board strength or comp direction.
 
 The core Unreal HUD/board ROIs were calibrated from a live 2560×1440 Set 18
 frame. Re-run `python backend/diagnose_capture.py --dump-hexes` after changing
