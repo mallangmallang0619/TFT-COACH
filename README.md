@@ -1,6 +1,96 @@
-# TFT Coach — Desktop Overlay with Screen Capture
+# TFT Coach
 
-A real-time Teamfight Tactics coaching overlay that captures your game screen, detects your board state via computer vision, and surfaces actionable advice as a transparent overlay on top of the game.
+TFT Coach is a Windows desktop companion for Teamfight Tactics. It captures the
+`TFT.exe` window, reads the live board with computer vision, and displays comp,
+item, economy, augment, and positioning guidance in a transparent Electron
+overlay. A separate Control Center handles diagnostics and support tasks without
+requiring terminal commands during a game.
+
+> **Development preview:** the application currently runs from source. A
+> self-contained Windows installer is planned but is not ready for public use.
+
+## What it does
+
+- Identifies live Set 18 champions with a local EfficientNet ONNX model.
+- Reads active traits from the left-side TFT panel instead of guessing them
+  from imperfect champion predictions.
+- Detects each equipped item independently from Riot icon artwork—no model or
+  item-combination training is required.
+- Tracks the shop, purchases, gold, level, health, augments, and board strength.
+- Scores comp directions with items weighted more heavily than temporary units.
+- Runs locally; gameplay frames are not uploaded by the application.
+- Provides one-click diagnostic captures and privacy-scoped support ZIPs.
+
+## Screenshots
+
+![TFT Coach Control Center](docs/control-center.svg)
+
+The Control Center starts with the desktop app. It reports backend, game, and
+capture status and provides the common recovery and support actions.
+
+<details>
+<summary><strong>Live Set 18 diagnostic example</strong></summary>
+
+![Annotated Set 18 detection regions](backend/_debug/diagnose_20260904_020107.png)
+
+The diagnostic overlays the board hexes and every screen region used by the
+detector. It is intended for calibration and troubleshooting, not normal play.
+
+</details>
+
+### Equipped-item recognition example
+
+Each visible slot is matched separately. The detector can therefore recognize
+one, two, or three items without learning the full combination.
+
+| Riot artwork | Example detected name |
+|---|---|
+| <img src="assets/templates/items/Red%20Buff.png" width="52" alt="Red Buff icon"> | Red Buff |
+| <img src="assets/templates/items/Morellonomicon.png" width="52" alt="Morellonomicon icon"> | Morellonomicon |
+| <img src="assets/templates/items/Warmog%27s%20Armor.png" width="52" alt="Warmog's Armor icon"> | Warmog's Armor |
+
+On the current reviewed dataset, the per-icon matcher processed 262 champion
+crops at roughly 0.6 ms per crop and recovered every annotated equipped item.
+
+## Quick start (Windows)
+
+Create the environment and install dependencies **once**:
+
+```powershell
+git clone https://github.com/mallangmallang0619/TFT-COACH.git
+cd TFT-COACH
+
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+npm install
+npm --prefix frontend install
+python backend/fetch_templates.py
+
+npm run verify
+```
+
+For each later PowerShell session, only activate the existing environment and
+start the mode you want:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+npm run dev       # demo data; confirms the desktop UI works
+npm run dev:live  # live TFT.exe capture
+```
+
+Install Tesseract before `npm run dev:live`:
+
+```powershell
+winget install UB-Mannheim.TesseractOCR
+```
+
+Open a new terminal after the Tesseract installation. Do not recreate `.venv`
+or reinstall dependencies each time. Activation only tells that terminal to use
+the already-installed project environment. A packaged installer will remove
+this source-development step for end users.
 
 ## Architecture
 
@@ -71,53 +161,94 @@ view from the launch URL:
  `src/useCoachSocket.js`| Shared live backend connection and command hook
  `src/backendConnection.js` | Validates Electron-provided local WebSocket details
 
-## Setup
+## Installation and first use
 
-### Prerequisites
+### Requirements
 
-- Python 3.10+
-- Node.js 18+
-- Tesseract OCR (live mode only):
-  - Windows: `winget install UB-Mannheim.TesseractOCR`
-  - macOS: `brew install tesseract`
-  - Linux: `sudo apt install tesseract-ocr`
+- Windows 10 or 11 for live `TFT.exe` capture
+- Python 3.10 or newer
+- Node.js 18 or newer
+- Tesseract OCR for live HUD and shop reading
+- Approximately 1 GB of free space for dependencies and model assets
 
 ### Installation
 
-```bash
-# 1. Clone and enter the project
-cd tft-coach-desktop
+Run this section once after cloning the repository:
 
-# 2. Install Python dependencies
-pip install -r requirements.txt
+```powershell
+# Clone the repository.
+git clone https://github.com/mallangmallang0619/TFT-COACH.git
+cd TFT-COACH
 
-# 3. Install Node dependencies (root + frontend)
+# Keep Python dependencies isolated from the rest of the computer.
+py -3 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+# Install the desktop and frontend dependencies.
 npm install
-cd frontend && npm install && cd ..
+npm --prefix frontend install
 
-# 4. Download template images from Riot's CDNs (champions, components, traits, items)
+# Download the patch-specific Riot templates that are not stored in Git.
 python backend/fetch_templates.py
 
-# 5. Verify everything works
+# Check the model contract, frontend build, Electron code, and Python detector.
 npm run verify
 ```
 
+If PowerShell blocks virtual-environment activation, run
+`Set-ExecutionPolicy -Scope Process Bypass` in that terminal and retry the
+activation command. This changes the policy for only the current terminal.
+
 ### Running
 
-```bash
-# Demo mode — fabricated game data, no game or CV deps needed.
-# Electron starts and owns the demo backend automatically:
-npm run dev
+In each new PowerShell window, activate the environment created during
+installation, then launch TFT Coach:
 
-# Sim mode — the REAL detector + coach running on synthesized board frames:
-npm run dev:sim
+```powershell
+.\.venv\Scripts\Activate.ps1
+npm run dev       # fabricated data; TFT does not need to be open
+npm run dev:sim   # real detector against generated test frames
+npm run dev:live  # actual TFT.exe capture
+```
 
-# Live mode — capture the actual game (TFT must be running):
-npm run dev:live
+You do **not** need to start the frontend separately for these commands. The
+root development script starts Vite, Electron, and the selected Python backend.
 
-# Browser-only development (without Electron):
-python backend/main.py        # terminal 1
-npm run dev:frontend          # terminal 2, then open localhost:5173
+For live mode:
+
+1. Start Teamfight Tactics and wait until the `TFT.exe` game window opens.
+2. From an activated `.venv`, run `npm run dev:live`.
+3. Confirm the Control Center shows **Detection engine: Ready**.
+4. Enter a game. The game status changes from **Waiting** once a valid frame is
+   captured.
+5. Minimize the Control Center and leave the transparent overlay open.
+6. Hover over the overlay when you need to click it. Move away to restore
+   click-through mode.
+7. Quit with **Quit TFT Coach** or `Ctrl+Shift+Q`.
+
+### What successful operation looks like
+
+| Signal | Expected result |
+|---|---|
+| Detection engine | `Ready` in the Control Center |
+| Game | Changes from `Waiting` after `TFT.exe` is visible |
+| Overlay | Stage, HP, gold, level, board, and advice update during play |
+| Traits | Match active rows shown on the left side of TFT |
+| Equipped items | Appear on their detected board champion during planning |
+| Diagnostics | **Run diagnostic capture** opens an annotated image |
+
+The first detection can take several seconds while templates and ONNX models
+load. Later frames use cached HUD reads and should be substantially faster.
+
+### Browser-only frontend development
+
+Use this only when working on React without the Electron windows:
+
+```powershell
+python backend/main.py  # terminal 1
+npm run dev:frontend    # terminal 2; open http://localhost:5173
 ```
 
 The desktop app chooses a free local port for its backend, prevents duplicate
@@ -344,15 +475,15 @@ and visibly different units are retained. Filtered files are moved to
 A Set 17/Hextech ONNX model is rejected at load time rather than silently
 producing bad predictions.
 
-#### Star level and equipped-item data (experimental)
+#### Star level data and equipped-item detection
 
-Star level and equipped items are separate vision tasks from champion identity:
-star level is a 3-class prediction, while equipped items are multi-label because
-a unit can hold up to three. Their optional ONNX adapters now safely abstain
-unless compatible Set 18 models and metadata exist, so this foundation does not
-change live advice yet. Both detail models run only during the planning phase;
-combat continues champion tracking without spending time on unstable star/item
-reads.
+Star level and equipped items are separate vision tasks from champion identity.
+Star level remains a 3-class ONNX prediction. Equipped items use three
+health-bar-relative icon slots and match each slot independently against the
+local Riot item/component artwork. This avoids learning every combination and
+does not require an item model or a large labeled dataset. Both detail paths run
+only during planning; combat continues champion tracking without spending time
+on unstable star/item reads.
 
 Conservative paired crop collection is enabled by default in live mode:
 
@@ -376,9 +507,10 @@ $env:TFT_COACH_COLLECT_UNIT_DETAILS="0"
 npm run dev:live
 ```
 
-Do not place these crops into the champion sorter. Star crops will be reviewed
-into `1`, `2`, or `3`; item crops use multi-label annotations rather than a
-class for every possible item combination. Open the dedicated sorters with:
+Do not place these crops into the champion sorter. Star crops are reviewed into
+`1`, `2`, or `3`. Item review is now optional and is useful as an evaluation set
+for template confidence—not as required training data. Open the dedicated
+sorters with:
 
 ```powershell
 npm run sort:stars
@@ -414,8 +546,12 @@ champion classifier. Use the command below to require the GPU explicitly:
 python scripts/train_unit_details.py --task stars --device cuda
 ```
 
-An item-model trainer and held-out production evaluation gate are still
-required before equipped items influence board strength or comp direction.
+Equipped item matches now populate each detected champion during planning and
+can influence board strength and comp direction. Matching abstains unless the
+best Riot icon clears both a confidence threshold and a lead over the runner-up.
+The reviewed local set currently measures 100% recall and 96%+ precision; two
+of its apparent false positives expose visibly equipped third items omitted
+from their manual annotations.
 
 The core Unreal HUD/board ROIs were calibrated from a live 2560×1440 Set 18
 frame. Re-run `python backend/diagnose_capture.py --dump-hexes` after changing
@@ -481,7 +617,7 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] Manual-inbox training harvester — live mode saves stable, visually novel board and bench crops to `_training/set18/_inbox` without guessing labels, while retaining a periodic duplicate for variation. The smart contact-sheet sorter files up to 20 reviewed neighbours at once, supports outlier deselection and batch undo, and never auto-labels. Raw crops remain local and reversible. Pool sorted crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
 - [x] Live unit identification — EfficientNet-B0 ONNX classifier with health-bar occupancy and temporal-stability gates
 - [~] Star-level classifier — crop collection, batch labeling, CUDA training, calibrated ONNX export, and optional inference are implemented; production data/evaluation, temporal fusion, and bench geometry remain
-- [~] Item classifier — optional multi-label ONNX inference, paired collection, and recoverable multi-item labeling are implemented; training, held-out evaluation, item localization, and temporal fusion remain
+- [x] Equipped-item detection — three health-bar-relative icon slots match Riot item/component artwork independently with confidence and ambiguity abstention; reviewed crops serve as evaluation data rather than required training data
 - [ ] Player-HP row tracking — the right-side player list reorders by standing, so the fixed HP ROI reads the wrong row late-game
 - [ ] Opponent scouting + positioning prediction (read enemy boards during combat, suggest counter-positioning)
 - [x] Set 18 data migration — current roster/traits, TFT Academy Set 18 cache, and `DA_*` identifiers

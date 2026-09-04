@@ -76,6 +76,7 @@ from unit_classifier import (
 )
 from unit_details import (
     EquippedItemClassifier,
+    EquippedItemTemplateMatcher,
     StarLevelClassifier,
     detail_prediction_fields,
 )
@@ -307,6 +308,9 @@ class Detector:
     STAGE_REFRESH_FRAMES = 6
     PLAYER_HP_REFRESH_FRAMES = 4
     LEVEL_REFRESH_FRAMES = 8
+    GOLD_REFRESH_FRAMES = 2
+    COMPONENT_REFRESH_FRAMES = 4
+    SHOP_REFRESH_FRAMES = 2
 
     def __init__(self, templates: Optional[TemplateStore] = None):
         self.templates = templates or TemplateStore()
@@ -324,6 +328,7 @@ class Detector:
         self.unit_classifier = UnitClassifier()
         self.star_level_classifier = StarLevelClassifier()
         self.equipped_item_classifier = EquippedItemClassifier()
+        self.equipped_item_matcher = EquippedItemTemplateMatcher()
         self.stabilize_unit_predictions = False
         self._unit_stabilizer = UnitPredictionStabilizer(
             slot_count=len(BOARD_HEX_GRID) + BENCH_SLOTS,
@@ -345,6 +350,19 @@ class Detector:
         self._level_cache_age = 10**6
         self._hud_layout_cache = "unknown"
         self._previous_phase = GamePhase.NOT_IN_GAME
+
+        # Gold/shop OCR and component template matching are much more costly
+        # than unit inference. At 2 FPS, running all three every frame kept the
+        # capture loop permanently busy. Refresh them at UI-appropriate rates.
+        self._gold_cache = -1
+        self._gold_cache_age = 10**6
+        self._components_cache: list[DetectedComponent] = []
+        self._components_cache_age = 10**6
+        self._shop_cache: tuple[list[Optional[str]], list[Optional[str]]] = (
+            [None] * 5,
+            [None] * 5,
+        )
+        self._shop_cache_age = 10**6
 
         # Held completed-item scan cache (change-gated — see
         # _detect_held_items).
@@ -389,6 +407,9 @@ class Detector:
             self._stage_cache_age = 10**6
             self._player_hp_cache_age = 10**6
             self._level_cache_age = 10**6
+            self._gold_cache_age = 10**6
+            self._components_cache_age = 10**6
+            self._shop_cache_age = 10**6
             self._hud_layout_cache = "unknown"
             self._unit_stabilizer.reset()
             state.detection_ms = (time.time() - t_start) * 1000
@@ -415,11 +436,17 @@ class Detector:
                     self._lobby_cache = lobby
                 self._lobby_age = 0
         state.lobby_hp = self._lobby_cache
-        state.gold = self._ocr_gold(frame)
+        (
+            state.gold,
+            state.held_components,
+            cached_shop,
+        ) = self._read_cached_live_ui(
+            frame,
+            phase_changed,
+            include_shop=state.phase in (GamePhase.PLANNING, GamePhase.COMBAT),
+        )
 
-        # 3. Item components on bench, plus completed/artifact/radiant
-        # items the game hands out that aren't components at all.
-        state.held_components = self._detect_components(frame)
+        # 3. Item components on bench, plus completed/artifact/radiant items.
         state.component_ids = [c.component_id for c in state.held_components]
         state.held_items = self._detect_held_items(frame)
 
@@ -460,9 +487,7 @@ class Detector:
             # Shop card names — feeds the purchase-tracking roster, which
             # is the reliable source of "what units does the player own"
             # while board/bench unit ID isn't viable on live frames.
-            state.shop_units, state.shop_wisps = self._detect_shop(
-                frame, include_wisps=True
-            )
+            state.shop_units, state.shop_wisps = cached_shop
 
         # 5. Augment options (only during augment selection)
         if state.phase == GamePhase.AUGMENT_SELECT:
@@ -504,6 +529,42 @@ class Detector:
 
         stage, stage_confidence = self._stage_cache
         return stage, stage_confidence, self._player_hp_cache, self._level_cache
+
+    def _read_cached_live_ui(
+        self,
+        frame: np.ndarray,
+        phase_changed: bool = False,
+        *,
+        include_shop: bool = True,
+    ) -> tuple[
+        int,
+        list[DetectedComponent],
+        tuple[list[Optional[str]], list[Optional[str]]],
+    ]:
+        """Read expensive economy UI at useful rates rather than every frame."""
+        self._gold_cache_age += 1
+        self._components_cache_age += 1
+        if include_shop:
+            self._shop_cache_age += 1
+
+        if phase_changed or self._gold_cache_age >= self.GOLD_REFRESH_FRAMES:
+            gold = self._ocr_gold(frame)
+            if gold >= 0:
+                self._gold_cache = gold
+            self._gold_cache_age = 0
+        if (
+            phase_changed
+            or self._components_cache_age >= self.COMPONENT_REFRESH_FRAMES
+        ):
+            self._components_cache = self._detect_components(frame)
+            self._components_cache_age = 0
+        if include_shop and (
+            phase_changed or self._shop_cache_age >= self.SHOP_REFRESH_FRAMES
+        ):
+            self._shop_cache = self._detect_shop(frame, include_wisps=True)
+            self._shop_cache_age = 0
+
+        return self._gold_cache, self._components_cache, self._shop_cache
 
     # ── Phase Detection ───────────────────────────────────────────────────────
 
@@ -1866,12 +1927,14 @@ class Detector:
         crops: list[Optional[np.ndarray]] = []
 
         board_crops: list[Optional[np.ndarray]] = [None] * len(BOARD_HEX_GRID)
+        board_samples = {}
         board_crop_mode = getattr(
             self.unit_classifier, "board_crop_mode", LEGACY_BOARD_CROP_MODE
         )
         if board_crop_mode == BOARD_CROP_MODE:
             for sample in extract_board_unit_crops(frame, self.rois):
                 board_crops[sample.index] = sample.crop
+                board_samples[sample.index] = sample
         else:
             bx, by, bw, bh = self.rois.board.to_pixels(w, h)
             board_region = frame[by:by + bh, bx:bx + bw]
@@ -1949,13 +2012,23 @@ class Detector:
 
         star_classifier = getattr(self, "star_level_classifier", None)
         item_classifier = getattr(self, "equipped_item_classifier", None)
+        item_matcher = getattr(self, "equipped_item_matcher", None)
+        template_store = getattr(self, "templates", None)
+        item_templates = getattr(template_store, "item_templates", {})
+        component_templates = getattr(template_store, "component_templates", {})
         star_model_available = bool(
             include_details
             and star_classifier is not None
             and star_classifier.available
         )
+        item_template_available = bool(
+            include_details
+            and item_matcher is not None
+            and (item_templates or component_templates)
+        )
         item_model_available = bool(
             include_details
+            and not item_template_available
             and item_classifier is not None
             and item_classifier.available
         )
@@ -1964,30 +2037,51 @@ class Detector:
             if star_model_available
             else [(None, 0.0)] * len(crops)
         )
-        item_results = (
-            item_classifier.classify_batch(crops)
-            if item_model_available
-            else [[] for _crop in crops]
-        )
+        if item_template_available:
+            item_results = item_matcher.classify_batch(
+                crops,
+                item_templates=item_templates,
+                component_templates=component_templates,
+            )
+            item_source = "template"
+        elif item_model_available:
+            item_results = item_classifier.classify_batch(crops)
+            item_source = "classifier"
+        else:
+            item_results = [[] for _crop in crops]
+            item_source = "unknown"
 
         def detail_fields(index: int) -> dict:
             return detail_prediction_fields(
                 star_results[index],
                 item_results[index],
                 star_model_available=star_model_available,
-                item_model_available=item_model_available,
+                item_model_available=(
+                    item_template_available or item_model_available
+                ),
+                item_detection_source=item_source,
             )
 
-        board: list[DetectedChampion] = []
+        board_by_hex: dict[int, DetectedChampion] = {}
         for index, (hex_pos, (name, conf)) in enumerate(zip(BOARD_HEX_GRID, results)):
             if name is not None:
-                board.append(DetectedChampion(
+                target_index = index
+                if index in board_samples:
+                    target_index = board_samples[index].project_for_champion(
+                        name, w, h, self.rois
+                    ).index
+                    hex_pos = BOARD_HEX_GRID[target_index]
+                candidate = DetectedChampion(
                     name=name,
                     board_row=hex_pos.row,
                     board_col=hex_pos.col,
                     confidence=conf,
                     **detail_fields(index),
-                ))
+                )
+                previous = board_by_hex.get(target_index)
+                if previous is None or candidate.confidence > previous.confidence:
+                    board_by_hex[target_index] = candidate
+        board = [board_by_hex[index] for index in sorted(board_by_hex)]
         bench: list[DetectedChampion] = []
         board_slots = len(BOARD_HEX_GRID)
         for offset, (name, conf) in enumerate(results[board_slots:]):

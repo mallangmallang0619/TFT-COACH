@@ -175,6 +175,11 @@ class TFTCoachServer:
         # Load templates
         logger.info("Loading template images...")
         self.templates.load()
+        logger.info(
+            "Equipped-item template matching active (%d items, %d components)",
+            len(self.templates.item_templates),
+            len(self.templates.component_templates),
+        )
         crop_count, champion_count, ready_count = training_stats()
         self._initial_reviewed_crop_count = (
             self.harvester.manual_inbox_count()

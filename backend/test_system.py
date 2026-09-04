@@ -1947,6 +1947,65 @@ def test_board_health_bar_crop_geometry():
     return "board crop + bench occupancy gate prevent board/bench spillover"
 
 
+def test_tall_champion_board_projection():
+    """Kayle's tall model projects from its bar to the actual bottom hex."""
+    import numpy as np
+    from board_crops import extract_board_unit_crops
+    from config import BOARD_HEX_GRID, GameROIs
+
+    height, width = 1440, 2560
+    frame = np.full((height, width, 3), 52, dtype=np.uint8)
+    rois = GameROIs()
+    bx, by, bw, bh = rois.board.to_pixels(width, height)
+    target = next(
+        position for position in BOARD_HEX_GRID
+        if position.row == 3 and position.col == 1
+    )
+    foot_x = bx + int(target.cx * bw)
+    foot_y = by + int(target.cy * bh)
+    bar_width = 86
+    # Measured on diagnose_20260904_020107.png: Kayle's health bar is about
+    # 2.6 bar-widths above her hex anchor. The generic 1.55 projection puts
+    # this exact placement on row 2.
+    bar_y = foot_y - int(round(bar_width * 2.62))
+    bar_x = foot_x - bar_width // 2
+    frame[bar_y:bar_y + 7, bar_x:bar_x + bar_width] = (25, 225, 65)
+
+    generic = extract_board_unit_crops(frame, rois)
+    assert len(generic) == 1 and generic[0].row == 2
+    corrected = generic[0].project_for_champion("Kayle", width, height, rois)
+    assert (corrected.row, corrected.col) == (3, 1)
+
+    # Exercise the live classifier path too: the preliminary crop remains in
+    # input slot r2c1, but the emitted champion must use the corrected anchor.
+    from detector import Detector
+
+    class KayleClassifier:
+        available = True
+        board_crop_mode = "health_bar_v1"
+        board_min_confidence = 0.10
+        min_confidence = 0.60
+
+        @staticmethod
+        def classify_batch(crops, min_confidences=None):
+            return [
+                ("Kayle", 0.91) if crop is not None else (None, 0.0)
+                for crop in crops
+            ]
+
+    detector = object.__new__(Detector)
+    detector.rois = rois
+    detector.unit_classifier = KayleClassifier()
+    detector.star_level_classifier = None
+    detector.equipped_item_classifier = None
+    detector.stabilize_unit_predictions = False
+    board, bench = detector._detect_units_cnn(frame)
+    assert [(unit.board_row, unit.board_col) for unit in board] == [(3, 1)]
+    assert bench == []
+
+    return "Kayle height-aware health-bar projection maps to bottom row"
+
+
 def test_set18_board_hex_alignment():
     """Grid centers follow the visible UE5 hexes in a normal-game frame."""
     from config import BOARD_HEX_GRID, GameROIs
@@ -1979,7 +2038,7 @@ def test_set18_board_hex_alignment():
 
 
 def test_slow_hud_refresh_schedule():
-    """Slow-changing HUD OCR is cached while gold remains live each frame."""
+    """Slow-changing HUD OCR is cached between scheduled refreshes."""
     from types import SimpleNamespace
     from detector import Detector
     from config import GameROIs
@@ -2030,6 +2089,56 @@ def test_slow_hud_refresh_schedule():
     assert ly < int(0.84 * 1440) and gy < int(0.84 * 1440)
 
     return "stage/HP/level caching and Set 18 value ROIs OK"
+
+
+def test_live_ui_refresh_schedule():
+    """Repeated frames reuse expensive live UI reads until their deadline."""
+    from types import SimpleNamespace
+    from detector import Detector
+
+    detector = object.__new__(Detector)
+    detector._gold_cache = -1
+    detector._gold_cache_age = 10**6
+    detector._components_cache = []
+    detector._components_cache_age = 10**6
+    detector._shop_cache = ([None] * 5, [None] * 5)
+    detector._shop_cache_age = 10**6
+    calls = SimpleNamespace(gold=0, components=0, shop=0)
+
+    def gold(_frame):
+        calls.gold += 1
+        return 20 + calls.gold
+
+    def components(_frame):
+        calls.components += 1
+        return [f"component-{calls.components}"]
+
+    def shop(_frame, *, include_wisps=False):
+        calls.shop += 1
+        result = ([f"unit-{calls.shop}"] * 5, [None] * 5)
+        return result if include_wisps else result[0]
+
+    detector._ocr_gold = gold
+    detector._detect_components = components
+    detector._detect_shop = shop
+
+    first = detector._read_cached_live_ui(None, phase_changed=False)
+    second = detector._read_cached_live_ui(None, phase_changed=False)
+    assert first == second
+    assert (calls.gold, calls.components, calls.shop) == (1, 1, 1)
+
+    # Gold and shop update at 1 Hz at the default 2 FPS; component matching
+    # is slower-changing and runs every two seconds.
+    detector._read_cached_live_ui(None, phase_changed=False)
+    assert (calls.gold, calls.components, calls.shop) == (2, 1, 2)
+    detector._read_cached_live_ui(None, phase_changed=False)
+    detector._read_cached_live_ui(None, phase_changed=False)
+    assert (calls.gold, calls.components, calls.shop) == (3, 2, 3)
+
+    detector._read_cached_live_ui(None, phase_changed=True)
+    assert (calls.gold, calls.components, calls.shop) == (4, 3, 4)
+
+    return "gold/shop/component scans are cached and phase-aware"
 
 
 def test_set18_dynamic_hud_and_trait_panel():
@@ -4050,8 +4159,10 @@ def main():
     test("Bench harvester", test_bench_harvester)
     test("Bench crop geometry", test_bench_crop_geometry)
     test("Board health-bar crop geometry", test_board_health_bar_crop_geometry)
+    test("Tall champion board projection", test_tall_champion_board_projection)
     test("Set 18 board hex alignment", test_set18_board_hex_alignment)
     test("Slow HUD refresh schedule", test_slow_hud_refresh_schedule)
+    test("Live UI refresh schedule", test_live_ui_refresh_schedule)
     test("Set 18 dynamic HUD + traits", test_set18_dynamic_hud_and_trait_panel)
     test("Set 18 standard trait counts", test_set18_standard_trait_panel_counts)
     test("Bench harvester quality invariants", test_bench_harvester_quality_invariants)
