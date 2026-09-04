@@ -149,6 +149,33 @@ def select_cdragon_item(
     return max(entries, key=score)
 
 
+def select_item_for_download(
+    name: str,
+    *,
+    by_norm: dict[str, list[dict]],
+    by_api: dict[str, dict],
+    preferred_api: str = "",
+    current_set: str,
+    is_craftable: bool,
+) -> Optional[dict]:
+    """Resolve an item icon, preferring its stable live API identifier.
+
+    Special-item display names are not stable across data sources (for
+    example ``Mogul'sMail`` versus ``Mogul's Mail``).  The API identifier is
+    authoritative; normalized display-name matching remains the fallback for
+    ordinary craftable items and older cache formats.
+    """
+    if preferred_api:
+        entry = by_api.get(preferred_api)
+        if entry is not None:
+            return entry
+    return select_cdragon_item(
+        by_norm.get(normalize(name), []),
+        current_set=current_set,
+        is_craftable=is_craftable,
+    )
+
+
 # ── Index builders ────────────────────────────────────────────────────────────
 
 def build_item_index(version: str) -> dict[str, dict]:
@@ -422,6 +449,7 @@ def fetch_items(
     every radiant item, artifact, emblem, and comp-layout special item."""
     from game_data import (
         ITEM_RECIPES,
+        LIVE_ITEM_NAMES_BY_API,
         LIVE_ITEM_TIERS,
         META_COMPS,
         find_item_name_by_api,
@@ -442,6 +470,10 @@ def fetch_items(
             by_api[item["apiName"]] = item
     current_set = detect_current_set(cdragon)
     craftable_names = {normalize(recipe["name"]) for recipe in ITEM_RECIPES}
+    live_api_by_normalized_name: dict[str, str] = {}
+    for api_name, display_name in LIVE_ITEM_NAMES_BY_API.items():
+        if api_name and display_name:
+            live_api_by_normalized_name.setdefault(normalize(display_name), api_name)
 
     # Comp pages contain Set-specific granted items (for example Psionic
     # mods) that are absent from the generic tier-list endpoint.
@@ -477,13 +509,18 @@ def fetch_items(
             ok += 1
             continue
         normalized = normalize(name)
-        entry = select_cdragon_item(
-            by_norm.get(normalized, []),
+        preferred_api = (
+            live_api_by_normalized_name.get(normalized)
+            or detail_api_by_name.get(name, "")
+        )
+        entry = select_item_for_download(
+            name,
+            by_norm=by_norm,
+            by_api=by_api,
+            preferred_api=preferred_api,
             current_set=current_set,
             is_craftable=normalized in craftable_names,
         )
-        if entry is None:
-            entry = by_api.get(detail_api_by_name.get(name, ""))
         icon = entry.get("icon") if entry else None
         if not icon:
             logger.warning(f"  ✗ {name}: no item icon in CDragon items")

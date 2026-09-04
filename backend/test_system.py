@@ -217,6 +217,37 @@ def test_trait_panel_authority():
     return "left-panel active rows authoritative; board fallback suppressed"
 
 
+def test_trait_panel_rejects_impossible_badge_counts():
+    """A stray OCR digit cannot turn an inactive panel row into an active trait."""
+    import numpy as np
+    import detector as detector_module
+    from detector import Detector, TemplateStore
+
+    frame = np.zeros((1440, 2560, 3), dtype=np.uint8)
+    # Reproduce the latest diagnosis: page OCR sees Inferno and its real 1/2
+    # progress, while the narrow badge re-read mistakes nearby pixels for 9.
+    fake_data = {
+        "text": ["9", "Inferno", "9/2"],
+        "left": [308, 384, 308],
+        "top": [560, 560, 610],
+        "width": [25, 120, 55],
+        "height": [32, 32, 28],
+    }
+    original_image_to_data = detector_module.pytesseract.image_to_data
+    detector_module.pytesseract.image_to_data = lambda *_a, **_k: fake_data
+    try:
+        detector = Detector(TemplateStore())
+        detector._ocr_region = lambda *_a, **_k: "9"
+        rows = detector._read_trait_panel_text(frame)
+    finally:
+        detector_module.pytesseract.image_to_data = original_image_to_data
+
+    assert rows and rows[0][:2] == ("Inferno", 1), rows
+    synergies = detector._synergies_from_trait_panel(frame)
+    assert not any(entry.name == "Inferno" for entry in synergies), synergies
+    return "impossible badge OCR cannot activate an inactive trait"
+
+
 def test_comp_detection():
     """detect_comp_direction picks the right comp for a partial board."""
     from game_state import DetectedChampion
@@ -457,6 +488,52 @@ def test_tftacademy_cache_roundtrip():
     game_data.META_COMPS_BY_CARRY.update(snapshot_lookup)
 
     return "cache write+read OK, in-place apply OK"
+
+
+def test_tftacademy_same_patch_content_refresh():
+    """Tier changes must refresh even when patch name and comp count match."""
+    import asyncio
+    import tempfile
+    from pathlib import Path
+    import game_data
+    import tftacademy_live
+
+    live_html = """
+      <h1>Patch 18.1D</h1><h2>B-Tier</h2>
+      <a href="/tierlist/comps/set-18-fae-tristana-copy"></a>
+    """
+    old_path = tftacademy_live.CACHE_PATH
+    old_fetch = tftacademy_live._fetch_html_blocking
+    old_attempt = tftacademy_live._last_refresh_attempt_at
+    old_comps = list(game_data.META_COMPS)
+    old_lookup = dict(game_data.META_COMPS_BY_CARRY)
+    with tempfile.TemporaryDirectory() as tmp:
+        tftacademy_live.CACHE_PATH = Path(tmp) / "cache.json"
+        tftacademy_live.save_cache({
+            "patch": "18.1d",
+            "augments": {"entries": [{"name": "Keep Me"}]},
+            "comps": [{
+                "name": "Fae Tristana Copy", "tier": "A",
+                "slug": "set-18-fae-tristana-copy",
+                "carry": "Tristana", "match_traits": ["Fae"],
+            }],
+        })
+        tftacademy_live._fetch_html_blocking = lambda _url: live_html
+        tftacademy_live._last_refresh_attempt_at = 0.0
+        try:
+            result = asyncio.run(tftacademy_live.refresh_async(debounce_seconds=0))
+            cache = tftacademy_live.load_cache()
+            assert result["refreshed"] is True, result
+            assert cache["comps"][0]["tier"] == "B", cache["comps"]
+            assert cache["augments"]["entries"][0]["name"] == "Keep Me"
+        finally:
+            tftacademy_live.CACHE_PATH = old_path
+            tftacademy_live._fetch_html_blocking = old_fetch
+            tftacademy_live._last_refresh_attempt_at = old_attempt
+            tftacademy_live.apply_to_game_data(old_comps)
+            game_data.META_COMPS_BY_CARRY.clear()
+            game_data.META_COMPS_BY_CARRY.update(old_lookup)
+    return "same-patch tier edits refresh the live comp catalog"
 
 
 def test_augments_parser():
@@ -3458,7 +3535,16 @@ def test_unit_prediction_stabilizer():
     assert names(tracker.update(
         [("Hecarim", 0.26), ("Kayle", 0.26)], min_confidences=floors
     )) == ["Hecarim", None]
-    return "confirmation, hysteresis, empty clearing, combat freeze OK"
+
+    # A bench occupancy check is stronger than a low-confidence classifier
+    # result. Once movement leaves a slot visibly empty, clear its old unit
+    # immediately instead of preserving it forever as an uncertain read.
+    cleared = tracker.update(
+        [(None, 0.0), (None, 0.0)],
+        force_empty_mask=[True, False],
+    )
+    assert names(cleared) == [None, None]
+    return "confirmation, hysteresis, definitive empty clearing, combat freeze OK"
 
 
 def test_shop_buy_calls():
@@ -3932,6 +4018,32 @@ def test_set_autodetect():
     return "slug-derived set OK, CDragon-derived set OK, fallbacks OK"
 
 
+def test_special_item_icon_resolution():
+    """Special items use stable API IDs when display names drift."""
+    from fetch_templates import select_item_for_download
+
+    stale = {
+        "apiName": "TFT7_Item_Artifact_MogulsMail",
+        "name": "Mogul's Mail",
+        "icon": "/Set7/MogulsMail.tex",
+    }
+    live = {
+        "apiName": "DA_Artifact_MogulsMail",
+        "name": "Mogul's Mail",
+        "icon": "/Items/Artifacts/MogulsMail.tex",
+    }
+    selected = select_item_for_download(
+        "Mogul'sMail",
+        by_norm={"mogulsmail": [stale, live]},
+        by_api={stale["apiName"]: stale, live["apiName"]: live},
+        preferred_api="DA_Artifact_MogulsMail",
+        current_set="18",
+        is_craftable=False,
+    )
+    assert selected is live
+    return "artifact display-name drift resolves through stable API ID"
+
+
 def test_set18_roster_and_lux():
     """Enchanted Wilds roster is complete and Lux forms share one ML label."""
     from collections import Counter
@@ -4131,14 +4243,17 @@ def main():
     test("Coach edge cases", test_coach_edge_cases)
     test("Active synergies", test_active_synergies)
     test("Trait panel authority", test_trait_panel_authority)
+    test("Trait count sanity", test_trait_panel_rejects_impossible_badge_counts)
     test("Comp detection", test_comp_detection)
     test("Coach comp direction", test_coach_comp_direction)
     test("TFT Academy enrichment", test_tftacademy_enrichment)
     test("TFT Academy parser", test_tftacademy_parser)
     test("TFT Academy cache roundtrip", test_tftacademy_cache_roundtrip)
+    test("TFT Academy same-patch refresh", test_tftacademy_same_patch_content_refresh)
     test("Augments parser", test_augments_parser)
     test("Augments apply + fuzzy lookup", test_augments_apply_and_fuzzy)
     test("Set auto-detection", test_set_autodetect)
+    test("Special item icon resolution", test_special_item_icon_resolution)
     test("Set 18 roster + Lux", test_set18_roster_and_lux)
     test("Context comp scoring", test_context_comp_scoring)
     test(

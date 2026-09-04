@@ -1691,9 +1691,15 @@ class Detector:
                 if match:
                     badge_count = int(match.group(1))
                     break
-            if badge_count is not None:
+            if (
+                badge_count is not None
+                and 1 <= badge_count <= max(breakpoints)
+            ):
                 count = badge_count
             else:
+                # An impossible page-level badge is equivalent to a missed
+                # badge; continue to the lower "current / breakpoint" row.
+                badge_count = None
                 count_group = next(
                     (
                         candidate
@@ -1736,7 +1742,29 @@ class Detector:
                 badge_text = self._ocr_region(badge, whitelist="0123456789")
                 badge_match = re.search(r"([1-9])", badge_text)
                 if badge_match:
-                    count = int(badge_match.group(1))
+                    badge_count = int(badge_match.group(1))
+                    # The latest live diagnosis read an inactive Inferno 1/2
+                    # row as 9, falsely activating it. Counts above a trait's
+                    # highest breakpoint are OCR contamination, so retain the
+                    # page-level progress count instead.
+                    if 1 <= badge_count <= max(breakpoints):
+                        count = badge_count
+                    else:
+                        logger.debug(
+                            "Ignoring impossible %s count %s (breakpoints=%s)",
+                            name,
+                            badge_count,
+                            breakpoints,
+                        )
+
+            if count > max(breakpoints):
+                logger.debug(
+                    "Ignoring impossible final %s count %s (breakpoints=%s)",
+                    name,
+                    count,
+                    breakpoints,
+                )
+                count = max(1, breakpoints[0] - 1)
 
             seen.add(name)
             resolved.append((name, count, title_y / h))
@@ -1960,6 +1988,7 @@ class Detector:
             slot_w // 3,
             max(0, int(round(slot_w * BENCH_CROP_HORIZONTAL_INSET_RATIO))),
         )
+        bench_crop_present: list[bool] = []
         for slot in range(9):
             crop = (
                 None
@@ -1978,6 +2007,7 @@ class Detector:
                 crop
             ):
                 crop = None
+            bench_crop_present.append(crop is not None)
             crops.append(crop)
 
         board_min_confidence = float(getattr(
@@ -2008,6 +2038,10 @@ class Detector:
                     if freeze_board else None
                 ),
                 min_confidences=confidence_floors,
+                force_empty_mask=(
+                    [False] * board_slots
+                    + [not present for present in bench_crop_present]
+                ),
             )
 
         star_classifier = getattr(self, "star_level_classifier", None)

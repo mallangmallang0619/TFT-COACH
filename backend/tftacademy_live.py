@@ -1070,9 +1070,16 @@ async def refresh_async(
         cached_count = len(cache.get("comps") or [])
 
         same_patch = live_patch and cached_patch and live_patch == cached_patch
-        same_size  = len(scraped) == cached_count
+        cached_listing = [
+            (entry.get("slug"), entry.get("tier"))
+            for entry in cache.get("comps") or []
+        ]
+        live_listing = [
+            (entry.get("slug"), entry.get("tier")) for entry in scraped
+        ]
+        same_listing = live_listing == cached_listing
 
-        if same_patch and same_size and not force:
+        if same_patch and same_listing and not force:
             # Nothing meaningful changed — touch the timestamp and bail.
             cache["last_checked_at"] = datetime.datetime.utcnow().isoformat() + "Z"
             save_cache(cache)
@@ -1091,13 +1098,16 @@ async def refresh_async(
         )
         apply_to_game_data(merged)
 
-        new_cache = {
+        # Listing changes must not erase independently refreshed augment/item
+        # data stored in the same cache file.
+        new_cache = dict(cache)
+        new_cache.update({
             "patch": live_patch or cached_patch,
             "synced_at": datetime.datetime.utcnow().isoformat() + "Z",
             "last_checked_at": datetime.datetime.utcnow().isoformat() + "Z",
             "source_url": COMPS_URL,
             "comps": merged,
-        }
+        })
         save_cache(new_cache)
         _last_successful_patch = live_patch
 
