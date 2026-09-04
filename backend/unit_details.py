@@ -137,7 +137,7 @@ def _health_bar_candidates(crop: np.ndarray) -> list[tuple[int, int, int, int]]:
     for x, y, bar_width, bar_height, area in stats[1:count]:
         if not (
             bar_width >= width * 0.22
-            and 2 <= bar_height <= max(3, height * 0.12)
+            and 2 <= bar_height <= max(3, height * 0.14)
             and y < height * 0.65
             and bar_width / max(1, bar_height) >= 4.0
             and area >= bar_width * bar_height * 0.30
@@ -168,10 +168,14 @@ def extract_unit_detail_regions(crop: Optional[np.ndarray]) -> Optional[UnitDeta
     star_y1 = max(0, int(round(y - bar_width * 0.08)))
     star_y2 = min(height, int(round(y + bar_height + bar_width * 0.16)))
 
-    item_x1 = max(0, x)
-    item_x2 = min(width, x + bar_width)
-    item_y1 = max(0, int(round(y - bar_width * 0.35)))
-    item_y2 = min(height, int(round(y + bar_height + bar_width * 0.20)))
+    # Equipped icons sit below the health bar and may begin left of its green
+    # fill. The earlier region spent most of its height above the bar and cut
+    # the icons off after their first few pixels. Retain the rank frame at the
+    # left plus a full icon-height below the bar.
+    item_x1 = max(0, int(round(x - bar_width * 0.35)))
+    item_x2 = min(width, int(round(x + bar_width * 1.08)))
+    item_y1 = max(0, int(round(y - bar_width * 0.10)))
+    item_y2 = min(height, int(round(y + bar_height + bar_width * 0.60)))
     if star_x2 <= star_x1 or star_y2 <= star_y1 or item_y2 <= item_y1:
         return None
     return UnitDetailRegions(
