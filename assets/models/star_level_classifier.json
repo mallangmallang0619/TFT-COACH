@@ -1,0 +1,36 @@
+{
+  "architecture": "mobilenet_v3_small",
+  "family": "mobilenet_v3",
+  "size": "small",
+  "task": "star_level",
+  "set_number": 18,
+  "set_name": "Enchanted Wilds",
+  "engine": "unreal",
+  "labels": [
+    "1",
+    "2",
+    "3"
+  ],
+  "input_size": 96,
+  "resize_mode": "letterbox",
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "color": "rgb",
+  "min_confidence": 0.7,
+  "val_accuracy": 1.0,
+  "accepted_val_precision": 1.0,
+  "accepted_val_coverage": 1.0,
+  "num_train_crops": 443,
+  "num_validation_crops": 70,
+  "validation_split": "capture_burst_aware",
+  "dataset_fingerprint": "5e46f8e976847a2134fcd15a1a1047d7e496c23aa8e74bf62d6a2444db03e423",
+  "trained_at": "2026-09-04T08:21:01+00:00"
+}
