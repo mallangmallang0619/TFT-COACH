@@ -4,11 +4,18 @@ A real-time Teamfight Tactics coaching overlay that captures your game screen, d
 
 ## Architecture
 
-Uses an Electron shell that hosts a React frontend. The React frontend connects to the Python computer-vision pipeline over a WebSocket.
+Electron owns both the normal Control Center and the transparent React overlay.
+It starts the Python computer-vision backend on an available local port and
+passes that WebSocket address to both windows through the preload bridge.
 
 ```
-TFT client ──screen capture──► Python backend ──ws://localhost:8765──► React UI (Electron overlay)
-                 (mss)          detect + coach
+TFT.exe ──direct/fallback capture──► Python detector + coach
+                                           │
+                              dynamic localhost WebSocket
+                                           │
+                          Electron-managed React application
+                               ├── Control Center
+                               └── in-game overlay
 ```
 
 ## Components
@@ -37,19 +44,32 @@ TFT client ──screen capture──► Python backend ──ws://localhost:876
 
 ### Electron Overlay (`electron/`)
 
- File          | Purpose                                           
----------------|---------------------------------------------------
- `main.js`     | Creates transparent, always-on-top overlay window 
- `preload.js`  | Exposes IPC bridge to renderer                    
+ File                      | Purpose
+---------------------------|---------------------------------------------------
+ `main.js`                 | Owns Control Center, overlay, IPC, hotkeys, and lifecycle
+ `backendManager.js`       | Starts, monitors, restarts, and stops the Python backend
+ `supportTools.js`         | Runs diagnostics and creates privacy-scoped support ZIPs
+ `applicationLifecycle.js` | Implements acknowledged, clean application shutdown
+ `preload.js`              | Exposes the restricted native API to React
 
 The repository currently provides a developer-run Electron overlay rather than
 a self-contained public installer. See the
 [desktop application roadmap](docs/APPLICATION_ROADMAP.md) for the packaging,
-backend lifecycle, installer, and release plan.
+backend lifecycle, installer, and release plan. The prioritized
+[improvement plan](docs/IMPROVEMENT_PLAN.md) covers product reliability,
+packaging, detection evaluation, and future game-state features.
 
 ### React Frontend (`frontend/`)
 
-Adapted from the prototype — receives game state via WebSocket and renders coaching UI.
+The frontend receives game state over WebSocket and selects its window-specific
+view from the launch URL:
+
+ File                   | Purpose
+------------------------|------------------------------------------------------
+ `src/App.jsx`          | Transparent in-game coaching overlay
+ `src/ControlCenter.jsx`| Normal out-of-game management and support interface
+ `src/useCoachSocket.js`| Shared live backend connection and command hook
+ `src/backendConnection.js` | Validates Electron-provided local WebSocket details
 
 ## Setup
 
@@ -109,6 +129,20 @@ outside the game to show or hide the overlay, restart detection, run an annotate
 diagnostic capture, open logs or screenshots, and export a support ZIP containing
 recent diagnostic images, logs, and model metadata. Closing the Control Center
 minimizes it to the taskbar; use **Quit TFT Coach** to stop the entire application.
+
+### Release verification and packaging
+
+```bash
+npm run verify       # Node tests + model contract + frontend build + Python suite
+npm run check:model  # Validate production model metadata only
+npm run package      # Build an NSIS installer only when standalone inputs exist
+```
+
+Standalone packaging is intentionally guarded. Until the PyInstaller backend
+and bundled Tesseract runtime are present, `npm run package` exits with the
+missing inputs instead of producing an Electron shell that cannot detect TFT.
+Follow [Milestones 2–3 of the improvement plan](docs/IMPROVEMENT_PLAN.md) to
+complete the first installable Windows build.
 
 The overlay is click-through ("ghost mode") by default so game clicks pass
 underneath — **hover over the panel to interact with it**; move the cursor
@@ -310,6 +344,42 @@ and visibly different units are retained. Filtered files are moved to
 A Set 17/Hextech ONNX model is rejected at load time rather than silently
 producing bad predictions.
 
+#### Star level and equipped-item data (experimental)
+
+Star level and equipped items are separate vision tasks from champion identity:
+star level is a 3-class prediction, while equipped items are multi-label because
+a unit can hold up to three. Their optional ONNX adapters now safely abstain
+unless compatible Set 18 models and metadata exist, so this foundation does not
+change live advice yet. Both detail models run only during the planning phase;
+combat continues champion tracking without spending time on unstable star/item
+reads.
+
+Enable conservative paired crop collection for a testing session in PowerShell:
+
+```powershell
+$env:TFT_COACH_COLLECT_UNIT_DETAILS="1"
+npm run dev:live
+```
+
+Accepted board-unit crops produce matching files under
+`backend/_training/set18_details/stars/_inbox/` and
+`backend/_training/set18_details/items/_inbox/`. The shared filename preserves
+which star and item regions came from the same unit. Each board position has a
+30-second cooldown, and crops without a trustworthy health-bar anchor are
+skipped. Collection is also restricted to planning rounds. This intentionally
+excludes combat animation and most unanchored bench crops rather than saving
+badly aligned samples. Unset the variable to return to normal:
+
+```powershell
+Remove-Item Env:TFT_COACH_COLLECT_UNIT_DETAILS
+```
+
+Do not place these crops into the champion sorter. Star crops will be reviewed
+into `1`, `2`, or `3`; item crops require multi-label annotations rather than a
+single folder name. A labeling/training command and held-out evaluation gate are
+the next step before either model is allowed to influence board strength or
+comp direction.
+
 The core Unreal HUD/board ROIs were calibrated from a live 2560×1440 Set 18
 frame. Re-run `python backend/diagnose_capture.py --dump-hexes` after changing
 resolution or in-game UI scale.
@@ -373,8 +443,8 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] Purchase-tracking roster — shop diffs between frames reveal buys; owned units (with 3-copy star-ups) feed comp direction as held units
 - [x] Manual-inbox training harvester — live mode saves stable, visually novel board and bench crops to `_training/set18/_inbox` without guessing labels, while retaining a periodic duplicate for variation. The smart contact-sheet sorter files up to 20 reviewed neighbours at once, supports outlier deselection and batch undo, and never auto-labels. Raw crops remain local and reversible. Pool sorted crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
 - [x] Live unit identification — EfficientNet-B0 ONNX classifier with health-bar occupancy and temporal-stability gates
-- [ ] Star-level classifier — detect whether each board and bench unit is 1-star, 2-star, or 3-star from live crops
-- [ ] Item classifier — detect equipped components, completed items, and artifacts on units from live board crops
+- [~] Star-level classifier — optional ONNX inference contract and conservative board-crop collection are implemented; labeling, training, held-out evaluation, temporal fusion, and bench geometry remain
+- [~] Item classifier — optional multi-label ONNX inference contract and paired board-crop collection are implemented; labeling UI, training, held-out evaluation, item localization, and temporal fusion remain
 - [ ] Player-HP row tracking — the right-side player list reorders by standing, so the fixed HP ROI reads the wrong row late-game
 - [ ] Opponent scouting + positioning prediction (read enemy boards during combat, suggest counter-positioning)
 - [x] Set 18 data migration — current roster/traits, TFT Academy Set 18 cache, and `DA_*` identifiers

@@ -29,6 +29,7 @@ from config import (
 )
 from board_crops import extract_board_unit_crops
 from game_data import ACTIVE_SET_NUMBER, canonical_training_label
+from unit_details import UnitDetailCollector
 
 logger = logging.getLogger(__name__)
 
@@ -231,6 +232,7 @@ class BenchHarvester:
         manual_novelty_refresh_seconds: float = _MANUAL_NOVELTY_REFRESH_SECONDS,
         manual_novelty_memory: int = _MANUAL_NOVELTY_MEMORY,
         manual_clock: Callable[[], float] = time.monotonic,
+        detail_collector: Optional[UnitDetailCollector] = None,
     ):
         self.out_dir = out_dir
         self.rois = GameROIs()
@@ -256,6 +258,7 @@ class BenchHarvester:
         )
         self.manual_novelty_memory = max(1, manual_novelty_memory)
         self._manual_clock = manual_clock
+        self.detail_collector = detail_collector
         self._manual_frame_count = 0
         self._manual_game_saved = 0
         self._manual_last_saved_by_source: dict[str, float] = {}
@@ -1379,6 +1382,8 @@ class BenchHarvester:
         self.saved_count += 1
         self.last_save_at = datetime.datetime.now().timestamp()
         self.last_saved_label = _MANUAL_INBOX_DIR
+        if self.detail_collector is not None:
+            self.detail_collector.save(crop, source)
         logger.info(f"Manual training crop saved: {source} → {out.name}")
         return True
 

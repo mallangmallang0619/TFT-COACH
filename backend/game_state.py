@@ -47,8 +47,12 @@ class DetectedChampion(BaseModel):
     """A champion detected on the board or bench."""
     name: str                                  # e.g., "Jinx"
     star_level: int = 1                        # 1, 2, or 3
+    star_confidence: float = 0.0
+    star_detection_source: str = "unknown"    # classifier / unknown
     cost: int = 1                              # 1-5 gold cost tier
     items: list[str] = Field(default_factory=list)  # Completed item names
+    item_confidences: dict[str, float] = Field(default_factory=dict)
+    item_detection_source: str = "unknown"    # classifier / unknown
     board_row: Optional[int] = None            # Row on board (0-3), None if on bench
     board_col: Optional[int] = None            # Column on board (0-6)
     confidence: float = 0.0
