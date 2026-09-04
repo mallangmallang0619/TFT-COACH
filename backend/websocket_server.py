@@ -39,7 +39,7 @@ from game_data import (
     SHRED_ITEMS,
     BURN_ITEMS,
 )
-from unit_details import UnitDetailCollector
+from unit_details import UnitDetailCollector, unit_detail_collection_enabled
 import tftacademy_live
 import tactics_live
 
@@ -117,9 +117,9 @@ class TFTCoachServer:
         # Set 18 UE5 animations made shop-to-bench auto-labels too noisy.
         # Collect many unlabeled board/bench crops instead; the developer sorts
         # them afterward with scripts/sort_training_inbox.py.
-        collect_unit_details = os.environ.get(
-            "TFT_COACH_COLLECT_UNIT_DETAILS", ""
-        ).strip().lower() in {"1", "true", "yes", "on"}
+        collect_unit_details = unit_detail_collection_enabled(
+            os.environ.get("TFT_COACH_COLLECT_UNIT_DETAILS")
+        )
         detail_collector = UnitDetailCollector() if collect_unit_details else None
         self.harvester = BenchHarvester(
             manual_inbox=True,
