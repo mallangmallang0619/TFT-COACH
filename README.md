@@ -350,7 +350,9 @@ Star level and equipped items are separate vision tasks from champion identity:
 star level is a 3-class prediction, while equipped items are multi-label because
 a unit can hold up to three. Their optional ONNX adapters now safely abstain
 unless compatible Set 18 models and metadata exist, so this foundation does not
-change live advice yet.
+change live advice yet. Both detail models run only during the planning phase;
+combat continues champion tracking without spending time on unstable star/item
+reads.
 
 Enable conservative paired crop collection for a testing session in PowerShell:
 
@@ -364,8 +366,9 @@ Accepted board-unit crops produce matching files under
 `backend/_training/set18_details/items/_inbox/`. The shared filename preserves
 which star and item regions came from the same unit. Each board position has a
 30-second cooldown, and crops without a trustworthy health-bar anchor are
-skipped. This intentionally excludes most bench crops in the first pass rather
-than saving badly aligned samples. Unset the variable to return to normal:
+skipped. Collection is also restricted to planning rounds. This intentionally
+excludes combat animation and most unanchored bench crops rather than saving
+badly aligned samples. Unset the variable to return to normal:
 
 ```powershell
 Remove-Item Env:TFT_COACH_COLLECT_UNIT_DETAILS

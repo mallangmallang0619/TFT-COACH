@@ -434,7 +434,9 @@ class Detector:
                 # models directly (one batched ONNX pass for board+bench).
                 state.board_champions, state.bench_champions = (
                     self._detect_units_cnn(
-                        frame, freeze_board=state.phase == GamePhase.COMBAT
+                        frame,
+                        freeze_board=state.phase == GamePhase.COMBAT,
+                        include_details=state.phase == GamePhase.PLANNING,
                     )
                 )
                 state.unit_detection_source = "classifier"
@@ -1848,7 +1850,10 @@ class Detector:
         return detected
 
     def _detect_units_cnn(
-        self, frame: np.ndarray, freeze_board: bool = False
+        self,
+        frame: np.ndarray,
+        freeze_board: bool = False,
+        include_details: bool = True,
     ) -> tuple[list[DetectedChampion], list[DetectedChampion]]:
         """
         Identify live 3D unit models on board hexes and bench slots with
@@ -1945,10 +1950,14 @@ class Detector:
         star_classifier = getattr(self, "star_level_classifier", None)
         item_classifier = getattr(self, "equipped_item_classifier", None)
         star_model_available = bool(
-            star_classifier is not None and star_classifier.available
+            include_details
+            and star_classifier is not None
+            and star_classifier.available
         )
         item_model_available = bool(
-            item_classifier is not None and item_classifier.available
+            include_details
+            and item_classifier is not None
+            and item_classifier.available
         )
         star_results = (
             star_classifier.classify_batch(crops)

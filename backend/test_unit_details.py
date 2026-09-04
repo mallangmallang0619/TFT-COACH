@@ -13,6 +13,8 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent))
 
 from game_state import DetectedChampion
+from config import GameROIs
+from detector import Detector
 from unit_details import (
     EquippedItemClassifier,
     StarLevelClassifier,
@@ -126,6 +128,44 @@ class OptionalModelTests(unittest.TestCase):
         self.assertEqual(champion.star_detection_source, "unknown")
         self.assertEqual(champion.item_confidences, {})
         self.assertEqual(champion.item_detection_source, "unknown")
+
+    def test_detail_models_are_skipped_when_planning_details_are_disabled(self):
+        class UnitClassifierStub:
+            board_crop_mode = "legacy_hex_v1"
+            board_min_confidence = 0.08
+            min_confidence = 0.35
+
+            def classify_batch(self, crops, min_confidences=None):
+                return [(None, 0.0)] * len(crops)
+
+        class DetailClassifierStub:
+            available = True
+
+            def __init__(self, output):
+                self.output = output
+                self.calls = 0
+
+            def classify_batch(self, crops):
+                self.calls += 1
+                return [self.output for _crop in crops]
+
+        detector = object.__new__(Detector)
+        detector.rois = GameROIs()
+        detector.unit_classifier = UnitClassifierStub()
+        detector.stabilize_unit_predictions = False
+        detector.star_level_classifier = DetailClassifierStub((None, 0.0))
+        detector.equipped_item_classifier = DetailClassifierStub([])
+        frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+
+        detector._detect_units_cnn(frame, include_details=False)
+
+        self.assertEqual(detector.star_level_classifier.calls, 0)
+        self.assertEqual(detector.equipped_item_classifier.calls, 0)
+
+        detector._detect_units_cnn(frame, include_details=True)
+
+        self.assertEqual(detector.star_level_classifier.calls, 1)
+        self.assertEqual(detector.equipped_item_classifier.calls, 1)
 
 
 class UnitDetailCollectorTests(unittest.TestCase):
