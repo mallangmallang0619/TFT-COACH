@@ -6,7 +6,7 @@
   "scripts": {
     "start": "cross-env NODE_ENV=development electron .",
     "dev:frontend": "cd frontend && vite",
-    "build:frontend": "cd frontend && vite build",
+    "build:frontend": "python backend/sync_frontend_icons.py && cd frontend && vite build",
     "start:backend": "python backend/main.py",
     "start:demo": "python backend/main.py --demo",
     "start:sim": "python backend/main.py --sim",

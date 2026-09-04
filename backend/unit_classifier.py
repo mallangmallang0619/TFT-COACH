@@ -85,6 +85,7 @@ class UnitPredictionStabilizer:
         results: list[tuple[Optional[str], float]],
         update_mask: Optional[list[bool]] = None,
         min_confidences: Optional[list[float]] = None,
+        force_empty_mask: Optional[list[bool]] = None,
     ) -> list[tuple[Optional[str], float]]:
         if len(results) != self.slot_count:
             raise ValueError(
@@ -99,9 +100,27 @@ class UnitPredictionStabilizer:
                 f"Expected {self.slot_count} confidence floors, "
                 f"got {len(min_confidences)}"
             )
+        if force_empty_mask is not None and len(force_empty_mask) != self.slot_count:
+            raise ValueError(
+                f"Expected {self.slot_count} definitive-empty flags, "
+                f"got {len(force_empty_mask)}"
+            )
 
         for i, (name, confidence) in enumerate(results):
             if update_mask is not None and not update_mask[i]:
+                continue
+
+            if force_empty_mask is not None and force_empty_mask[i]:
+                # Slot occupancy is established outside the classifier (for
+                # example, by the bench health-bar gate). An absent anchor is
+                # definitive empty evidence, not a low-confidence prediction
+                # that should preserve a stale champion through movement.
+                self._names[i] = None
+                self._confidences[i] = 0.0
+                self._candidates[i] = None
+                self._candidate_counts[i] = 0
+                self._candidate_confidences[i] = 0.0
+                self._clear_counts[i] = 0
                 continue
 
             stable_name = self._names[i]
