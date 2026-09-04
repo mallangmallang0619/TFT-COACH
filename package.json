@@ -12,6 +12,8 @@
     "start:sim": "python backend/main.py --sim",
     "sort:stars": "python scripts/sort_unit_details.py --task stars",
     "sort:items": "python scripts/sort_unit_details.py --task items",
+    "check:stars": "python scripts/train_unit_details.py --task stars --check",
+    "train:stars": "python scripts/train_unit_details.py --task stars",
     "dev": "cross-env TFT_COACH_BACKEND_MODE=demo concurrently \"npm run dev:frontend\" \"npm run start:delayed\"",
     "dev:live": "cross-env TFT_COACH_BACKEND_MODE=live concurrently \"npm run dev:frontend\" \"npm run start:delayed\"",
     "dev:sim": "cross-env TFT_COACH_BACKEND_MODE=sim concurrently \"npm run dev:frontend\" \"npm run start:delayed\"",
@@ -20,7 +22,7 @@
     "test:electron": "node --test electron/*.test.js",
     "test:frontend": "node --test frontend/src/*.test.js",
     "check:model": "node scripts/releaseReadiness.js --model-only",
-    "verify": "npm test && npm run check:model && npm run build:frontend && python backend/test_unit_details.py && python backend/test_unit_detail_sorter.py && python backend/test_system.py",
+    "verify": "npm test && npm run check:model && npm run build:frontend && python backend/test_unit_details.py && python backend/test_unit_detail_sorter.py && python backend/test_train_unit_details.py && python backend/test_system.py",
     "package": "npm run build:frontend && node scripts/releaseReadiness.js && electron-builder --win nsis"
   },
   "devDependencies": {

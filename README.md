@@ -394,8 +394,28 @@ selects none, Space defers, Delete rejects recoverably, and Ctrl+Z undoes the
 latest label or rejection. Item annotations are written to
 `backend/_training/set18_details/items/labels.json`.
 
-A training command and held-out evaluation gate are still required before
-either model is allowed to influence board strength or comp direction.
+Check star-class balance and crop readability, then train with:
+
+```powershell
+npm run check:stars
+npm run train:stars
+```
+
+The production gate requires at least 50 reviewed crops for each of `1`, `2`,
+and `3`. Training automatically uses CUDA when available, defaults to a compact
+MobileNetV3-Small at 96px, balances all three levels, keeps adjacent capture
+bursts together in train or validation, calibrates the confidence threshold for
+95% accepted precision, and verifies the exported model through CPU ONNX
+Runtime. It writes `assets/models/star_level_classifier.onnx` and
+`assets/models/star_level_classifier.json`; these names cannot overwrite the
+champion classifier. Use the command below to require the GPU explicitly:
+
+```powershell
+python scripts/train_unit_details.py --task stars --device cuda
+```
+
+An item-model trainer and held-out production evaluation gate are still
+required before equipped items influence board strength or comp direction.
 
 The core Unreal HUD/board ROIs were calibrated from a live 2560×1440 Set 18
 frame. Re-run `python backend/diagnose_capture.py --dump-hexes` after changing
@@ -460,8 +480,8 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] Purchase-tracking roster — shop diffs between frames reveal buys; owned units (with 3-copy star-ups) feed comp direction as held units
 - [x] Manual-inbox training harvester — live mode saves stable, visually novel board and bench crops to `_training/set18/_inbox` without guessing labels, while retaining a periodic duplicate for variation. The smart contact-sheet sorter files up to 20 reviewed neighbours at once, supports outlier deselection and batch undo, and never auto-labels. Raw crops remain local and reversible. Pool sorted crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
 - [x] Live unit identification — EfficientNet-B0 ONNX classifier with health-bar occupancy and temporal-stability gates
-- [~] Star-level classifier — optional ONNX inference contract and conservative board-crop collection are implemented; labeling, training, held-out evaluation, temporal fusion, and bench geometry remain
-- [~] Item classifier — optional multi-label ONNX inference contract and paired board-crop collection are implemented; labeling UI, training, held-out evaluation, item localization, and temporal fusion remain
+- [~] Star-level classifier — crop collection, batch labeling, CUDA training, calibrated ONNX export, and optional inference are implemented; production data/evaluation, temporal fusion, and bench geometry remain
+- [~] Item classifier — optional multi-label ONNX inference, paired collection, and recoverable multi-item labeling are implemented; training, held-out evaluation, item localization, and temporal fusion remain
 - [ ] Player-HP row tracking — the right-side player list reorders by standing, so the fixed HP ROI reads the wrong row late-game
 - [ ] Opponent scouting + positioning prediction (read enemy boards during combat, suggest counter-positioning)
 - [x] Set 18 data migration — current roster/traits, TFT Academy Set 18 cache, and `DA_*` identifiers

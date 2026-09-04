@@ -33,6 +33,10 @@ class UnitDetailRegionTests(unittest.TestCase):
         # Player health bar, plus a bronze-colored badge immediately left.
         cv2.rectangle(crop, (30, 40), (89, 44), (0, 255, 0), -1)
         cv2.rectangle(crop, (12, 37), (27, 53), (40, 105, 170), -1)
+        # Two equipped-item icons extend well below the bar. The item crop
+        # must retain their complete height, not only their top few pixels.
+        cv2.rectangle(crop, (30, 50), (49, 80), (20, 20, 230), -1)
+        cv2.rectangle(crop, (50, 50), (69, 80), (230, 80, 20), -1)
         regions = extract_unit_detail_regions(crop)
 
         self.assertIsNotNone(regions)
@@ -41,6 +45,10 @@ class UnitDetailRegionTests(unittest.TestCase):
         self.assertGreater(regions.item_strip.size, 0)
         # The left badge must be retained rather than cropped off at bar x=30.
         self.assertTrue(np.any(regions.star_badge[:, :, 2] > 100))
+        self.assertTrue(np.any(regions.item_strip[:, :, 2] > 200))
+        self.assertTrue(np.any(regions.item_strip[:, :, 0] > 200))
+        self.assertGreaterEqual(regions.item_strip.shape[0], 45)
+        self.assertGreaterEqual(regions.item_strip.shape[1], 80)
 
     def test_no_health_bar_abstains_from_detail_extraction(self):
         crop = np.full((180, 120, 3), 80, dtype=np.uint8)
