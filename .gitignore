@@ -101,6 +101,7 @@ Desktop.ini
 backend/_debug/diagnose_*.png
 backend/_debug/hexes_*/
 backend/_debug/*.png
+!backend/_debug/diagnose_20260904_020107.png
 backend/_debug/session/
 backend/_training/
 backend/_training_rejected/

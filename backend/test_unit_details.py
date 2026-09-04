@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 import cv2
 import numpy as np
@@ -16,6 +17,7 @@ from game_state import DetectedChampion
 from config import GameROIs
 from detector import Detector
 from unit_details import (
+    EquippedItemTemplateMatcher,
     EquippedItemClassifier,
     StarLevelClassifier,
     UnitDetailCollector,
@@ -23,6 +25,7 @@ from unit_details import (
     detail_prediction_fields,
     decode_item_logits,
     decode_star_logits,
+    extract_item_icon_slots,
     extract_unit_detail_regions,
 )
 
@@ -49,6 +52,9 @@ class UnitDetailRegionTests(unittest.TestCase):
         self.assertTrue(np.any(regions.item_strip[:, :, 0] > 200))
         self.assertGreaterEqual(regions.item_strip.shape[0], 45)
         self.assertGreaterEqual(regions.item_strip.shape[1], 80)
+        self.assertEqual(len(regions.item_icons), 3)
+        self.assertTrue(np.any(regions.item_icons[0][:, :, 2] > 200))
+        self.assertTrue(np.any(regions.item_icons[1][:, :, 0] > 200))
 
     def test_no_health_bar_abstains_from_detail_extraction(self):
         crop = np.full((180, 120, 3), 80, dtype=np.uint8)
@@ -110,6 +116,66 @@ class UnitDetailDecodeTests(unittest.TestCase):
             )["star_detection_source"],
             "unknown",
         )
+
+
+class EquippedItemTemplateTests(unittest.TestCase):
+    def test_item_strip_is_split_into_three_complete_icon_slots(self):
+        strip = np.zeros((66, 122, 3), dtype=np.uint8)
+        for index, value in enumerate((60, 130, 220)):
+            x = 23 + index * 34
+            strip[23:54, x:x + 31] = value
+
+        slots = extract_item_icon_slots(strip)
+
+        self.assertEqual(len(slots), 3)
+        self.assertEqual([slot.shape for slot in slots], [(31, 31, 3)] * 3)
+        self.assertEqual([int(slot.mean()) for slot in slots], [60, 130, 220])
+
+    def test_matcher_recognizes_each_icon_independently_and_ignores_empty(self):
+        component = cv2.imread(str(
+            Path(__file__).parent.parent / "assets" / "templates" /
+            "components" / "bf_sword.png"
+        ))
+        completed = cv2.imread(str(
+            Path(__file__).parent.parent / "assets" / "templates" /
+            "items" / "Red Buff.png"
+        ))
+        self.assertIsNotNone(component)
+        self.assertIsNotNone(completed)
+
+        strip = np.full((66, 122, 3), 45, dtype=np.uint8)
+        strip[23:54, 23:54] = cv2.resize(component, (31, 31))
+        strip[23:54, 57:88] = cv2.resize(completed, (31, 31))
+        matcher = EquippedItemTemplateMatcher(min_confidence=0.75)
+
+        results = matcher.classify_item_strips(
+            [strip],
+            item_templates={"Red Buff": completed},
+            component_templates={"bf_sword": component},
+        )
+
+        self.assertEqual([name for name, _confidence in results[0]], [
+            "B.F. Sword",
+            "Red Buff",
+        ])
+
+    def test_matcher_abstains_when_two_templates_are_indistinguishable(self):
+        icon = np.random.default_rng(18).integers(
+            0, 256, (31, 31, 3), dtype=np.uint8
+        )
+        strip = np.full((66, 122, 3), 45, dtype=np.uint8)
+        strip[23:54, 23:54] = icon
+        matcher = EquippedItemTemplateMatcher(
+            min_confidence=0.75, min_margin=0.10
+        )
+
+        results = matcher.classify_item_strips(
+            [strip],
+            item_templates={"Item A": icon, "Item B": icon.copy()},
+            component_templates={},
+        )
+
+        self.assertEqual(results, [[]])
 
 
 class OptionalModelTests(unittest.TestCase):
@@ -175,6 +241,60 @@ class OptionalModelTests(unittest.TestCase):
 
         self.assertEqual(detector.star_level_classifier.calls, 1)
         self.assertEqual(detector.equipped_item_classifier.calls, 1)
+
+    def test_live_detection_prefers_item_templates_over_optional_model(self):
+        class UnitClassifierStub:
+            board_crop_mode = "legacy_hex_v1"
+            board_min_confidence = 0.08
+            min_confidence = 0.35
+
+            @staticmethod
+            def classify_batch(crops, min_confidences=None):
+                return [
+                    ("Kayle", 0.91) if index == 0 else (None, 0.0)
+                    for index, _crop in enumerate(crops)
+                ]
+
+        class MatcherStub:
+            calls = 0
+
+            def classify_batch(self, crops, **_templates):
+                self.calls += 1
+                return [
+                    [("Red Buff", 0.96)] if index == 0 else []
+                    for index, _crop in enumerate(crops)
+                ]
+
+        class ModelStub:
+            available = True
+            calls = 0
+
+            def classify_batch(self, crops):
+                self.calls += 1
+                return [[] for _crop in crops]
+
+        detector = object.__new__(Detector)
+        detector.rois = GameROIs()
+        detector.unit_classifier = UnitClassifierStub()
+        detector.stabilize_unit_predictions = False
+        detector.star_level_classifier = None
+        detector.equipped_item_matcher = MatcherStub()
+        detector.equipped_item_classifier = ModelStub()
+        icon = np.ones((16, 16, 3), dtype=np.uint8)
+        detector.templates = SimpleNamespace(
+            item_templates={"Red Buff": icon},
+            component_templates={},
+        )
+
+        board, _bench = detector._detect_units_cnn(
+            np.zeros((720, 1280, 3), dtype=np.uint8),
+            include_details=True,
+        )
+
+        self.assertEqual(detector.equipped_item_matcher.calls, 1)
+        self.assertEqual(detector.equipped_item_classifier.calls, 0)
+        self.assertEqual(board[0].items, ["Red Buff"])
+        self.assertEqual(board[0].item_detection_source, "template")
 
 
 class UnitDetailCollectorTests(unittest.TestCase):

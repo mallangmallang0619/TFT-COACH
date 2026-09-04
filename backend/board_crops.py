@@ -17,6 +17,15 @@ import numpy as np
 from config import BOARD_HEX_GRID, GameROIs
 
 BOARD_CROP_MODE = "health_bar_v1"
+DEFAULT_FOOT_OFFSET_RATIO = 1.55
+
+# Health bars are placed above the rendered model, not at a fixed distance
+# from its board hex. Most Set 18 silhouettes are close enough to the default,
+# but tall/floating models need a measured per-champion projection. Kayle was
+# measured in diagnose_20260904_020107.png and the adjacent raw capture.
+CHAMPION_FOOT_OFFSET_RATIOS = {
+    "kayle": 2.62,
+}
 
 
 @dataclass
@@ -25,6 +34,43 @@ class BoardUnitCrop:
     col: int
     index: int
     crop: np.ndarray
+    health_bar_x: float = 0.0
+    health_bar_y: float = 0.0
+    health_bar_width: float = 0.0
+
+    def project_for_champion(
+        self,
+        champion_name: str,
+        frame_width: int,
+        frame_height: int,
+        rois: GameROIs,
+    ) -> "BoardUnitCrop":
+        """Re-project a tall model's bar using its measured model height."""
+        ratio = CHAMPION_FOOT_OFFSET_RATIOS.get(
+            champion_name.casefold(), DEFAULT_FOOT_OFFSET_RATIO
+        )
+        if self.health_bar_width <= 0 or ratio == DEFAULT_FOOT_OFFSET_RATIO:
+            return self
+        bx, by, bw, bh = rois.board.to_pixels(frame_width, frame_height)
+        estimated_y = self.health_bar_y + self.health_bar_width * ratio
+        pitch_x = max(1.0, bw * 0.136)
+        pitch_y = max(1.0, bh * 0.24)
+        distances = [
+            ((self.health_bar_x - (bx + position.cx * bw)) / pitch_x) ** 2
+            + ((estimated_y - (by + position.cy * bh)) / pitch_y) ** 2
+            for position in BOARD_HEX_GRID
+        ]
+        index = int(np.argmin(distances))
+        position = BOARD_HEX_GRID[index]
+        return BoardUnitCrop(
+            row=position.row,
+            col=position.col,
+            index=index,
+            crop=self.crop,
+            health_bar_x=self.health_bar_x,
+            health_bar_y=self.health_bar_y,
+            health_bar_width=self.health_bar_width,
+        )
 
 
 def _health_bar_components(
@@ -106,7 +152,7 @@ def extract_board_unit_crops(
     for bar in _health_bar_components(frame, rois):
         x, y, bar_width, _bar_height = bar
         estimated_x = x + bar_width / 2
-        estimated_y = y + bar_width * 1.55
+        estimated_y = y + bar_width * DEFAULT_FOOT_OFFSET_RATIO
         distances = [
             ((estimated_x - hx) / pitch_x) ** 2
             + ((estimated_y - hy) / pitch_y) ** 2
@@ -149,6 +195,9 @@ def extract_board_unit_crops(
                 col=position.col,
                 index=index,
                 crop=crop,
+                health_bar_x=center_x,
+                health_bar_y=float(y),
+                health_bar_width=float(bar_width),
             )
         )
     return samples

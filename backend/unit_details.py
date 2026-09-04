@@ -22,7 +22,7 @@ import cv2
 import numpy as np
 
 from config import ASSETS_DIR
-from game_data import ACTIVE_SET_NUMBER
+from game_data import ACTIVE_SET_NUMBER, COMPONENT_NAMES
 from unit_classifier import FULL_SPRITE_RESIZE_MODE, preprocess
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,7 @@ class UnitDetailRegions:
     health_bar: tuple[int, int, int, int]
     star_badge: np.ndarray
     item_strip: np.ndarray
+    item_icons: list[np.ndarray]
 
 
 class UnitDetailCollector:
@@ -178,11 +179,178 @@ def extract_unit_detail_regions(crop: Optional[np.ndarray]) -> Optional[UnitDeta
     item_y2 = min(height, int(round(y + bar_height + bar_width * 0.60)))
     if star_x2 <= star_x1 or star_y2 <= star_y1 or item_y2 <= item_y1:
         return None
+    icon_size = max(1, int(round(bar_width * 0.36)))
+    # Anchor below the detected green fill's bottom. Its top/height can vary
+    # by a couple of pixels with compression and animation, while the lower
+    # edge stays aligned with the status frame.
+    icon_y = y + bar_height + int(round(bar_width * 0.095))
+    icon_x_offsets = (-0.08, 0.32, 0.706)
+    item_icons = [
+        crop[icon_y:icon_y + icon_size, icon_x:icon_x + icon_size].copy()
+        for offset in icon_x_offsets
+        for icon_x in (int(round(x + bar_width * offset)),)
+        if (
+            icon_x >= 0
+            and icon_y >= 0
+            and icon_x + icon_size <= width
+            and icon_y + icon_size <= height
+        )
+    ]
     return UnitDetailRegions(
         health_bar=(x, y, bar_width, bar_height),
         star_badge=crop[star_y1:star_y2, star_x1:star_x2].copy(),
         item_strip=crop[item_y1:item_y2, item_x1:item_x2].copy(),
+        item_icons=item_icons,
     )
+
+
+def extract_item_icon_slots(item_strip: Optional[np.ndarray]) -> list[np.ndarray]:
+    """Split a health-bar-relative strip into its three equipped-icon slots.
+
+    The ratios come from the 1440p Set 18 review set and scale with the strip
+    height, which itself scales from the detected health-bar width. A clipped
+    right edge simply omits the unavailable slot instead of matching a partial
+    icon.
+    """
+    if item_strip is None or item_strip.size == 0:
+        return []
+    height, width = item_strip.shape[:2]
+    size = max(1, int(round(height * 0.47)))
+    x0 = int(round(height * 0.35))
+    y0 = int(round(height * 0.35))
+    pitch = max(1, int(round(height * 0.51)))
+    if y0 + size > height:
+        return []
+    return [
+        item_strip[y0:y0 + size, x:x + size].copy()
+        for slot in range(3)
+        for x in (x0 + slot * pitch,)
+        if x + size <= width
+    ]
+
+
+def _normalized_icon_descriptor(image: np.ndarray, size: int) -> np.ndarray:
+    resized = cv2.resize(image, (size, size), interpolation=cv2.INTER_AREA)
+    values = resized.astype(np.float32).reshape(-1)
+    values -= float(values.mean())
+    norm = float(np.linalg.norm(values))
+    if norm > 1e-8:
+        values /= norm
+    return values
+
+
+class EquippedItemTemplateMatcher:
+    """Recognize each equipped icon from Riot artwork without model training."""
+
+    def __init__(
+        self,
+        *,
+        min_confidence: float = 0.78,
+        min_margin: float = 0.10,
+    ):
+        self.min_confidence = float(min_confidence)
+        self.min_margin = float(min_margin)
+        self._template_cache: dict[
+            tuple[int, tuple], tuple[list[str], np.ndarray]
+        ] = {}
+
+    @staticmethod
+    def _combined_templates(
+        item_templates: dict[str, np.ndarray],
+        component_templates: dict[str, np.ndarray],
+    ) -> dict[str, np.ndarray]:
+        combined = {
+            str(name): image
+            for name, image in item_templates.items()
+            if image is not None and image.size > 0
+        }
+        for component_id, image in component_templates.items():
+            name = COMPONENT_NAMES.get(str(component_id), str(component_id))
+            if image is not None and image.size > 0:
+                combined[name] = image
+        return combined
+
+    def _template_matrix(
+        self,
+        templates: dict[str, np.ndarray],
+        size: int,
+    ) -> tuple[list[str], np.ndarray]:
+        signature = tuple(
+            (name, id(image), image.shape)
+            for name, image in sorted(templates.items())
+        )
+        key = (size, signature)
+        cached = self._template_cache.get(key)
+        if cached is not None:
+            return cached
+        names = [name for name, _image in sorted(templates.items())]
+        matrix = np.stack([
+            _normalized_icon_descriptor(templates[name], size)
+            for name in names
+        ])
+        self._template_cache = {key: (names, matrix)}
+        return names, matrix
+
+    def classify_item_strips(
+        self,
+        item_strips: list[Optional[np.ndarray]],
+        *,
+        item_templates: dict[str, np.ndarray],
+        component_templates: dict[str, np.ndarray],
+    ) -> list[list[tuple[str, float]]]:
+        """Return up to three high-confidence matches per item strip."""
+        return self._classify_icon_groups(
+            [extract_item_icon_slots(strip) for strip in item_strips],
+            item_templates=item_templates,
+            component_templates=component_templates,
+        )
+
+    def _classify_icon_groups(
+        self,
+        icon_groups: list[list[np.ndarray]],
+        *,
+        item_templates: dict[str, np.ndarray],
+        component_templates: dict[str, np.ndarray],
+    ) -> list[list[tuple[str, float]]]:
+        output: list[list[tuple[str, float]]] = [[] for _icons in icon_groups]
+        templates = self._combined_templates(item_templates, component_templates)
+        if not templates:
+            return output
+
+        for strip_index, icons in enumerate(icon_groups):
+            for icon in icons:
+                size = icon.shape[0]
+                names, matrix = self._template_matrix(templates, size)
+                scores = matrix @ _normalized_icon_descriptor(icon, size)
+                if scores.size == 0:
+                    continue
+                order = np.argsort(scores)[::-1]
+                best_index = int(order[0])
+                confidence = float(scores[best_index])
+                runner_up = float(scores[int(order[1])]) if scores.size > 1 else -1.0
+                if (
+                    confidence < self.min_confidence
+                    or confidence - runner_up < self.min_margin
+                ):
+                    continue
+                output[strip_index].append(
+                    (names[best_index], max(0.0, min(1.0, confidence)))
+                )
+        return output
+
+    def classify_batch(
+        self,
+        unit_crops: list[Optional[np.ndarray]],
+        *,
+        item_templates: dict[str, np.ndarray],
+        component_templates: dict[str, np.ndarray],
+    ) -> list[list[tuple[str, float]]]:
+        details = [extract_unit_detail_regions(crop) for crop in unit_crops]
+        return self._classify_icon_groups(
+            [regions.item_icons if regions is not None else [] for regions in details],
+            item_templates=item_templates,
+            component_templates=component_templates,
+        )
 
 
 def decode_star_logits(
@@ -233,6 +401,7 @@ def detail_prediction_fields(
     *,
     star_model_available: bool,
     item_model_available: bool,
+    item_detection_source: str = "classifier",
 ) -> dict:
     """Translate accepted detail predictions into DetectedChampion fields."""
     star_level, star_confidence = star_result
@@ -245,7 +414,9 @@ def detail_prediction_fields(
         "item_confidences": {
             name: float(confidence) for name, confidence in item_results
         },
-        "item_detection_source": "classifier" if item_model_available else "unknown",
+        "item_detection_source": (
+            item_detection_source if item_model_available else "unknown"
+        ),
     }
 
 

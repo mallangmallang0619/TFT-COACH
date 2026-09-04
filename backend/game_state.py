@@ -52,7 +52,7 @@ class DetectedChampion(BaseModel):
     cost: int = 1                              # 1-5 gold cost tier
     items: list[str] = Field(default_factory=list)  # Completed item names
     item_confidences: dict[str, float] = Field(default_factory=dict)
-    item_detection_source: str = "unknown"    # classifier / unknown
+    item_detection_source: str = "unknown"    # template / classifier / unknown
     board_row: Optional[int] = None            # Row on board (0-3), None if on bench
     board_col: Optional[int] = None            # Column on board (0-6)
     confidence: float = 0.0
