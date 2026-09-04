@@ -354,24 +354,26 @@ change live advice yet. Both detail models run only during the planning phase;
 combat continues champion tracking without spending time on unstable star/item
 reads.
 
-Enable conservative paired crop collection for a testing session in PowerShell:
+Conservative paired crop collection is enabled by default in live mode:
 
 ```powershell
-$env:TFT_COACH_COLLECT_UNIT_DETAILS="1"
 npm run dev:live
 ```
 
 Accepted board-unit crops produce matching files under
 `backend/_training/set18_details/stars/_inbox/` and
 `backend/_training/set18_details/items/_inbox/`. The shared filename preserves
-which star and item regions came from the same unit. Each board position has a
+which star and item regions came from the same unit. The matching full champion
+crop remains in `backend/_training/set18/_inbox/`, so all three views can be
+joined by filename during review. Each board position has a
 30-second cooldown, and crops without a trustworthy health-bar anchor are
 skipped. Collection is also restricted to planning rounds. This intentionally
 excludes combat animation and most unanchored bench crops rather than saving
-badly aligned samples. Unset the variable to return to normal:
+badly aligned samples. To turn detail collection off for a session:
 
 ```powershell
-Remove-Item Env:TFT_COACH_COLLECT_UNIT_DETAILS
+$env:TFT_COACH_COLLECT_UNIT_DETAILS="0"
+npm run dev:live
 ```
 
 Do not place these crops into the champion sorter. Star crops will be reviewed

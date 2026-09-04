@@ -34,6 +34,11 @@ DETAIL_TRAINING_DIR = (
 _SAFE_SOURCE = re.compile(r"[^a-zA-Z0-9_-]+")
 
 
+def unit_detail_collection_enabled(value: Optional[str]) -> bool:
+    """Default detail collection on; retain an explicit environment off switch."""
+    return (value or "").strip().lower() not in {"0", "false", "no", "off"}
+
+
 @dataclass
 class UnitDetailRegions:
     health_bar: tuple[int, int, int, int]
@@ -61,7 +66,13 @@ class UnitDetailCollector:
         self._last_saved_by_source: dict[str, float] = {}
         self.saved_pairs = 0
 
-    def save(self, unit_crop: Optional[np.ndarray], source: str) -> int:
+    def save(
+        self,
+        unit_crop: Optional[np.ndarray],
+        source: str,
+        *,
+        sample_id: Optional[str] = None,
+    ) -> int:
         """Save a matched crop pair and return the number of image files saved."""
         now = self._clock()
         safe_source = _SAFE_SOURCE.sub("_", str(source)).strip("_") or "unit"
@@ -72,8 +83,14 @@ class UnitDetailCollector:
         if regions is None:
             return 0
 
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-        filename = f"{timestamp}_{safe_source}.png"
+        if sample_id:
+            safe_sample_id = _SAFE_SOURCE.sub(
+                "_", Path(str(sample_id)).stem
+            ).strip("_")
+        else:
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            safe_sample_id = f"{timestamp}_{safe_source}"
+        filename = f"{safe_sample_id or safe_source}.png"
         star_path = self.out_dir / "stars" / "_inbox" / filename
         item_path = self.out_dir / "items" / "_inbox" / filename
         try:

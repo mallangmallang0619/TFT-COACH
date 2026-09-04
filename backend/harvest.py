@@ -1383,7 +1383,7 @@ class BenchHarvester:
         self.last_save_at = datetime.datetime.now().timestamp()
         self.last_saved_label = _MANUAL_INBOX_DIR
         if self.detail_collector is not None:
-            self.detail_collector.save(crop, source)
+            self.detail_collector.save(crop, source, sample_id=out.stem)
         logger.info(f"Manual training crop saved: {source} → {out.name}")
         return True
 

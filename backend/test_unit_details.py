@@ -19,6 +19,7 @@ from unit_details import (
     EquippedItemClassifier,
     StarLevelClassifier,
     UnitDetailCollector,
+    unit_detail_collection_enabled,
     detail_prediction_fields,
     decode_item_logits,
     decode_star_logits,
@@ -185,6 +186,31 @@ class UnitDetailCollectorTests(unittest.TestCase):
             self.assertEqual(collector.save(crop, "board_r1_c2_i9"), 2)
             self.assertEqual(len(list((Path(directory) / "stars" / "_inbox").glob("*.png"))), 2)
             self.assertEqual(len(list((Path(directory) / "items" / "_inbox").glob("*.png"))), 2)
+
+    def test_collector_can_reuse_the_full_champion_crop_sample_id(self):
+        crop = np.zeros((180, 120, 3), dtype=np.uint8)
+        cv2.rectangle(crop, (30, 40), (89, 44), (0, 255, 0), -1)
+        with tempfile.TemporaryDirectory() as directory:
+            collector = UnitDetailCollector(out_dir=Path(directory))
+            self.assertEqual(
+                collector.save(
+                    crop,
+                    "board_r1_c2_i9",
+                    sample_id="20260903_120000_123456_board_r1_c2_i9",
+                ),
+                2,
+            )
+            self.assertTrue(
+                (Path(directory) / "stars" / "_inbox" /
+                 "20260903_120000_123456_board_r1_c2_i9.png").exists()
+            )
+
+    def test_detail_collection_defaults_on_but_has_an_explicit_off_switch(self):
+        self.assertTrue(unit_detail_collection_enabled(None))
+        self.assertTrue(unit_detail_collection_enabled(""))
+        self.assertTrue(unit_detail_collection_enabled("1"))
+        self.assertFalse(unit_detail_collection_enabled("0"))
+        self.assertFalse(unit_detail_collection_enabled("false"))
 
     def test_collector_rejects_crops_without_a_health_bar(self):
         with tempfile.TemporaryDirectory() as directory:
