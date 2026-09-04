@@ -344,6 +344,39 @@ and visibly different units are retained. Filtered files are moved to
 A Set 17/Hextech ONNX model is rejected at load time rather than silently
 producing bad predictions.
 
+#### Star level and equipped-item data (experimental)
+
+Star level and equipped items are separate vision tasks from champion identity:
+star level is a 3-class prediction, while equipped items are multi-label because
+a unit can hold up to three. Their optional ONNX adapters now safely abstain
+unless compatible Set 18 models and metadata exist, so this foundation does not
+change live advice yet.
+
+Enable conservative paired crop collection for a testing session in PowerShell:
+
+```powershell
+$env:TFT_COACH_COLLECT_UNIT_DETAILS="1"
+npm run dev:live
+```
+
+Accepted board-unit crops produce matching files under
+`backend/_training/set18_details/stars/_inbox/` and
+`backend/_training/set18_details/items/_inbox/`. The shared filename preserves
+which star and item regions came from the same unit. Each board position has a
+30-second cooldown, and crops without a trustworthy health-bar anchor are
+skipped. This intentionally excludes most bench crops in the first pass rather
+than saving badly aligned samples. Unset the variable to return to normal:
+
+```powershell
+Remove-Item Env:TFT_COACH_COLLECT_UNIT_DETAILS
+```
+
+Do not place these crops into the champion sorter. Star crops will be reviewed
+into `1`, `2`, or `3`; item crops require multi-label annotations rather than a
+single folder name. A labeling/training command and held-out evaluation gate are
+the next step before either model is allowed to influence board strength or
+comp direction.
+
 The core Unreal HUD/board ROIs were calibrated from a live 2560×1440 Set 18
 frame. Re-run `python backend/diagnose_capture.py --dump-hexes` after changing
 resolution or in-game UI scale.
@@ -407,8 +440,8 @@ Detects the augment selection overlay and reads augment names via OCR.
 - [x] Purchase-tracking roster — shop diffs between frames reveal buys; owned units (with 3-copy star-ups) feed comp direction as held units
 - [x] Manual-inbox training harvester — live mode saves stable, visually novel board and bench crops to `_training/set18/_inbox` without guessing labels, while retaining a periodic duplicate for variation. The smart contact-sheet sorter files up to 20 reviewed neighbours at once, supports outlier deselection and batch undo, and never auto-labels. Raw crops remain local and reversible. Pool sorted crops across machines with `python scripts/training_data.py --pack/--merge` (`--stats` shows progress)
 - [x] Live unit identification — EfficientNet-B0 ONNX classifier with health-bar occupancy and temporal-stability gates
-- [ ] Star-level classifier — detect whether each board and bench unit is 1-star, 2-star, or 3-star from live crops
-- [ ] Item classifier — detect equipped components, completed items, and artifacts on units from live board crops
+- [~] Star-level classifier — optional ONNX inference contract and conservative board-crop collection are implemented; labeling, training, held-out evaluation, temporal fusion, and bench geometry remain
+- [~] Item classifier — optional multi-label ONNX inference contract and paired board-crop collection are implemented; labeling UI, training, held-out evaluation, item localization, and temporal fusion remain
 - [ ] Player-HP row tracking — the right-side player list reorders by standing, so the fixed HP ROI reads the wrong row late-game
 - [ ] Opponent scouting + positioning prediction (read enemy boards during combat, suggest counter-positioning)
 - [x] Set 18 data migration — current roster/traits, TFT Academy Set 18 cache, and `DA_*` identifiers

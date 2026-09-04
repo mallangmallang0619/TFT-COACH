@@ -12,6 +12,7 @@ import asyncio
 import datetime
 import json
 import logging
+import os
 import time
 from pathlib import Path
 from typing import Set
@@ -38,6 +39,7 @@ from game_data import (
     SHRED_ITEMS,
     BURN_ITEMS,
 )
+from unit_details import UnitDetailCollector
 import tftacademy_live
 import tactics_live
 
@@ -115,7 +117,19 @@ class TFTCoachServer:
         # Set 18 UE5 animations made shop-to-bench auto-labels too noisy.
         # Collect many unlabeled board/bench crops instead; the developer sorts
         # them afterward with scripts/sort_training_inbox.py.
-        self.harvester = BenchHarvester(manual_inbox=True)
+        collect_unit_details = os.environ.get(
+            "TFT_COACH_COLLECT_UNIT_DETAILS", ""
+        ).strip().lower() in {"1", "true", "yes", "on"}
+        detail_collector = UnitDetailCollector() if collect_unit_details else None
+        self.harvester = BenchHarvester(
+            manual_inbox=True,
+            detail_collector=detail_collector,
+        )
+        if detail_collector is not None:
+            logger.info(
+                "Star/item training collection enabled at %s",
+                detail_collector.out_dir,
+            )
         self.augment_click_monitor = WindowsClickMonitor()
         self.augment_selection_tracker = AugmentSelectionTracker()
 

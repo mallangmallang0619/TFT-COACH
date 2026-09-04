@@ -160,6 +160,12 @@ Tests and exit criteria:
 
 ### Milestone 5 — Higher-value game-state inputs
 
+Current foundation: optional Set 18 ONNX contracts now exist for star level and
+equipped items, together with health-bar-relative region extraction and an
+opt-in, source-throttled paired crop collector. Missing models abstain, and the
+new fields do not affect advice. The remaining Milestone 5 gates below still
+apply before enabling either signal in production.
+
 Implement in dependency order:
 
 1. **Player-row identity tracking:** anchor the local player instead of assuming

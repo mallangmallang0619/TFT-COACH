@@ -74,6 +74,11 @@ from unit_classifier import (
     UnitClassifier,
     UnitPredictionStabilizer,
 )
+from unit_details import (
+    EquippedItemClassifier,
+    StarLevelClassifier,
+    detail_prediction_fields,
+)
 from game_state import (
     GameState,
     GamePhase,
@@ -317,6 +322,8 @@ class Detector:
         # CNN unit classifier for live 3D models — a no-op until a trained
         # model exists in assets/models/ (see scripts/train_classifier.py).
         self.unit_classifier = UnitClassifier()
+        self.star_level_classifier = StarLevelClassifier()
+        self.equipped_item_classifier = EquippedItemClassifier()
         self.stabilize_unit_predictions = False
         self._unit_stabilizer = UnitPredictionStabilizer(
             slot_count=len(BOARD_HEX_GRID) + BENCH_SLOTS,
@@ -1935,20 +1942,52 @@ class Detector:
                 min_confidences=confidence_floors,
             )
 
+        star_classifier = getattr(self, "star_level_classifier", None)
+        item_classifier = getattr(self, "equipped_item_classifier", None)
+        star_model_available = bool(
+            star_classifier is not None and star_classifier.available
+        )
+        item_model_available = bool(
+            item_classifier is not None and item_classifier.available
+        )
+        star_results = (
+            star_classifier.classify_batch(crops)
+            if star_model_available
+            else [(None, 0.0)] * len(crops)
+        )
+        item_results = (
+            item_classifier.classify_batch(crops)
+            if item_model_available
+            else [[] for _crop in crops]
+        )
+
+        def detail_fields(index: int) -> dict:
+            return detail_prediction_fields(
+                star_results[index],
+                item_results[index],
+                star_model_available=star_model_available,
+                item_model_available=item_model_available,
+            )
+
         board: list[DetectedChampion] = []
-        for hex_pos, (name, conf) in zip(BOARD_HEX_GRID, results):
+        for index, (hex_pos, (name, conf)) in enumerate(zip(BOARD_HEX_GRID, results)):
             if name is not None:
                 board.append(DetectedChampion(
                     name=name,
                     board_row=hex_pos.row,
                     board_col=hex_pos.col,
                     confidence=conf,
+                    **detail_fields(index),
                 ))
-        bench = [
-            DetectedChampion(name=name, confidence=conf)
-            for name, conf in results[len(BOARD_HEX_GRID):]
-            if name is not None
-        ]
+        bench: list[DetectedChampion] = []
+        board_slots = len(BOARD_HEX_GRID)
+        for offset, (name, conf) in enumerate(results[board_slots:]):
+            if name is not None:
+                bench.append(DetectedChampion(
+                    name=name,
+                    confidence=conf,
+                    **detail_fields(board_slots + offset),
+                ))
         return board, bench
 
     def _is_hex_empty(self, hex_crop: np.ndarray) -> bool:
