@@ -89,11 +89,11 @@
   "min_confidence": 0.55,
   "board_crop_mode": "health_bar_v1",
   "board_min_confidence": 0.55,
-  "accepted_val_precision": 0.9944,
-  "accepted_val_coverage": 0.9586,
-  "val_accuracy": 0.9716,
-  "num_train_crops": 8679,
+  "accepted_val_precision": 0.9984,
+  "accepted_val_coverage": 0.9756,
+  "val_accuracy": 0.9944,
+  "num_train_crops": 10760,
   "roster_coverage": 1.0,
   "lux_forms_collapsed": true,
-  "trained_at": "2026-09-03T18:15:18"
+  "trained_at": "2026-09-04T04:40:57"
 }

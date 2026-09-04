@@ -1,275 +1,89 @@
 {
-  "patch": "17.9",
-  "synced_at": "2026-08-26T17:00:46.789986Z",
-  "last_checked_at": "2026-08-26T17:01:17.294631Z",
+  "patch": "18.1d",
+  "synced_at": "2026-09-04T09:22:26.572074Z",
+  "last_checked_at": "2026-09-04T09:22:26.572082Z",
   "source_url": "https://tftacademy.com/tierlist/comps",
   "comps": [
     {
-      "name": "Cashout Morgana",
+      "name": "Soraka Flex",
       "tier": "A",
-      "slug": "set-18-cashout-morgana",
+      "slug": "set-18-soraka-flex",
       "trend": "",
       "carry": "?",
       "match_traits": [],
       "detail": {
         "units": [
           {
-            "apiName": "DA_18_Sentry",
-            "name": "Pebbles",
-            "boardIndex": 23,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Diana",
-            "name": "Diana",
-            "boardIndex": 3,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Hecarim",
-            "name": "Hecarim",
-            "boardIndex": 1,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_KogMaw18_AD",
-            "name": "Kog'Maw",
-            "boardIndex": 26,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Brambleback18",
-            "name": "Brambleback",
+            "apiName": "DA_18_Yorick",
+            "name": "Yorick",
             "boardIndex": 19,
-            "items": [
-              {
-                "apiName": "DA_EdgeOfNight",
-                "name": "Edge of Night"
-              },
-              {
-                "apiName": "DA_GiantSlayer",
-                "name": "Giant Slayer"
-              },
-              {
-                "apiName": "DA_Quicksilver",
-                "name": "Quicksilver"
-              }
-            ],
+            "items": [],
             "stars": 1
           },
           {
-            "apiName": "DA_18_Morgana",
-            "name": "Morgana",
-            "boardIndex": 18,
-            "items": [
-              {
-                "apiName": "DA_Morellonomicon",
-                "name": "Morellonomicon"
-              },
-              {
-                "apiName": "DA_RabadonsDeathcap",
-                "name": "Rabadon's Deathcap"
-              },
-              {
-                "apiName": "DA_VoidStaff",
-                "name": "Void Staff"
-              }
-            ],
+            "apiName": "DA_18_Azir",
+            "name": "Azir",
+            "boardIndex": 21,
+            "items": [],
             "stars": 1
           },
           {
-            "apiName": "DA_Sentinel18",
-            "name": "Ancient Sentinel",
-            "boardIndex": 4,
+            "apiName": "DA_Fiddlesticks18",
+            "name": "Fiddlesticks",
+            "boardIndex": 17,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Amumu18",
+            "name": "Amumu",
+            "boardIndex": 15,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Malphite",
+            "name": "Malphite",
+            "boardIndex": 3,
             "items": [
               {
-                "apiName": "DA_ProtectorsVow",
-                "name": "Protector's Vow"
+                "apiName": "DA_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
               },
               {
                 "apiName": "DA_WarmogsArmor",
                 "name": "Warmog's Armor"
               },
               {
-                "apiName": "DA_AdaptiveHelm",
-                "name": "Adaptive Helm"
+                "apiName": "DA_Crownguard",
+                "name": "Crownguard"
               }
             ],
             "stars": 1
           },
           {
-            "apiName": "DA_Taric18",
-            "name": "Taric",
-            "boardIndex": 2,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Alune",
-            "name": "Alune",
-            "boardIndex": 25,
+            "apiName": "DA_18_Soraka",
+            "name": "Soraka",
+            "boardIndex": 26,
             "items": [
               {
-                "apiName": "DA_18_EmblemInvoker",
-                "name": "Emblem Invoker"
-              }
-            ],
-            "stars": 1
-          }
-        ],
-        "early_comp": [
-          {
-            "apiName": "DA_18_Kobuko",
-            "name": "Kobuko",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Sentry",
-            "name": "Pebbles",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Teemo",
-            "name": "Teemo",
-            "boardIndex": null,
-            "items": [
-              {
-                "apiName": "DA_VoidStaff",
-                "name": "Void Staff"
+                "apiName": "DA_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
               },
               {
-                "apiName": "DA_Morellonomicon",
-                "name": "Morellonomicon"
+                "apiName": "DA_NashorsTooth",
+                "name": "Nashor's Tooth"
+              },
+              {
+                "apiName": "DA_SpearOfShojin",
+                "name": "Spear of Shojin"
               }
             ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Rammus",
-            "name": "Rammus",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "augments": [
-          {
-            "apiName": "DA_18_CovenTraitAugment_LootToAP",
-            "name": "Coven Trait Augment_Loot To AP"
-          },
-          {
-            "apiName": "DA_18_CovenTraitAugment",
-            "name": "Coven Trait Augment"
-          },
-          {
-            "apiName": "DA_WandOverflow",
-            "name": "Wand Overflow"
-          },
-          {
-            "apiName": "DA_SeraphimsStaff",
-            "name": "Seraphims Staff"
-          },
-          {
-            "apiName": "DA_Staffsmith",
-            "name": "Staffsmith"
-          },
-          {
-            "apiName": "DA_DeadlierCaps",
-            "name": "Deadlier Caps"
-          },
-          {
-            "apiName": "DA_BoosterPack",
-            "name": "Booster Pack"
-          },
-          {
-            "apiName": "DA_18_OnesTwosThree",
-            "name": "Ones Twos Three"
-          }
-        ],
-        "carousel": [
-          {
-            "apiName": "DA_Morellonomicon",
-            "name": "Morellonomicon"
-          },
-          {
-            "apiName": "DA_VoidStaff",
-            "name": "Void Staff"
-          },
-          {
-            "apiName": "DA_Component_NeedlesslyLargeRod",
-            "name": "Component_Needlessly Large Rod"
-          },
-          {
-            "apiName": "DA_Component_TearOfTheGoddess",
-            "name": "Component_Tear Of The Goddess"
-          }
-        ],
-        "main_champion": {
-          "apiName": "DA_18_Morgana",
-          "name": "Morgana",
-          "cost": 4
-        },
-        "tip": "Can play from Coven Cashout. Aim for 250 + essence for chance at Morgana 2 + item cashout. Void staff still okay with Kog since he doesn't hit backline.",
-        "difficulty": "HARD",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:00:47.368685Z"
-      }
-    },
-    {
-      "name": "Spirit Blossom",
-      "tier": "A",
-      "slug": "set-18-spirit-blossom",
-      "trend": "",
-      "carry": "?",
-      "match_traits": [],
-      "detail": {
-        "units": [
-          {
-            "apiName": "DA_Karma18",
-            "name": "Karma",
-            "boardIndex": 21,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Yorick",
-            "name": "Yorick",
-            "boardIndex": 1,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Vi18",
-            "name": "Vi",
-            "boardIndex": 3,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Sivir",
-            "name": "Sivir",
-            "boardIndex": 24,
-            "items": [],
             "stars": 1
           },
           {
             "apiName": "DA_18_Zyra",
             "name": "Zyra",
-            "boardIndex": 23,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Ahri",
-            "name": "Ahri",
             "boardIndex": 27,
             "items": [
               {
@@ -277,61 +91,21 @@
                 "name": "Spear of Shojin"
               },
               {
-                "apiName": "DA_JeweledGauntlet",
-                "name": "Jeweled Gauntlet"
+                "apiName": "DA_VoidStaff",
+                "name": "Void Staff"
               },
               {
-                "apiName": "DA_StrikersFlail",
-                "name": "Striker's Flail"
+                "apiName": "DA_ArchangelsStaff",
+                "name": "Archangel's Staff"
               }
             ],
             "stars": 1
           },
           {
-            "apiName": "DA_18_Sett",
-            "name": "Sett",
-            "boardIndex": 5,
-            "items": [
-              {
-                "apiName": "DA_BrambleVest",
-                "name": "Bramble Vest"
-              },
-              {
-                "apiName": "DA_DragonsClaw",
-                "name": "Dragon's Claw"
-              },
-              {
-                "apiName": "DA_WarmogsArmor",
-                "name": "Warmog's Armor"
-              }
-            ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_GnarSmall",
-            "name": "Gnar",
-            "boardIndex": 10,
+            "apiName": "DA_18_Kennen",
+            "name": "Kennen",
+            "boardIndex": 16,
             "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Ashe",
-            "name": "Ashe",
-            "boardIndex": 25,
-            "items": [
-              {
-                "apiName": "DA_RedBuff",
-                "name": "Red Buff"
-              },
-              {
-                "apiName": "DA_SpearOfShojin",
-                "name": "Spear of Shojin"
-              },
-              {
-                "apiName": "DA_LastWhisper",
-                "name": "Last Whisper"
-              }
-            ],
             "stars": 1
           }
         ],
@@ -340,7 +114,16 @@
             "apiName": "DA_Karma18",
             "name": "Karma",
             "boardIndex": null,
-            "items": [],
+            "items": [
+              {
+                "apiName": "DA_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "DA_VoidStaff",
+                "name": "Void Staff"
+              }
+            ],
             "stars": 1
           },
           {
@@ -367,114 +150,133 @@
         ],
         "augments": [
           {
-            "apiName": "DA_Slammin",
-            "name": "Slammin"
+            "apiName": "DA_BlackthornTraitAugment",
+            "name": "Blackthorn Trait Augment"
           },
           {
-            "apiName": "DA_JeweledLotus_I",
-            "name": "Jeweled Lotus_I"
+            "apiName": "DA_FlowingTears",
+            "name": "Flowing Tears"
           },
           {
-            "apiName": "DA_CommerceCore",
-            "name": "Commerce Core"
+            "apiName": "DA_SoloPlate",
+            "name": "Solo Plate"
+          },
+          {
+            "apiName": "DA_SmallGrabBag",
+            "name": "Small Grab Bag"
           },
           {
             "apiName": "DA_18_BigGrabBag",
             "name": "Big Grab Bag"
           },
           {
-            "apiName": "DA_FeelingLucky",
-            "name": "Feeling Lucky"
+            "apiName": "DA_CyberneticUplink_Gold",
+            "name": "Cybernetic Uplink_Gold"
           },
           {
-            "apiName": "DA_ExclusiveCustomization",
-            "name": "Exclusive Customization"
+            "apiName": "DA_BuriedTreasuresIII",
+            "name": "Buried Treasures III"
           },
           {
-            "apiName": "DA_Staffsmith",
-            "name": "Staffsmith"
-          },
-          {
-            "apiName": "DA_18_WispRebatePlus",
-            "name": "Wisp Rebate Plus"
+            "apiName": "DA_CommerceCore",
+            "name": "Commerce Core"
           }
         ],
         "carousel": [
           {
-            "apiName": "DA_SpearOfShojin",
-            "name": "Spear of Shojin"
+            "apiName": "DA_GargoyleStoneplate",
+            "name": "Gargoyle Stoneplate"
           },
           {
-            "apiName": "DA_JeweledGauntlet",
-            "name": "Jeweled Gauntlet"
+            "apiName": "DA_Component_TearOfTheGoddess",
+            "name": "Component_Tear Of The Goddess"
           },
           {
-            "apiName": "DA_Component_GiantsBelt",
-            "name": "Component_Giants Belt"
+            "apiName": "DA_Component_NeedlesslyLargeRod",
+            "name": "Component_Needlessly Large Rod"
           },
           {
-            "apiName": "DA_Component_SparringGloves",
-            "name": "Component_Sparring Gloves"
+            "apiName": "DA_Component_RecurveBow",
+            "name": "Component_Recurve Bow"
           }
         ],
         "main_champion": {
-          "apiName": "DA_18_Ahri",
-          "name": "Ahri",
+          "apiName": "DA_18_Malphite",
+          "name": "Malphite",
           "cost": 4
         },
-        "tip": "Core of the comp is Ahri + Sett + Ashe. The rest of the units are flexible. If itemizing Sivir, go for Execute Primal. If far ahead and win streaking, you can play for Phoenix Primal.",
-        "difficulty": "EASY",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:00:48.549290Z"
+        "tip": "Core is Malphite + Azir + 2 Flora Fatalis for healing. Can play Ahri/Zyra/Ezreal as additional carries and Lillia/Amumu/Kennen/Maokai as supporting frontline.",
+        "difficulty": "MEDIUM",
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:42.028974Z"
       }
     },
     {
-      "name": "Moon Fire",
+      "name": "Solar Kayle",
       "tier": "A",
-      "slug": "set-18-moon-fire",
+      "slug": "set-18-solar-kayle",
       "trend": "",
       "carry": "?",
       "match_traits": [],
       "detail": {
         "units": [
           {
-            "apiName": "DA_18_Diana",
-            "name": "Diana",
-            "boardIndex": 9,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Hecarim",
-            "name": "Hecarim",
-            "boardIndex": 10,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_CrimsonRaptor18",
-            "name": "Raptor",
+            "apiName": "DA_Elderwood18_Lifeblossom",
+            "name": "Elderwood 18_Lifeblossom",
             "boardIndex": 22,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Elderwood18_StonebarkTree",
+            "name": "Elderwood 18_Stonebark Tree",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Leona",
+            "name": "Leona",
+            "boardIndex": 11,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Rakan",
+            "name": "Rakan",
+            "boardIndex": 17,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Ornn",
+            "name": "Ornn",
+            "boardIndex": 4,
             "items": [
               {
-                "apiName": "DA_LastWhisper",
-                "name": "Last Whisper"
+                "apiName": "DA_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "DA_WarmogsArmor",
+                "name": "Warmog's Armor"
+              },
+              {
+                "apiName": "DA_SpiritVisage",
+                "name": "Spirit Visage"
               }
             ],
-            "stars": 1
+            "stars": 3
           },
           {
-            "apiName": "DA_18_Zyra",
-            "name": "Zyra",
-            "boardIndex": 27,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Aphelios",
-            "name": "Aphelios",
-            "boardIndex": 21,
+            "apiName": "DA_18_Xayah",
+            "name": "Xayah",
+            "boardIndex": 26,
             "items": [
+              {
+                "apiName": "DA_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
               {
                 "apiName": "DA_RedBuff",
                 "name": "Red Buff"
@@ -482,96 +284,287 @@
               {
                 "apiName": "DA_Deathblade",
                 "name": "Deathblade"
-              },
-              {
-                "apiName": "DA_GiantSlayer",
-                "name": "Giant Slayer"
               }
             ],
-            "stars": 1
+            "stars": 3
           },
           {
-            "apiName": "DA_Brambleback18",
-            "name": "Brambleback",
-            "boardIndex": 8,
+            "apiName": "DA_18_Sejuani",
+            "name": "Sejuani",
+            "boardIndex": 10,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Kayle",
+            "name": "Kayle",
+            "boardIndex": 27,
             "items": [
               {
-                "apiName": "DA_EdgeOfNight",
-                "name": "Edge of Night"
+                "apiName": "DA_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
               },
               {
-                "apiName": "DA_Quicksilver",
-                "name": "Quicksilver"
+                "apiName": "DA_Artifact_NavoriFlickerblade",
+                "name": "Artifact_Navori Flickerblade"
               },
               {
-                "apiName": "DA_SteraksGage",
-                "name": "Sterak's Gage"
+                "apiName": "DA_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
               }
             ],
-            "stars": 1
+            "stars": 3
           },
           {
-            "apiName": "DA_Sentinel18",
-            "name": "Ancient Sentinel",
-            "boardIndex": 3,
-            "items": [
-              {
-                "apiName": "DA_ProtectorsVow",
-                "name": "Protector's Vow"
-              },
-              {
-                "apiName": "DA_ProtectorsVow",
-                "name": "Protector's Vow"
-              },
-              {
-                "apiName": "DA_WarmogsArmor",
-                "name": "Warmog's Armor"
-              }
-            ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Taric18",
-            "name": "Taric",
-            "boardIndex": 2,
+            "apiName": "DA_18_Hecarim",
+            "name": "Hecarim",
+            "boardIndex": 18,
             "items": [],
             "stars": 1
           }
         ],
         "early_comp": [
           {
+            "apiName": "DA_18_Leona",
+            "name": "Leona",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
             "apiName": "DA_18_Ornn",
             "name": "Ornn",
             "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Varus",
-            "name": "Varus",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Xayah",
-            "name": "Xayah",
-            "boardIndex": null,
             "items": [
               {
-                "apiName": "DA_LastWhisper",
-                "name": "Last Whisper"
-              },
-              {
-                "apiName": "DA_RedBuff",
-                "name": "Red Buff"
+                "apiName": "DA_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
               }
             ],
             "stars": 1
           },
           {
-            "apiName": "DA_18_Shen",
-            "name": "Shen",
+            "apiName": "DA_18_Sejuani",
+            "name": "Sejuani",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Kayle",
+            "name": "Kayle",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "DA_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "DA_18_SolarTraitAugment",
+            "name": "Solar Trait Augment"
+          },
+          {
+            "apiName": "DA_PandorasBench",
+            "name": "Pandoras Bench"
+          },
+          {
+            "apiName": "DA_PrismaticTicket",
+            "name": "Prismatic Ticket"
+          },
+          {
+            "apiName": "DA_NoScoutNoPivot",
+            "name": "No Scout No Pivot"
+          },
+          {
+            "apiName": "DA_HeroicGrabBagPlus",
+            "name": "Heroic Grab Bag Plus"
+          },
+          {
+            "apiName": "DA_MissedConnections",
+            "name": "Missed Connections"
+          },
+          {
+            "apiName": "DA_PortableForge",
+            "name": "Portable Forge"
+          },
+          {
+            "apiName": "DA_18_ElderwoodTraitAugment",
+            "name": "Elderwood Trait Augment"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "DA_GuinsoosRageblade",
+            "name": "Guinsoo's Rageblade"
+          },
+          {
+            "apiName": "DA_GargoyleStoneplate",
+            "name": "Gargoyle Stoneplate"
+          },
+          {
+            "apiName": "DA_Component_NeedlesslyLargeRod",
+            "name": "Component_Needlessly Large Rod"
+          },
+          {
+            "apiName": "DA_Component_SparringGloves",
+            "name": "Component_Sparring Gloves"
+          }
+        ],
+        "main_champion": {
+          "apiName": "DA_18_Kayle",
+          "name": "Kayle",
+          "cost": 2
+        },
+        "tip": "Roll on 3-1 to try and finish a 3* 1 cost for bench space -> Slow roll above 50g on level 5. Ornn Artifact print is very strong but only scales quickly once you get him to 3*. Kayle has built in 20% Shred at 2*. ",
+        "difficulty": "EASY",
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:43.211703Z"
+      }
+    },
+    {
+      "name": "Invoker Nidalee Copy",
+      "tier": "A",
+      "slug": "set-18-invoker-nidalee-copy",
+      "trend": "",
+      "carry": "?",
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "DA_Cinderling18",
+            "name": "Cinderling 18",
+            "boardIndex": 27,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": 20,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_KogMaw18_AD",
+            "name": "Kog'Maw",
+            "boardIndex": 22,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Krug18",
+            "name": "Krug",
+            "boardIndex": 17,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Sentinel18",
+            "name": "Ancient Sentinel",
+            "boardIndex": 19,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Malphite",
+            "name": "Malphite",
+            "boardIndex": 3,
+            "items": [
+              {
+                "apiName": "DA_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "DA_WarmogsArmor",
+                "name": "Warmog's Armor"
+              },
+              {
+                "apiName": "DA_Crownguard",
+                "name": "Crownguard"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Nidalee18_AP",
+            "name": "Nidalee",
+            "boardIndex": 14,
+            "items": [
+              {
+                "apiName": "DA_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "DA_SteraksGage",
+                "name": "Sterak's Gage"
+              },
+              {
+                "apiName": "DA_SpearOfShojin",
+                "name": "Spear of Shojin"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Sivir",
+            "name": "Sivir",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "DA_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "DA_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "DA_StrikersFlail",
+                "name": "Striker's Flail"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "DA_18_Yorick",
+            "name": "Yorick",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Cinderling18",
+            "name": "Cinderling 18",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "DA_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "DA_SpearOfShojin",
+                "name": "Spear of Shojin"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Gromp18_AP",
+            "name": "Gromp",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Scuttlecrab18",
+            "name": "Scuttlecrab",
             "boardIndex": null,
             "items": [],
             "stars": 1
@@ -579,42 +572,42 @@
         ],
         "augments": [
           {
-            "apiName": "DA_BackupBows",
-            "name": "Backup Bows"
+            "apiName": "DA_18_BigGrabBag",
+            "name": "Big Grab Bag"
           },
           {
-            "apiName": "DA_OneBuffTwoBuff",
-            "name": "One Buff Two Buff"
-          },
-          {
-            "apiName": "DA_Swordsmith",
-            "name": "Swordsmith"
-          },
-          {
-            "apiName": "DA_CarveAPath",
-            "name": "Carve APath"
-          },
-          {
-            "apiName": "DA_SwordOverflow",
-            "name": "Sword Overflow"
+            "apiName": "DA_18_PrimalAugmentPlus_Nidalee",
+            "name": "Primal Augment Plus_Nidalee"
           },
           {
             "apiName": "DA_CaretakersFavor",
             "name": "Caretakers Favor"
           },
           {
-            "apiName": "DA_BuriedTreasuresIII",
-            "name": "Buried Treasures III"
+            "apiName": "DA_Swordsmith",
+            "name": "Swordsmith"
+          },
+          {
+            "apiName": "DA_18_PrimalAugmentPlus_Sivir",
+            "name": "Primal Augment Plus_Sivir"
+          },
+          {
+            "apiName": "DA_CarveAPath",
+            "name": "Carve APath"
           },
           {
             "apiName": "DA_18_FOURcing",
             "name": "FOURcing"
+          },
+          {
+            "apiName": "DA_DeadlierBlades",
+            "name": "Deadlier Blades"
           }
         ],
         "carousel": [
           {
-            "apiName": "DA_Component_RecurveBow",
-            "name": "Component_Recurve Bow"
+            "apiName": "DA_InfinityEdge",
+            "name": "Infinity Edge"
           },
           {
             "apiName": "DA_Component_BFSword",
@@ -625,223 +618,19 @@
             "name": "Component_Sparring Gloves"
           },
           {
-            "apiName": "DA_Component_ChainVest",
-            "name": "Component_Chain Vest"
+            "apiName": "DA_Component_GiantsBelt",
+            "name": "Component_Giants Belt"
           }
         ],
         "main_champion": {
-          "apiName": "DA_18_Aphelios",
-          "name": "Aphelios",
+          "apiName": "DA_18_Sivir",
+          "name": "Sivir",
           "cost": 4
         },
-        "tip": "Core units are Aphelios + Diana + Sentinel + Mama Beak. Red Buff is BIS Aphelios but you can also play Rageblade build. Play Scuttlecrab + Rakan over Brambleback if no melee items. Can duo carry Zyra or Morgana if extra AP items. ",
+        "tip": "Krug on the Blackthorn hex. Prioritize Nidalee > Sivir items. Kogmaw provides free Shred and Sunder. Max cap is drop riftbeasts for Gnar + Ashe + Taric. Hunter emblem is incredible on Nidalee.",
         "difficulty": "MEDIUM",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:00:49.718961Z"
-      }
-    },
-    {
-      "name": "Adaptor Reroll",
-      "tier": "A",
-      "slug": "set-18-adaptor-reroll",
-      "trend": "",
-      "carry": "?",
-      "match_traits": [],
-      "detail": {
-        "units": [
-          {
-            "apiName": "DA_18_Yorick",
-            "name": "Yorick",
-            "boardIndex": 14,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Krug18",
-            "name": "Krug",
-            "boardIndex": 1,
-            "items": [],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_KogMaw18_AD",
-            "name": "Kog'Maw",
-            "boardIndex": 27,
-            "items": [
-              {
-                "apiName": "DA_SpearOfShojin",
-                "name": "Spear of Shojin"
-              },
-              {
-                "apiName": "DA_RabadonsDeathcap",
-                "name": "Rabadon's Deathcap"
-              },
-              {
-                "apiName": "DA_JeweledGauntlet",
-                "name": "Jeweled Gauntlet"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_MasterYi_AD",
-            "name": "Master Yi",
-            "boardIndex": 20,
-            "items": [
-              {
-                "apiName": "DA_GuinsoosRageblade",
-                "name": "Guinsoo's Rageblade"
-              },
-              {
-                "apiName": "DA_EdgeOfNight",
-                "name": "Edge of Night"
-              },
-              {
-                "apiName": "DA_TitansResolve",
-                "name": "Titan's Resolve"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_Vi18",
-            "name": "Vi",
-            "boardIndex": 5,
-            "items": [
-              {
-                "apiName": "DA_WarmogsArmor",
-                "name": "Warmog's Armor"
-              },
-              {
-                "apiName": "DA_GargoyleStoneplate",
-                "name": "Gargoyle Stoneplate"
-              },
-              {
-                "apiName": "DA_GargoyleStoneplate",
-                "name": "Gargoyle Stoneplate"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Sett",
-            "name": "Sett",
-            "boardIndex": 0,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Nidalee18_AP",
-            "name": "Nidalee",
-            "boardIndex": 26,
-            "items": [
-              {
-                "apiName": "DA_GuinsoosRageblade",
-                "name": "Guinsoo's Rageblade"
-              },
-              {
-                "apiName": "DA_SpearOfShojin",
-                "name": "Spear of Shojin"
-              },
-              {
-                "apiName": "DA_RabadonsDeathcap",
-                "name": "Rabadon's Deathcap"
-              }
-            ],
-            "stars": 1
-          }
-        ],
-        "early_comp": [
-          {
-            "apiName": "DA_18_MasterYi_AD",
-            "name": "Master Yi",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Karma18",
-            "name": "Karma",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Yorick",
-            "name": "Yorick",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Gromp18_AP",
-            "name": "Gromp",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "augments": [
-          {
-            "apiName": "DA_LatentForge",
-            "name": "Latent Forge"
-          },
-          {
-            "apiName": "DA_PortableForge",
-            "name": "Portable Forge"
-          },
-          {
-            "apiName": "DA_ForgedInStrength",
-            "name": "Forged In Strength"
-          },
-          {
-            "apiName": "DA_LivingForge",
-            "name": "Living Forge"
-          },
-          {
-            "apiName": "DA_URF",
-            "name": "URF"
-          },
-          {
-            "apiName": "DA_NestingAnvils",
-            "name": "Nesting Anvils"
-          },
-          {
-            "apiName": "DA_HeroicGrabBag",
-            "name": "Heroic Grab Bag"
-          },
-          {
-            "apiName": "DA_LegionOfThrees",
-            "name": "Legion Of Threes"
-          }
-        ],
-        "carousel": [
-          {
-            "apiName": "DA_GuinsoosRageblade",
-            "name": "Guinsoo's Rageblade"
-          },
-          {
-            "apiName": "DA_EdgeOfNight",
-            "name": "Edge of Night"
-          },
-          {
-            "apiName": "DA_Component_ChainVest",
-            "name": "Component_Chain Vest"
-          },
-          {
-            "apiName": "DA_Component_RecurveBow",
-            "name": "Component_Recurve Bow"
-          }
-        ],
-        "main_champion": {
-          "apiName": "DA_18_MasterYi_AD",
-          "name": "Master Yi",
-          "cost": 3
-        },
-        "tip": "+1 tier in strength with Artifact or Brawler emblem. Level 7 board is no Gromp. VI 3 is stronger than Krug 3, but harder to hit because of Vi's popularity. Item priority: Master Yi > Tank > Kogmaw > Nidalee. Only take Phoenix Primal buff if ahead. Otherwise, Execute / Healing Primal.",
-        "difficulty": "MEDIUM",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:00:50.886651Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:44.722131Z"
       }
     },
     {
@@ -1082,124 +871,122 @@
         },
         "tip": "Only play from early win streak and lots of gold. Because you are aiming for scaling 5 costs, aim to level 9 around end of Stage 4 / beginning of Stage 5. Best Draven quests are dealing damage for gold, but avoid the 10k damage in 1 round because you can get trapped.",
         "difficulty": "HARD",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:00:52.043049Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:45.894075Z"
       }
     },
     {
-      "name": "Solar Kayle",
+      "name": "Defender Cassio",
       "tier": "A",
-      "slug": "set-18-solar-kayle",
+      "slug": "set-18-defender-cassio",
       "trend": "",
       "carry": "?",
       "match_traits": [],
       "detail": {
         "units": [
           {
-            "apiName": "DA_Elderwood18_Lifeblossom",
-            "name": "Elderwood 18_Lifeblossom",
-            "boardIndex": 22,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Elderwood18_StonebarkTree",
-            "name": "Elderwood 18_Stonebark Tree",
-            "boardIndex": 0,
-            "items": [],
-            "stars": 1
-          },
-          {
             "apiName": "DA_18_Leona",
             "name": "Leona",
-            "boardIndex": 11,
+            "boardIndex": 2,
             "items": [],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Rakan",
-            "name": "Rakan",
-            "boardIndex": 17,
-            "items": [],
-            "stars": 3
+            "stars": 1
           },
           {
             "apiName": "DA_18_Ornn",
             "name": "Ornn",
-            "boardIndex": 4,
-            "items": [
-              {
-                "apiName": "DA_GargoyleStoneplate",
-                "name": "Gargoyle Stoneplate"
-              },
-              {
-                "apiName": "DA_WarmogsArmor",
-                "name": "Warmog's Armor"
-              },
-              {
-                "apiName": "DA_SpiritVisage",
-                "name": "Spirit Visage"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Xayah",
-            "name": "Xayah",
-            "boardIndex": 26,
-            "items": [
-              {
-                "apiName": "DA_GuinsoosRageblade",
-                "name": "Guinsoo's Rageblade"
-              },
-              {
-                "apiName": "DA_RedBuff",
-                "name": "Red Buff"
-              },
-              {
-                "apiName": "DA_Deathblade",
-                "name": "Deathblade"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Sejuani",
-            "name": "Sejuani",
-            "boardIndex": 10,
+            "boardIndex": 1,
             "items": [],
             "stars": 3
           },
           {
-            "apiName": "DA_18_Kayle",
-            "name": "Kayle",
+            "apiName": "DA_18_Shen",
+            "name": "Shen",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Cassiopeia",
+            "name": "Cassiopeia",
             "boardIndex": 27,
             "items": [
               {
-                "apiName": "DA_GuinsoosRageblade",
-                "name": "Guinsoo's Rageblade"
+                "apiName": "DA_SpearOfShojin",
+                "name": "Spear of Shojin"
               },
               {
-                "apiName": "DA_JeweledGauntlet",
-                "name": "Jeweled Gauntlet"
+                "apiName": "DA_HextechGunblade",
+                "name": "Hextech Gunblade"
               },
               {
-                "apiName": "DA_RabadonsDeathcap",
-                "name": "Rabadon's Deathcap"
+                "apiName": "DA_ArchangelsStaff",
+                "name": "Archangel's Staff"
               }
             ],
             "stars": 3
           },
           {
-            "apiName": "DA_18_Hecarim",
-            "name": "Hecarim",
-            "boardIndex": 18,
-            "items": [],
+            "apiName": "DA_Fiddlesticks18",
+            "name": "Fiddlesticks",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "DA_TitansResolve",
+                "name": "Titan's Resolve"
+              },
+              {
+                "apiName": "DA_AdaptiveHelm",
+                "name": "Adaptive Helm"
+              },
+              {
+                "apiName": "DA_Crownguard",
+                "name": "Crownguard"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Rammus",
+            "name": "Rammus",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "DA_IonicSpark",
+                "name": "Ionic Spark"
+              },
+              {
+                "apiName": "DA_SunfireCape",
+                "name": "Sunfire Cape"
+              },
+              {
+                "apiName": "DA_SteadfastHeart",
+                "name": "Steadfast Heart"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Lillia",
+            "name": "Lillia",
+            "boardIndex": 0,
+            "items": [
+              {
+                "apiName": "DA_ThiefsGloves",
+                "name": "Thief's Gloves"
+              }
+            ],
             "stars": 1
           }
         ],
         "early_comp": [
           {
+            "apiName": "DA_Karma18",
+            "name": "Karma",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
             "apiName": "DA_18_Leona",
             "name": "Leona",
             "boardIndex": null,
@@ -1210,101 +997,84 @@
             "apiName": "DA_18_Ornn",
             "name": "Ornn",
             "boardIndex": null,
-            "items": [
-              {
-                "apiName": "DA_GargoyleStoneplate",
-                "name": "Gargoyle Stoneplate"
-              }
-            ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Sejuani",
-            "name": "Sejuani",
-            "boardIndex": null,
             "items": [],
             "stars": 1
           },
           {
-            "apiName": "DA_18_Kayle",
-            "name": "Kayle",
+            "apiName": "DA_18_LeBlanc",
+            "name": "LeBlanc",
             "boardIndex": null,
-            "items": [
-              {
-                "apiName": "DA_GuinsoosRageblade",
-                "name": "Guinsoo's Rageblade"
-              }
-            ],
+            "items": [],
             "stars": 1
           }
         ],
         "augments": [
           {
-            "apiName": "DA_18_SolarTraitAugment",
-            "name": "Solar Trait Augment"
+            "apiName": "DA_Ascension",
+            "name": "Ascension"
           },
           {
-            "apiName": "DA_PandorasBench",
-            "name": "Pandoras Bench"
+            "apiName": "DA_18_FloraFatalisAugment",
+            "name": "Flora Fatalis Augment"
           },
           {
-            "apiName": "DA_PrismaticTicket",
-            "name": "Prismatic Ticket"
+            "apiName": "DA_SpiritOfRedemption",
+            "name": "Spirit Of Redemption"
           },
           {
-            "apiName": "DA_NoScoutNoPivot",
-            "name": "No Scout No Pivot"
+            "apiName": "DA_ItsMeBaby",
+            "name": "Its Me Baby"
           },
           {
-            "apiName": "DA_HeroicGrabBagPlus",
-            "name": "Heroic Grab Bag Plus"
+            "apiName": "DA_WovenMagic",
+            "name": "Woven Magic"
           },
           {
-            "apiName": "DA_MissedConnections",
-            "name": "Missed Connections"
+            "apiName": "DA_HeroicGrabBagPlusPlus",
+            "name": "Heroic Grab Bag Plus Plus"
           },
           {
-            "apiName": "DA_PortableForge",
-            "name": "Portable Forge"
+            "apiName": "DA_FlowingTears",
+            "name": "Flowing Tears"
           },
           {
-            "apiName": "DA_18_ElderwoodTraitAugment",
-            "name": "Elderwood Trait Augment"
+            "apiName": "DA_CookingPot",
+            "name": "Cooking Pot"
           }
         ],
         "carousel": [
           {
-            "apiName": "DA_GuinsoosRageblade",
-            "name": "Guinsoo's Rageblade"
+            "apiName": "DA_SpearOfShojin",
+            "name": "Spear of Shojin"
           },
           {
-            "apiName": "DA_GargoyleStoneplate",
-            "name": "Gargoyle Stoneplate"
+            "apiName": "DA_HextechGunblade",
+            "name": "Hextech Gunblade"
+          },
+          {
+            "apiName": "DA_Component_ChainVest",
+            "name": "Component_Chain Vest"
           },
           {
             "apiName": "DA_Component_NeedlesslyLargeRod",
             "name": "Component_Needlessly Large Rod"
-          },
-          {
-            "apiName": "DA_Component_SparringGloves",
-            "name": "Component_Sparring Gloves"
           }
         ],
         "main_champion": {
-          "apiName": "DA_18_Kayle",
-          "name": "Kayle",
-          "cost": 2
+          "apiName": "DA_18_Cassiopeia",
+          "name": "Cassiopeia",
+          "cost": 3
         },
-        "tip": "Roll on 3-1 to try and finish a 3* 1 cost for bench space -> Slow roll above 50g on level 5. Ornn Artifact print is very strong but only scales quickly once you get him to 3*. Kayle has built in 20% Shred at 2*. ",
+        "tip": "Very BIS dependent. Can play from Coven Cashout. Can also play for Ornn 3 to potentially farm Artifacts. Always play 6 Defender. Duo carry on 8 is any 4 or 5 cost AP carry. Titans on fiddle because we have no other use for bow.",
         "difficulty": "EASY",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:00:53.216438Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:47.292361Z"
       }
     },
     {
-      "name": "Soraka Flex",
+      "name": "Adaptor Reroll Copy",
       "tier": "A",
-      "slug": "set-18-soraka-flex",
+      "slug": "set-18-adaptor-reroll-copy",
       "trend": "",
       "carry": "?",
       "match_traits": [],
@@ -1313,40 +1083,62 @@
           {
             "apiName": "DA_18_Yorick",
             "name": "Yorick",
-            "boardIndex": 19,
+            "boardIndex": 14,
             "items": [],
             "stars": 1
           },
           {
-            "apiName": "DA_18_Azir",
-            "name": "Azir",
-            "boardIndex": 21,
+            "apiName": "DA_Krug18",
+            "name": "Krug",
+            "boardIndex": 1,
             "items": [],
-            "stars": 1
+            "stars": 3
           },
           {
-            "apiName": "DA_Fiddlesticks18",
-            "name": "Fiddlesticks",
-            "boardIndex": 15,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Amumu18",
-            "name": "Amumu",
-            "boardIndex": 17,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Malphite",
-            "name": "Malphite",
-            "boardIndex": 3,
+            "apiName": "DA_18_MasterYi_AD",
+            "name": "Master Yi",
+            "boardIndex": 20,
             "items": [
               {
-                "apiName": "DA_GargoyleStoneplate",
-                "name": "Gargoyle Stoneplate"
+                "apiName": "DA_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
               },
+              {
+                "apiName": "DA_EdgeOfNight",
+                "name": "Edge of Night"
+              },
+              {
+                "apiName": "DA_TitansResolve",
+                "name": "Titan's Resolve"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Rengar",
+            "name": "Rengar",
+            "boardIndex": 19,
+            "items": [
+              {
+                "apiName": "DA_TitansResolve",
+                "name": "Titan's Resolve"
+              },
+              {
+                "apiName": "DA_EdgeOfNight",
+                "name": "Edge of Night"
+              },
+              {
+                "apiName": "DA_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_Vi18",
+            "name": "Vi",
+            "boardIndex": 5,
+            "items": [
               {
                 "apiName": "DA_WarmogsArmor",
                 "name": "Warmog's Armor"
@@ -1354,55 +1146,39 @@
               {
                 "apiName": "DA_GargoyleStoneplate",
                 "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "DA_Evenshroud",
+                "name": "Evenshroud"
               }
             ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Sett",
+            "name": "Sett",
+            "boardIndex": 0,
+            "items": [],
             "stars": 1
           },
           {
-            "apiName": "DA_18_Soraka",
-            "name": "Soraka",
+            "apiName": "DA_Nidalee18_AP",
+            "name": "Nidalee",
             "boardIndex": 27,
             "items": [
               {
-                "apiName": "DA_RabadonsDeathcap",
-                "name": "Rabadon's Deathcap"
-              },
-              {
-                "apiName": "DA_NashorsTooth",
-                "name": "Nashor's Tooth"
-              },
-              {
-                "apiName": "DA_AdaptiveHelm",
-                "name": "Adaptive Helm"
-              }
-            ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Zyra",
-            "name": "Zyra",
-            "boardIndex": 25,
-            "items": [
-              {
-                "apiName": "DA_VoidStaff",
-                "name": "Void Staff"
+                "apiName": "DA_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
               },
               {
                 "apiName": "DA_SpearOfShojin",
                 "name": "Spear of Shojin"
               },
               {
-                "apiName": "DA_JeweledGauntlet",
-                "name": "Jeweled Gauntlet"
+                "apiName": "DA_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
               }
             ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Kennen",
-            "name": "Kennen",
-            "boardIndex": 16,
-            "items": [],
             "stars": 1
           }
         ],
@@ -1422,15 +1198,232 @@
             "stars": 1
           },
           {
-            "apiName": "DA_18_Yunara",
-            "name": "Yunara",
+            "apiName": "DA_Gromp18_AP",
+            "name": "Gromp",
             "boardIndex": null,
             "items": [],
             "stars": 1
           },
           {
-            "apiName": "DA_18_Rakan",
-            "name": "Rakan",
+            "apiName": "DA_18_MasterYi_AD",
+            "name": "Master Yi",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "DA_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "DA_LatentForge",
+            "name": "Latent Forge"
+          },
+          {
+            "apiName": "DA_PortableForge",
+            "name": "Portable Forge"
+          },
+          {
+            "apiName": "DA_ForgedInStrength",
+            "name": "Forged In Strength"
+          },
+          {
+            "apiName": "DA_LivingForge",
+            "name": "Living Forge"
+          },
+          {
+            "apiName": "DA_NestingAnvils",
+            "name": "Nesting Anvils"
+          },
+          {
+            "apiName": "DA_HeroicGrabBag",
+            "name": "Heroic Grab Bag"
+          },
+          {
+            "apiName": "DA_LegionOfThrees",
+            "name": "Legion Of Threes"
+          },
+          {
+            "apiName": "DA_18_BigGrabBag",
+            "name": "Big Grab Bag"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "DA_GuinsoosRageblade",
+            "name": "Guinsoo's Rageblade"
+          },
+          {
+            "apiName": "DA_Component_RecurveBow",
+            "name": "Component_Recurve Bow"
+          },
+          {
+            "apiName": "DA_Component_ChainVest",
+            "name": "Component_Chain Vest"
+          },
+          {
+            "apiName": "DA_Component_BFSword",
+            "name": "Component_BFSword"
+          }
+        ],
+        "main_champion": {
+          "apiName": "DA_18_MasterYi_AD",
+          "name": "Master Yi",
+          "cost": 3
+        },
+        "tip": "+1 tier in strength with Artifact.  VI 3 is stronger than Krug 3. Item priority: Master Yi/Rengar > Tank > Nidalee. Only take Phoenix Primal buff if ahead. Otherwise, Execute / Healing Primal. Rengar and Yi have the exact same BIS. Yi is stronger but itemize whoever is upgraded first. ",
+        "difficulty": "MEDIUM",
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:48.822043Z"
+      }
+    },
+    {
+      "name": "Moon Fire",
+      "tier": "B",
+      "slug": "set-18-moon-fire",
+      "trend": "",
+      "carry": "?",
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "DA_18_Diana",
+            "name": "Diana",
+            "boardIndex": 9,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Hecarim",
+            "name": "Hecarim",
+            "boardIndex": 10,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_CrimsonRaptor18",
+            "name": "Mama Beak",
+            "boardIndex": 22,
+            "items": [
+              {
+                "apiName": "DA_LastWhisper",
+                "name": "Last Whisper"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Zyra",
+            "name": "Zyra",
+            "boardIndex": 27,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Aphelios",
+            "name": "Aphelios",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "DA_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "DA_Deathblade",
+                "name": "Deathblade"
+              },
+              {
+                "apiName": "DA_GiantSlayer",
+                "name": "Giant Slayer"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Brambleback18",
+            "name": "Brambleback",
+            "boardIndex": 8,
+            "items": [
+              {
+                "apiName": "DA_EdgeOfNight",
+                "name": "Edge of Night"
+              },
+              {
+                "apiName": "DA_Quicksilver",
+                "name": "Quicksilver"
+              },
+              {
+                "apiName": "DA_SteraksGage",
+                "name": "Sterak's Gage"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Sentinel18",
+            "name": "Ancient Sentinel",
+            "boardIndex": 3,
+            "items": [
+              {
+                "apiName": "DA_ProtectorsVow",
+                "name": "Protector's Vow"
+              },
+              {
+                "apiName": "DA_ProtectorsVow",
+                "name": "Protector's Vow"
+              },
+              {
+                "apiName": "DA_WarmogsArmor",
+                "name": "Warmog's Armor"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Taric18",
+            "name": "Taric",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "DA_18_Ornn",
+            "name": "Ornn",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Varus",
+            "name": "Varus",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Xayah",
+            "name": "Xayah",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "DA_LastWhisper",
+                "name": "Last Whisper"
+              },
+              {
+                "apiName": "DA_RedBuff",
+                "name": "Red Buff"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Shen",
+            "name": "Shen",
             "boardIndex": null,
             "items": [],
             "stars": 1
@@ -1438,70 +1431,70 @@
         ],
         "augments": [
           {
-            "apiName": "DA_BlackthornTraitAugment",
-            "name": "Blackthorn Trait Augment"
+            "apiName": "DA_BackupBows",
+            "name": "Backup Bows"
           },
           {
-            "apiName": "DA_FlowingTears",
-            "name": "Flowing Tears"
+            "apiName": "DA_OneBuffTwoBuff",
+            "name": "One Buff Two Buff"
           },
           {
-            "apiName": "DA_SoloPlate",
-            "name": "Solo Plate"
+            "apiName": "DA_Swordsmith",
+            "name": "Swordsmith"
           },
           {
-            "apiName": "DA_SmallGrabBag",
-            "name": "Small Grab Bag"
+            "apiName": "DA_CarveAPath",
+            "name": "Carve APath"
           },
           {
-            "apiName": "DA_18_BigGrabBag",
-            "name": "Big Grab Bag"
+            "apiName": "DA_SwordOverflow",
+            "name": "Sword Overflow"
           },
           {
-            "apiName": "DA_CyberneticUplink_Gold",
-            "name": "Cybernetic Uplink_Gold"
+            "apiName": "DA_CaretakersFavor",
+            "name": "Caretakers Favor"
           },
           {
             "apiName": "DA_BuriedTreasuresIII",
             "name": "Buried Treasures III"
           },
           {
-            "apiName": "DA_CommerceCore",
-            "name": "Commerce Core"
+            "apiName": "DA_18_FOURcing",
+            "name": "FOURcing"
           }
         ],
         "carousel": [
           {
-            "apiName": "DA_GargoyleStoneplate",
-            "name": "Gargoyle Stoneplate"
-          },
-          {
-            "apiName": "DA_Component_TearOfTheGoddess",
-            "name": "Component_Tear Of The Goddess"
-          },
-          {
-            "apiName": "DA_Component_NeedlesslyLargeRod",
-            "name": "Component_Needlessly Large Rod"
-          },
-          {
             "apiName": "DA_Component_RecurveBow",
             "name": "Component_Recurve Bow"
+          },
+          {
+            "apiName": "DA_Component_BFSword",
+            "name": "Component_BFSword"
+          },
+          {
+            "apiName": "DA_Component_SparringGloves",
+            "name": "Component_Sparring Gloves"
+          },
+          {
+            "apiName": "DA_Component_ChainVest",
+            "name": "Component_Chain Vest"
           }
         ],
         "main_champion": {
-          "apiName": "DA_18_Malphite",
-          "name": "Malphite",
+          "apiName": "DA_18_Aphelios",
+          "name": "Aphelios",
           "cost": 4
         },
-        "tip": "Core is Malphite + Azir + 2 Flora Fatalis for healing. Can play Ahri/Zyra/Ezreal as additional carries and Lillia/Amumu/Kennen/Maokai as supporting frontline.",
+        "tip": "Core units are Aphelios + Diana + Sentinel + Mama Beak. Red Buff is BIS Aphelios but you can also play Rageblade build. Play Scuttlecrab + Rakan over Brambleback if no melee items. Can duo carry Zyra or Morgana if extra AP items. ",
         "difficulty": "MEDIUM",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:00:54.719893Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:50.006027Z"
       }
     },
     {
       "name": "Dragon Princess",
-      "tier": "A",
+      "tier": "B",
       "slug": "set-18-dragon-princess",
       "trend": "",
       "carry": "?",
@@ -1703,19 +1696,39 @@
         },
         "tip": "Alpha Mark the Elder Dragon. Your duo carry with Elder Dragon is highly flexible. Can replace Morgana for Lux, Alune, Soraka for AP options. Can also play AD duo carry: Ashe, Draven, Ezreal, etc. ",
         "difficulty": "HARD",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:00:55.908041Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:51.458414Z"
       }
     },
     {
       "name": "Riftbeast Reroll",
-      "tier": "A",
+      "tier": "B",
       "slug": "set-18-riftbeast-reroll",
       "trend": "",
       "carry": "?",
       "match_traits": [],
       "detail": {
         "units": [
+          {
+            "apiName": "DA_Cinderling18",
+            "name": "Cinderling 18",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "DA_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "DA_BlueBuff",
+                "name": "Blue Buff"
+              },
+              {
+                "apiName": "DA_LastWhisper",
+                "name": "Last Whisper"
+              }
+            ],
+            "stars": 3
+          },
           {
             "apiName": "DA_18_Sentry",
             "name": "Pebbles",
@@ -1749,33 +1762,6 @@
             "boardIndex": 18,
             "items": [],
             "stars": 3
-          },
-          {
-            "apiName": "DA_Gromp18_AP",
-            "name": "Gromp",
-            "boardIndex": 27,
-            "items": [
-              {
-                "apiName": "DA_SpearOfShojin",
-                "name": "Spear of Shojin"
-              },
-              {
-                "apiName": "DA_HextechGunblade",
-                "name": "Hextech Gunblade"
-              },
-              {
-                "apiName": "DA_InfinityEdge",
-                "name": "Infinity Edge"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_KogMaw18_AD",
-            "name": "Kog'Maw",
-            "boardIndex": 25,
-            "items": [],
-            "stars": 1
           },
           {
             "apiName": "DA_Krug18",
@@ -1815,9 +1801,23 @@
               }
             ],
             "stars": 1
+          },
+          {
+            "apiName": "DA_18_GnarSmall",
+            "name": "Gnar",
+            "boardIndex": 19,
+            "items": [],
+            "stars": 1
           }
         ],
         "early_comp": [
+          {
+            "apiName": "DA_Cinderling18",
+            "name": "Cinderling 18",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
           {
             "apiName": "DA_18_Sentry",
             "name": "Pebbles",
@@ -1826,8 +1826,8 @@
             "stars": 1
           },
           {
-            "apiName": "DA_Gromp18_AP",
-            "name": "Gromp",
+            "apiName": "DA_18_Yorick",
+            "name": "Yorick",
             "boardIndex": null,
             "items": [],
             "stars": 1
@@ -1835,13 +1835,6 @@
           {
             "apiName": "DA_Scuttlecrab18",
             "name": "Scuttlecrab",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_KogMaw18_AD",
-            "name": "Kog'Maw",
             "boardIndex": null,
             "items": [],
             "stars": 1
@@ -1883,8 +1876,231 @@
         ],
         "carousel": [
           {
-            "apiName": "DA_SpearOfShojin",
-            "name": "Spear of Shojin"
+            "apiName": "DA_LastWhisper",
+            "name": "Last Whisper"
+          },
+          {
+            "apiName": "DA_Component_BFSword",
+            "name": "Component_BFSword"
+          },
+          {
+            "apiName": "DA_Component_TearOfTheGoddess",
+            "name": "Component_Tear Of The Goddess"
+          },
+          {
+            "apiName": "DA_Component_GiantsBelt",
+            "name": "Component_Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "DA_Cinderling18",
+          "name": "Cinderling 18",
+          "cost": 1
+        },
+        "tip": "Use 5 Riftbeast shops to finish your 3* because you want to rush 7 Riftbeast on Level 7 ASAP. You can carry ALL of the riftbeast carries besides Mama Beak if you have items. Krug 3 is the best tank but you can also tank Sentinel 2 > Scuttle Crab 3. Alpha Mark Cinderling early > Crab late.",
+        "difficulty": "EASY",
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:52.642479Z"
+      }
+    },
+    {
+      "name": "Cashout Morgana",
+      "tier": "B",
+      "slug": "set-18-cashout-morgana",
+      "trend": "",
+      "carry": "?",
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "DA_18_Sentry",
+            "name": "Pebbles",
+            "boardIndex": 23,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Diana",
+            "name": "Diana",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Hecarim",
+            "name": "Hecarim",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_KogMaw18_AD",
+            "name": "Kog'Maw",
+            "boardIndex": 26,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Brambleback18",
+            "name": "Brambleback",
+            "boardIndex": 19,
+            "items": [
+              {
+                "apiName": "DA_EdgeOfNight",
+                "name": "Edge of Night"
+              },
+              {
+                "apiName": "DA_GiantSlayer",
+                "name": "Giant Slayer"
+              },
+              {
+                "apiName": "DA_Quicksilver",
+                "name": "Quicksilver"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Morgana",
+            "name": "Morgana",
+            "boardIndex": 18,
+            "items": [
+              {
+                "apiName": "DA_Morellonomicon",
+                "name": "Morellonomicon"
+              },
+              {
+                "apiName": "DA_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              },
+              {
+                "apiName": "DA_VoidStaff",
+                "name": "Void Staff"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Sentinel18",
+            "name": "Ancient Sentinel",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "DA_ProtectorsVow",
+                "name": "Protector's Vow"
+              },
+              {
+                "apiName": "DA_WarmogsArmor",
+                "name": "Warmog's Armor"
+              },
+              {
+                "apiName": "DA_AdaptiveHelm",
+                "name": "Adaptive Helm"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Taric18",
+            "name": "Taric",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Alune",
+            "name": "Alune",
+            "boardIndex": 25,
+            "items": [
+              {
+                "apiName": "DA_18_EmblemInvoker",
+                "name": "Emblem Invoker"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "DA_18_Kobuko",
+            "name": "Kobuko",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Sentry",
+            "name": "Pebbles",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Teemo",
+            "name": "Teemo",
+            "boardIndex": null,
+            "items": [
+              {
+                "apiName": "DA_VoidStaff",
+                "name": "Void Staff"
+              },
+              {
+                "apiName": "DA_Morellonomicon",
+                "name": "Morellonomicon"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Rammus",
+            "name": "Rammus",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "DA_18_CovenTraitAugment_LootToAP",
+            "name": "Coven Trait Augment_Loot To AP"
+          },
+          {
+            "apiName": "DA_18_CovenTraitAugment",
+            "name": "Coven Trait Augment"
+          },
+          {
+            "apiName": "DA_WandOverflow",
+            "name": "Wand Overflow"
+          },
+          {
+            "apiName": "DA_SeraphimsStaff",
+            "name": "Seraphims Staff"
+          },
+          {
+            "apiName": "DA_Staffsmith",
+            "name": "Staffsmith"
+          },
+          {
+            "apiName": "DA_DeadlierCaps",
+            "name": "Deadlier Caps"
+          },
+          {
+            "apiName": "DA_BoosterPack",
+            "name": "Booster Pack"
+          },
+          {
+            "apiName": "DA_18_OnesTwosThree",
+            "name": "Ones Twos Three"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "DA_Morellonomicon",
+            "name": "Morellonomicon"
+          },
+          {
+            "apiName": "DA_VoidStaff",
+            "name": "Void Staff"
           },
           {
             "apiName": "DA_Component_NeedlesslyLargeRod",
@@ -1893,26 +2109,418 @@
           {
             "apiName": "DA_Component_TearOfTheGoddess",
             "name": "Component_Tear Of The Goddess"
-          },
-          {
-            "apiName": "DA_Component_BFSword",
-            "name": "Component_BFSword"
           }
         ],
         "main_champion": {
-          "apiName": "DA_Gromp18_AP",
-          "name": "Gromp",
+          "apiName": "DA_18_Morgana",
+          "name": "Morgana",
+          "cost": 4
+        },
+        "tip": "Can play from Coven Cashout. Aim for 250 + essence for chance at Morgana 2 + item cashout. Void staff still okay with Kog since he doesn't hit backline.",
+        "difficulty": "HARD",
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:54.216634Z"
+      }
+    },
+    {
+      "name": "Spirit Blossom",
+      "tier": "B",
+      "slug": "set-18-spirit-blossom",
+      "trend": "",
+      "carry": "?",
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "DA_Karma18",
+            "name": "Karma",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Yorick",
+            "name": "Yorick",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Vi18",
+            "name": "Vi",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Sivir",
+            "name": "Sivir",
+            "boardIndex": 24,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Zyra",
+            "name": "Zyra",
+            "boardIndex": 23,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Ahri",
+            "name": "Ahri",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "DA_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "DA_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "DA_StrikersFlail",
+                "name": "Striker's Flail"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Sett",
+            "name": "Sett",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "DA_BrambleVest",
+                "name": "Bramble Vest"
+              },
+              {
+                "apiName": "DA_DragonsClaw",
+                "name": "Dragon's Claw"
+              },
+              {
+                "apiName": "DA_WarmogsArmor",
+                "name": "Warmog's Armor"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_GnarSmall",
+            "name": "Gnar",
+            "boardIndex": 10,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Ashe",
+            "name": "Ashe",
+            "boardIndex": 25,
+            "items": [
+              {
+                "apiName": "DA_RedBuff",
+                "name": "Red Buff"
+              },
+              {
+                "apiName": "DA_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "DA_LastWhisper",
+                "name": "Last Whisper"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "DA_Karma18",
+            "name": "Karma",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Rakan",
+            "name": "Rakan",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Yorick",
+            "name": "Yorick",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Yunara",
+            "name": "Yunara",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "DA_Slammin",
+            "name": "Slammin"
+          },
+          {
+            "apiName": "DA_JeweledLotus_I",
+            "name": "Jeweled Lotus_I"
+          },
+          {
+            "apiName": "DA_CommerceCore",
+            "name": "Commerce Core"
+          },
+          {
+            "apiName": "DA_18_BigGrabBag",
+            "name": "Big Grab Bag"
+          },
+          {
+            "apiName": "DA_FeelingLucky",
+            "name": "Feeling Lucky"
+          },
+          {
+            "apiName": "DA_ExclusiveCustomization",
+            "name": "Exclusive Customization"
+          },
+          {
+            "apiName": "DA_Staffsmith",
+            "name": "Staffsmith"
+          },
+          {
+            "apiName": "DA_18_WispRebatePlus",
+            "name": "Wisp Rebate Plus"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "DA_SpearOfShojin",
+            "name": "Spear of Shojin"
+          },
+          {
+            "apiName": "DA_JeweledGauntlet",
+            "name": "Jeweled Gauntlet"
+          },
+          {
+            "apiName": "DA_Component_GiantsBelt",
+            "name": "Component_Giants Belt"
+          },
+          {
+            "apiName": "DA_Component_SparringGloves",
+            "name": "Component_Sparring Gloves"
+          }
+        ],
+        "main_champion": {
+          "apiName": "DA_18_Ahri",
+          "name": "Ahri",
+          "cost": 4
+        },
+        "tip": "Core of the comp is Ahri + Sett + Ashe. The rest of the units are flexible. If itemizing Sivir, go for Execute Primal. If far ahead and win streaking, you can play for Phoenix Primal.",
+        "difficulty": "EASY",
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:55.686270Z"
+      }
+    },
+    {
+      "name": "Caitlyn Hunters",
+      "tier": "B",
+      "slug": "set-18-caitlyn-hunters",
+      "trend": "",
+      "carry": "?",
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "DA_18_Rakan",
+            "name": "Rakan",
+            "boardIndex": 16,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Sejuani",
+            "name": "Sejuani",
+            "boardIndex": 15,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Caitlyn",
+            "name": "Caitlyn",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "DA_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              },
+              {
+                "apiName": "DA_KrakensFury",
+                "name": "Kraken's Fury"
+              },
+              {
+                "apiName": "DA_KrakensFury",
+                "name": "Kraken's Fury"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_Scuttlecrab18",
+            "name": "Scuttlecrab",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "DA_SpiritVisage",
+                "name": "Spirit Visage"
+              },
+              {
+                "apiName": "DA_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "DA_WarmogsArmor",
+                "name": "Warmog's Armor"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Tristana",
+            "name": "Tristana",
+            "boardIndex": 25,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Vi18",
+            "name": "Vi",
+            "boardIndex": 17,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Sivir",
+            "name": "Sivir",
+            "boardIndex": 26,
+            "items": [
+              {
+                "apiName": "DA_InfinityEdge",
+                "name": "Infinity Edge"
+              },
+              {
+                "apiName": "DA_LastWhisper",
+                "name": "Last Whisper"
+              },
+              {
+                "apiName": "DA_RedBuff",
+                "name": "Red Buff"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "DA_18_Caitlyn",
+            "name": "Caitlyn",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Rakan",
+            "name": "Rakan",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Yorick",
+            "name": "Yorick",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Tristana",
+            "name": "Tristana",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "DA_SpeedyDoubleKill",
+            "name": "Speedy Double Kill"
+          },
+          {
+            "apiName": "DA_BackupBows",
+            "name": "Backup Bows"
+          },
+          {
+            "apiName": "DA_KickStart",
+            "name": "Kick Start"
+          },
+          {
+            "apiName": "DA_PrismaticTicket",
+            "name": "Prismatic Ticket"
+          },
+          {
+            "apiName": "DA_Replication",
+            "name": "Replication"
+          },
+          {
+            "apiName": "DA_ShimmerscaleEssence",
+            "name": "Shimmerscale Essence"
+          },
+          {
+            "apiName": "DA_TradeSector",
+            "name": "Trade Sector"
+          },
+          {
+            "apiName": "DA_HeroicGrabBag",
+            "name": "Heroic Grab Bag"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "DA_GuinsoosRageblade",
+            "name": "Guinsoo's Rageblade"
+          },
+          {
+            "apiName": "DA_KrakensFury",
+            "name": "Kraken's Fury"
+          },
+          {
+            "apiName": "DA_Component_RecurveBow",
+            "name": "Component_Recurve Bow"
+          },
+          {
+            "apiName": "DA_Component_GiantsBelt",
+            "name": "Component_Giants Belt"
+          }
+        ],
+        "main_champion": {
+          "apiName": "DA_18_Caitlyn",
+          "name": "Caitlyn",
           "cost": 2
         },
-        "tip": "You can roll on 5 a bit for Pebbles copies but you need to go level 7 fast for 7 riftbeast. You can carry ALL of the riftbeast carries besides Mama Beak if you have items. Krug 3 is the best tank but you can also tank Sentinel 2 > Scuttle Crab 3. Alpha Mark Crab for defensive stats.",
+        "tip": "Can also tank Sejuani 3. Tank whoever you can hit first. Can also play 4 Vanguard version with Elise. Sivir takes leftover utility / AD items (red buff highly impractical so oftentimes you play Morello).",
         "difficulty": "EASY",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:00:57.088989Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:57.124572Z"
       }
     },
     {
       "name": "Adaptor Nidalee",
-      "tier": "A",
+      "tier": "C",
       "slug": "set-18-adaptor-nidalee",
       "trend": "",
       "carry": "?",
@@ -2113,1005 +2721,13 @@
         },
         "tip": "Prioritize Nidalee > Morello on Morgana + Tank > leftover AP on Morgana. If above 50HP with Nidalee, choose Phoenix Primal (item). Otherwise, go for Execute Primal. Riftbeast Alpha Mark the Scuttle Crab. Kogmaw provides free Sunder / Shred. ",
         "difficulty": "MEDIUM",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:00:58.269509Z"
-      }
-    },
-    {
-      "name": "Caitlyn Hunters",
-      "tier": "B",
-      "slug": "set-18-caitlyn-hunters",
-      "trend": "",
-      "carry": "?",
-      "match_traits": [],
-      "detail": {
-        "units": [
-          {
-            "apiName": "DA_18_Rakan",
-            "name": "Rakan",
-            "boardIndex": 16,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Sejuani",
-            "name": "Sejuani",
-            "boardIndex": 15,
-            "items": [],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Caitlyn",
-            "name": "Caitlyn",
-            "boardIndex": 27,
-            "items": [
-              {
-                "apiName": "DA_GuinsoosRageblade",
-                "name": "Guinsoo's Rageblade"
-              },
-              {
-                "apiName": "DA_KrakensFury",
-                "name": "Kraken's Fury"
-              },
-              {
-                "apiName": "DA_KrakensFury",
-                "name": "Kraken's Fury"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_Scuttlecrab18",
-            "name": "Scuttlecrab",
-            "boardIndex": 4,
-            "items": [
-              {
-                "apiName": "DA_SpiritVisage",
-                "name": "Spirit Visage"
-              },
-              {
-                "apiName": "DA_GargoyleStoneplate",
-                "name": "Gargoyle Stoneplate"
-              },
-              {
-                "apiName": "DA_WarmogsArmor",
-                "name": "Warmog's Armor"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Tristana",
-            "name": "Tristana",
-            "boardIndex": 25,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Vi18",
-            "name": "Vi",
-            "boardIndex": 17,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Sivir",
-            "name": "Sivir",
-            "boardIndex": 26,
-            "items": [
-              {
-                "apiName": "DA_InfinityEdge",
-                "name": "Infinity Edge"
-              },
-              {
-                "apiName": "DA_LastWhisper",
-                "name": "Last Whisper"
-              },
-              {
-                "apiName": "DA_RedBuff",
-                "name": "Red Buff"
-              }
-            ],
-            "stars": 1
-          }
-        ],
-        "early_comp": [
-          {
-            "apiName": "DA_18_Caitlyn",
-            "name": "Caitlyn",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Rakan",
-            "name": "Rakan",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Yorick",
-            "name": "Yorick",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Tristana",
-            "name": "Tristana",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "augments": [
-          {
-            "apiName": "DA_SpeedyDoubleKill",
-            "name": "Speedy Double Kill"
-          },
-          {
-            "apiName": "DA_BackupBows",
-            "name": "Backup Bows"
-          },
-          {
-            "apiName": "DA_KickStart",
-            "name": "Kick Start"
-          },
-          {
-            "apiName": "DA_PrismaticTicket",
-            "name": "Prismatic Ticket"
-          },
-          {
-            "apiName": "DA_Replication",
-            "name": "Replication"
-          },
-          {
-            "apiName": "DA_ShimmerscaleEssence",
-            "name": "Shimmerscale Essence"
-          },
-          {
-            "apiName": "DA_TradeSector",
-            "name": "Trade Sector"
-          },
-          {
-            "apiName": "DA_HeroicGrabBag",
-            "name": "Heroic Grab Bag"
-          }
-        ],
-        "carousel": [
-          {
-            "apiName": "DA_GuinsoosRageblade",
-            "name": "Guinsoo's Rageblade"
-          },
-          {
-            "apiName": "DA_KrakensFury",
-            "name": "Kraken's Fury"
-          },
-          {
-            "apiName": "DA_Component_RecurveBow",
-            "name": "Component_Recurve Bow"
-          },
-          {
-            "apiName": "DA_Component_GiantsBelt",
-            "name": "Component_Giants Belt"
-          }
-        ],
-        "main_champion": {
-          "apiName": "DA_18_Caitlyn",
-          "name": "Caitlyn",
-          "cost": 2
-        },
-        "tip": "Can also tank Sejuani 3. Tank whoever you can hit first. Can also play 4 Vanguard version with Elise. Sivir takes leftover utility / AD items (red buff highly impractical so oftentimes you play Morello).",
-        "difficulty": "EASY",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:00:59.454549Z"
-      }
-    },
-    {
-      "name": "Pebbles 3 Tempo",
-      "tier": "B",
-      "slug": "set-18-pebbles-3-tempo",
-      "trend": "",
-      "carry": "?",
-      "match_traits": [],
-      "detail": {
-        "units": [
-          {
-            "apiName": "DA_18_Sentry",
-            "name": "Pebbles",
-            "boardIndex": 27,
-            "items": [
-              {
-                "apiName": "DA_BlueBuff",
-                "name": "Blue Buff"
-              },
-              {
-                "apiName": "DA_RabadonsDeathcap",
-                "name": "Rabadon's Deathcap"
-              },
-              {
-                "apiName": "DA_HextechGunblade",
-                "name": "Hextech Gunblade"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_Scuttlecrab18",
-            "name": "Scuttlecrab",
-            "boardIndex": 3,
-            "items": [],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Teemo",
-            "name": "Teemo",
-            "boardIndex": 23,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_KogMaw18_AD",
-            "name": "Kog'Maw",
-            "boardIndex": 25,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Morgana",
-            "name": "Morgana",
-            "boardIndex": 18,
-            "items": [
-              {
-                "apiName": "DA_Morellonomicon",
-                "name": "Morellonomicon"
-              },
-              {
-                "apiName": "DA_RabadonsDeathcap",
-                "name": "Rabadon's Deathcap"
-              }
-            ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Sentinel18",
-            "name": "Ancient Sentinel",
-            "boardIndex": 4,
-            "items": [
-              {
-                "apiName": "DA_ProtectorsVow",
-                "name": "Protector's Vow"
-              },
-              {
-                "apiName": "DA_WarmogsArmor",
-                "name": "Warmog's Armor"
-              },
-              {
-                "apiName": "DA_AdaptiveHelm",
-                "name": "Adaptive Helm"
-              }
-            ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Ivern",
-            "name": "Ivern",
-            "boardIndex": 21,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Maokai",
-            "name": "Maokai",
-            "boardIndex": 2,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Taric18",
-            "name": "Taric",
-            "boardIndex": 1,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "early_comp": [
-          {
-            "apiName": "DA_18_Sentry",
-            "name": "Pebbles",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Gromp18_AP",
-            "name": "Gromp",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Scuttlecrab18",
-            "name": "Scuttlecrab",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_KogMaw18_AD",
-            "name": "Kog'Maw",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "augments": [
-          {
-            "apiName": "DA_SeraphimsStaff",
-            "name": "Seraphims Staff"
-          },
-          {
-            "apiName": "DA_DeadlierCaps",
-            "name": "Deadlier Caps"
-          },
-          {
-            "apiName": "DA_WandOverflow",
-            "name": "Wand Overflow"
-          },
-          {
-            "apiName": "DA_Replication",
-            "name": "Replication"
-          },
-          {
-            "apiName": "DA_FlowingTears",
-            "name": "Flowing Tears"
-          },
-          {
-            "apiName": "DA_MissedConnections",
-            "name": "Missed Connections"
-          },
-          {
-            "apiName": "DA_18_RiftbeastTraitAugment",
-            "name": "Riftbeast Trait Augment"
-          },
-          {
-            "apiName": "DA_WorththeWait",
-            "name": "Worththe Wait"
-          }
-        ],
-        "carousel": [
-          {
-            "apiName": "DA_BlueBuff",
-            "name": "Blue Buff"
-          },
-          {
-            "apiName": "DA_RabadonsDeathcap",
-            "name": "Rabadon's Deathcap"
-          },
-          {
-            "apiName": "DA_Component_NeedlesslyLargeRod",
-            "name": "Component_Needlessly Large Rod"
-          },
-          {
-            "apiName": "DA_Component_GiantsBelt",
-            "name": "Component_Giants Belt"
-          }
-        ],
-        "main_champion": {
-          "apiName": "DA_18_Sentry",
-          "name": "Pebbles",
-          "cost": 1
-        },
-        "tip": "Only play if you have lots of Pebbles copies on stage 2 (4+). Pebbles can go \"infinite\" when he has 22 mana per second regen. Use 5 riftbeast shop guarantees to finish 3*. Chasing entire 3* board is often bait so only focus on units that will hold items. Only play the 3x Archangels build with Seraphim's Staff.",
-        "difficulty": "EASY",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:00.643769Z"
-      }
-    },
-    {
-      "name": "Defender Cassio",
-      "tier": "B",
-      "slug": "set-18-defender-cassio",
-      "trend": "",
-      "carry": "?",
-      "match_traits": [],
-      "detail": {
-        "units": [
-          {
-            "apiName": "DA_18_Ornn",
-            "name": "Ornn",
-            "boardIndex": 0,
-            "items": [],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Leona",
-            "name": "Leona",
-            "boardIndex": 1,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Shen",
-            "name": "Shen",
-            "boardIndex": 3,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Rammus",
-            "name": "Rammus",
-            "boardIndex": 2,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Cassiopeia",
-            "name": "Cassiopeia",
-            "boardIndex": 27,
-            "items": [
-              {
-                "apiName": "DA_SpearOfShojin",
-                "name": "Spear of Shojin"
-              },
-              {
-                "apiName": "DA_HextechGunblade",
-                "name": "Hextech Gunblade"
-              },
-              {
-                "apiName": "DA_RabadonsDeathcap",
-                "name": "Rabadon's Deathcap"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_Fiddlesticks18",
-            "name": "Fiddlesticks",
-            "boardIndex": 5,
-            "items": [
-              {
-                "apiName": "DA_SunfireCape",
-                "name": "Sunfire Cape"
-              },
-              {
-                "apiName": "DA_IonicSpark",
-                "name": "Ionic Spark"
-              },
-              {
-                "apiName": "DA_WarmogsArmor",
-                "name": "Warmog's Armor"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Lillia",
-            "name": "Lillia",
-            "boardIndex": 4,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "early_comp": [
-          {
-            "apiName": "DA_18_Leona",
-            "name": "Leona",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Ornn",
-            "name": "Ornn",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_LeBlanc",
-            "name": "LeBlanc",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Karma18",
-            "name": "Karma",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "augments": [
-          {
-            "apiName": "DA_DeadlierCaps",
-            "name": "Deadlier Caps"
-          },
-          {
-            "apiName": "DA_Ascension",
-            "name": "Ascension"
-          },
-          {
-            "apiName": "DA_18_FloraFatalisAugment",
-            "name": "Flora Fatalis Augment"
-          },
-          {
-            "apiName": "DA_ElectrochargeII",
-            "name": "Electrocharge II"
-          },
-          {
-            "apiName": "DA_SpiritOfRedemption",
-            "name": "Spirit Of Redemption"
-          },
-          {
-            "apiName": "DA_ItsMeBaby",
-            "name": "Its Me Baby"
-          },
-          {
-            "apiName": "DA_WovenMagic",
-            "name": "Woven Magic"
-          },
-          {
-            "apiName": "DA_HeroicGrabBagPlusPlus",
-            "name": "Heroic Grab Bag Plus Plus"
-          }
-        ],
-        "carousel": [
-          {
-            "apiName": "DA_SpearOfShojin",
-            "name": "Spear of Shojin"
-          },
-          {
-            "apiName": "DA_HextechGunblade",
-            "name": "Hextech Gunblade"
-          },
-          {
-            "apiName": "DA_RabadonsDeathcap",
-            "name": "Rabadon's Deathcap"
-          },
-          {
-            "apiName": "DA_Component_GiantsBelt",
-            "name": "Component_Giants Belt"
-          }
-        ],
-        "main_champion": {
-          "apiName": "DA_18_Cassiopeia",
-          "name": "Cassiopeia",
-          "cost": 3
-        },
-        "tip": "Can play from Coven Cashout. Can also play for Ornn 3 to potentially farm Artifacts. Always play 6 Defender. Duo carry on 8 is any 4 or 5 cost AP carry.",
-        "difficulty": "EASY",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:01.814414Z"
-      }
-    },
-    {
-      "name": "Moo Nara",
-      "tier": "B",
-      "slug": "set-18-moo-nara",
-      "trend": "",
-      "carry": "?",
-      "match_traits": [],
-      "detail": {
-        "units": [
-          {
-            "apiName": "DA_18_Alistar",
-            "name": "Alistar",
-            "boardIndex": 4,
-            "items": [
-              {
-                "apiName": "DA_GargoyleStoneplate",
-                "name": "Gargoyle Stoneplate"
-              },
-              {
-                "apiName": "DA_SpiritVisage",
-                "name": "Spirit Visage"
-              },
-              {
-                "apiName": "DA_WarmogsArmor",
-                "name": "Warmog's Armor"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Yunara",
-            "name": "Yunara",
-            "boardIndex": 27,
-            "items": [
-              {
-                "apiName": "DA_Deathblade",
-                "name": "Deathblade"
-              },
-              {
-                "apiName": "DA_SpearOfShojin",
-                "name": "Spear of Shojin"
-              },
-              {
-                "apiName": "DA_StrikersFlail",
-                "name": "Striker's Flail"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Ezreal",
-            "name": "Ezreal",
-            "boardIndex": 26,
-            "items": [
-              {
-                "apiName": "DA_LastWhisper",
-                "name": "Last Whisper"
-              },
-              {
-                "apiName": "DA_SpearOfShojin",
-                "name": "Spear of Shojin"
-              },
-              {
-                "apiName": "DA_RedBuff",
-                "name": "Red Buff"
-              }
-            ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Azir",
-            "name": "Azir",
-            "boardIndex": 21,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_GnarSmall",
-            "name": "Gnar",
-            "boardIndex": 18,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Yorick",
-            "name": "Yorick",
-            "boardIndex": 0,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Elderwood18_Lifeblossom",
-            "name": "Elderwood 18_Lifeblossom",
-            "boardIndex": 17,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Sett",
-            "name": "Sett",
-            "boardIndex": 3,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_RekSai",
-            "name": "Rek'Sai",
-            "boardIndex": 2,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Elderwood18_StonebarkTree",
-            "name": "Elderwood 18_Stonebark Tree",
-            "boardIndex": 1,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "early_comp": [
-          {
-            "apiName": "DA_Karma18",
-            "name": "Karma",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Yorick",
-            "name": "Yorick",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Yunara",
-            "name": "Yunara",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Azir",
-            "name": "Azir",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "augments": [
-          {
-            "apiName": "DA_WorththeWaitII",
-            "name": "Worththe Wait II"
-          },
-          {
-            "apiName": "DA_18_CaretakersAlly",
-            "name": "Caretakers Ally"
-          },
-          {
-            "apiName": "DA_KickStart",
-            "name": "Kick Start"
-          },
-          {
-            "apiName": "DA_Swordsmith",
-            "name": "Swordsmith"
-          },
-          {
-            "apiName": "DA_GlassCannon_Silver",
-            "name": "Glass Cannon_Silver"
-          },
-          {
-            "apiName": "DA_SwordOverflow",
-            "name": "Sword Overflow"
-          },
-          {
-            "apiName": "DA_HeroicGrabBag",
-            "name": "Heroic Grab Bag"
-          },
-          {
-            "apiName": "DA_SoloPlate",
-            "name": "Solo Plate"
-          }
-        ],
-        "carousel": [
-          {
-            "apiName": "DA_SpearOfShojin",
-            "name": "Spear of Shojin"
-          },
-          {
-            "apiName": "DA_GargoyleStoneplate",
-            "name": "Gargoyle Stoneplate"
-          },
-          {
-            "apiName": "DA_Deathblade",
-            "name": "Deathblade"
-          },
-          {
-            "apiName": "DA_Component_SparringGloves",
-            "name": "Component_Sparring Gloves"
-          }
-        ],
-        "main_champion": {
-          "apiName": "DA_18_Yunara",
-          "name": "Yunara",
-          "cost": 2
-        },
-        "tip": "Play when you have lots of copies of Yunara with sword items. Leftover AD on Ezreal. Can also play 3* Leblanc / Ahri 2* as an AP duo carry if you have the items for it. Play Azir + Reksai on 6 before you find Ezreal + Sett. Level for more executioners.",
-        "difficulty": "MEDIUM",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:02.995241Z"
-      }
-    },
-    {
-      "name": "Primal Hunters",
-      "tier": "B",
-      "slug": "set-18-primal-hunters",
-      "trend": "",
-      "carry": "?",
-      "match_traits": [],
-      "detail": {
-        "units": [
-          {
-            "apiName": "DA_18_Tristana",
-            "name": "Tristana",
-            "boardIndex": 25,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Amumu18",
-            "name": "Amumu",
-            "boardIndex": 4,
-            "items": [
-              {
-                "apiName": "DA_WarmogsArmor",
-                "name": "Warmog's Armor"
-              },
-              {
-                "apiName": "DA_GargoyleStoneplate",
-                "name": "Gargoyle Stoneplate"
-              },
-              {
-                "apiName": "DA_SpiritVisage",
-                "name": "Spirit Visage"
-              }
-            ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Sivir",
-            "name": "Sivir",
-            "boardIndex": 27,
-            "items": [
-              {
-                "apiName": "DA_InfinityEdge",
-                "name": "Infinity Edge"
-              },
-              {
-                "apiName": "DA_Deathblade",
-                "name": "Deathblade"
-              },
-              {
-                "apiName": "DA_BlueBuff",
-                "name": "Blue Buff"
-              }
-            ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Ivern",
-            "name": "Ivern",
-            "boardIndex": 21,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Ashe",
-            "name": "Ashe",
-            "boardIndex": 26,
-            "items": [
-              {
-                "apiName": "DA_SpearOfShojin",
-                "name": "Spear of Shojin"
-              },
-              {
-                "apiName": "DA_RedBuff",
-                "name": "Red Buff"
-              },
-              {
-                "apiName": "DA_LastWhisper",
-                "name": "Last Whisper"
-              }
-            ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Lillia",
-            "name": "Lillia",
-            "boardIndex": 17,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Vi18",
-            "name": "Vi",
-            "boardIndex": 16,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Shen",
-            "name": "Shen",
-            "boardIndex": 15,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Kennen",
-            "name": "Kennen",
-            "boardIndex": 18,
-            "items": [
-              {
-                "apiName": "DA_ThiefsGloves",
-                "name": "Thief's Gloves"
-              }
-            ],
-            "stars": 1
-          }
-        ],
-        "early_comp": [
-          {
-            "apiName": "DA_Cinderling18",
-            "name": "Cinderling 18",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Gromp18_AP",
-            "name": "Gromp",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Scuttlecrab18",
-            "name": "Scuttlecrab",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Yorick",
-            "name": "Yorick",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "augments": [
-          {
-            "apiName": "DA_18_PrimalAugment_Sivir",
-            "name": "Primal Augment_Sivir"
-          },
-          {
-            "apiName": "DA_Swordsmith",
-            "name": "Swordsmith"
-          },
-          {
-            "apiName": "DA_SwordOverflow",
-            "name": "Sword Overflow"
-          },
-          {
-            "apiName": "DA_CarveAPath",
-            "name": "Carve APath"
-          },
-          {
-            "apiName": "DA_JeweledLotus_II",
-            "name": "Jeweled Lotus_II"
-          },
-          {
-            "apiName": "DA_GildedSteel",
-            "name": "Gilded Steel"
-          },
-          {
-            "apiName": "DA_BoosterPackPlusPlus",
-            "name": "Booster Pack Plus Plus"
-          },
-          {
-            "apiName": "DA_CyberneticImplants_Gold",
-            "name": "Cybernetic Implants_Gold"
-          }
-        ],
-        "carousel": [
-          {
-            "apiName": "DA_BlueBuff",
-            "name": "Blue Buff"
-          },
-          {
-            "apiName": "DA_InfinityEdge",
-            "name": "Infinity Edge"
-          },
-          {
-            "apiName": "DA_GargoyleStoneplate",
-            "name": "Gargoyle Stoneplate"
-          },
-          {
-            "apiName": "DA_Component_BFSword",
-            "name": "Component_BFSword"
-          }
-        ],
-        "main_champion": {
-          "apiName": "DA_18_Sivir",
-          "name": "Sivir",
-          "cost": 4
-        },
-        "tip": "Must find a way to get to Ashe to cap the board, otherwise you fall off hard. Choose Execute Primal > Item Primal if very far ahead. Ashe is great with utility items because she has big AOE spell.",
-        "difficulty": "MEDIUM",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:04.166338Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:58.608997Z"
       }
     },
     {
       "name": "Rengar Rr",
-      "tier": "B",
+      "tier": "C",
       "slug": "set-18-rengar-rr",
       "trend": "",
       "carry": "?",
@@ -3152,7 +2768,7 @@
           },
           {
             "apiName": "DA_CrimsonRaptor18",
-            "name": "Raptor",
+            "name": "Mama Beak",
             "boardIndex": 21,
             "items": [
               {
@@ -3317,13 +2933,13 @@
         },
         "tip": "Strong with artifacts. Rengar prefers to be paired with other carries that can use AD scaling. But he is a flexible unit with no traits so you can play him with whatever you hit.",
         "difficulty": "MEDIUM",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:05.589322Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:59:00.136192Z"
       }
     },
     {
       "name": "Warwick Rr",
-      "tier": "B",
+      "tier": "C",
       "slug": "set-18-warwick-rr",
       "trend": "",
       "carry": "?",
@@ -3508,226 +3124,8 @@
         },
         "tip": "Aim to play a 3* unit in the Blackthorn center hex for max stats, preferably Krug 3. Leftover AD items on Murkwolf. Can also tank Rek'sai 3 if you can't find Malphite 2.",
         "difficulty": "MEDIUM",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:06.760555Z"
-      }
-    },
-    {
-      "name": "Lunarwood Khazix",
-      "tier": "C",
-      "slug": "set-18-lunarwood-khazix",
-      "trend": "",
-      "carry": "?",
-      "match_traits": [],
-      "detail": {
-        "units": [
-          {
-            "apiName": "DA_Elderwood18_Lifeblossom",
-            "name": "Elderwood 18_Lifeblossom",
-            "boardIndex": 26,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Elderwood18_StonebarkTree",
-            "name": "Elderwood 18_Stonebark Tree",
-            "boardIndex": 6,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_LeBlanc",
-            "name": "LeBlanc",
-            "boardIndex": 24,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Diana",
-            "name": "Diana",
-            "boardIndex": 8,
-            "items": [
-              {
-                "apiName": "DA_JeweledGauntlet",
-                "name": "Jeweled Gauntlet"
-              },
-              {
-                "apiName": "DA_HandOfJustice",
-                "name": "Hand of Justice"
-              },
-              {
-                "apiName": "DA_IonicSpark",
-                "name": "Ionic Spark"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Hecarim",
-            "name": "Hecarim",
-            "boardIndex": 2,
-            "items": [
-              {
-                "apiName": "DA_WarmogsArmor",
-                "name": "Warmog's Armor"
-              },
-              {
-                "apiName": "DA_GargoyleStoneplate",
-                "name": "Gargoyle Stoneplate"
-              },
-              {
-                "apiName": "DA_SpiritVisage",
-                "name": "Spirit Visage"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_KhaZix",
-            "name": "Kha'Zix",
-            "boardIndex": 7,
-            "items": [
-              {
-                "apiName": "DA_HandOfJustice",
-                "name": "Hand of Justice"
-              },
-              {
-                "apiName": "DA_RabadonsDeathcap",
-                "name": "Rabadon's Deathcap"
-              },
-              {
-                "apiName": "DA_EdgeOfNight",
-                "name": "Edge of Night"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Aphelios",
-            "name": "Aphelios",
-            "boardIndex": 22,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Ezreal",
-            "name": "Ezreal",
-            "boardIndex": 21,
-            "items": [
-              {
-                "apiName": "DA_RedBuff",
-                "name": "Red Buff"
-              },
-              {
-                "apiName": "DA_SpearOfShojin",
-                "name": "Spear of Shojin"
-              },
-              {
-                "apiName": "DA_Deathblade",
-                "name": "Deathblade"
-              }
-            ],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Alune",
-            "name": "Alune",
-            "boardIndex": 25,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "early_comp": [
-          {
-            "apiName": "DA_18_Ornn",
-            "name": "Ornn",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Alistar",
-            "name": "Alistar",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_LeBlanc",
-            "name": "LeBlanc",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_KhaZix",
-            "name": "Kha'Zix",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "augments": [
-          {
-            "apiName": "DA_ChampDelivery",
-            "name": "Champ Delivery"
-          },
-          {
-            "apiName": "DA_PandorasBench",
-            "name": "Pandoras Bench"
-          },
-          {
-            "apiName": "DA_FlowingTears",
-            "name": "Flowing Tears"
-          },
-          {
-            "apiName": "DA_AdvancedLoanPlus",
-            "name": "Advanced Loan Plus"
-          },
-          {
-            "apiName": "DA_HeroicGrabBagPlusPlus",
-            "name": "Heroic Grab Bag Plus Plus"
-          },
-          {
-            "apiName": "DA_LegionOfThrees",
-            "name": "Legion Of Threes"
-          },
-          {
-            "apiName": "DA_LuckyGlovesPlus",
-            "name": "Lucky Gloves Plus"
-          },
-          {
-            "apiName": "DA_PrismaticTicket",
-            "name": "Prismatic Ticket"
-          }
-        ],
-        "carousel": [
-          {
-            "apiName": "DA_EdgeOfNight",
-            "name": "Edge of Night"
-          },
-          {
-            "apiName": "DA_RabadonsDeathcap",
-            "name": "Rabadon's Deathcap"
-          },
-          {
-            "apiName": "DA_HandOfJustice",
-            "name": "Hand of Justice"
-          },
-          {
-            "apiName": "DA_Component_NeedlesslyLargeRod",
-            "name": "Component_Needlessly Large Rod"
-          }
-        ],
-        "main_champion": {
-          "apiName": "DA_18_KhaZix",
-          "name": "Kha'Zix",
-          "cost": 3
-        },
-        "tip": "Ideally, Khazix gains Ravager > Executioner > Rapidfire > Spellweaver with takedowns. Can play 3rd Executioner/Lux/Ivern or another executioner before Alune.",
-        "difficulty": "MEDIUM",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:07.931535Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:59:01.622523Z"
       }
     },
     {
@@ -3979,8 +3377,220 @@
         },
         "tip": "Look for Elderwood Lux. 3 Executioner is a big spike so always look to play around it if possible. Can also chase 9 Elderwood if you have Elderwood Lux.",
         "difficulty": "MEDIUM",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:09.113028Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:59:02.802964Z"
+      }
+    },
+    {
+      "name": "Moo Nara",
+      "tier": "C",
+      "slug": "set-18-moo-nara",
+      "trend": "",
+      "carry": "?",
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "DA_18_Alistar",
+            "name": "Alistar",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "DA_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "DA_SpiritVisage",
+                "name": "Spirit Visage"
+              },
+              {
+                "apiName": "DA_WarmogsArmor",
+                "name": "Warmog's Armor"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Yunara",
+            "name": "Yunara",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "DA_Deathblade",
+                "name": "Deathblade"
+              },
+              {
+                "apiName": "DA_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "DA_StrikersFlail",
+                "name": "Striker's Flail"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Ezreal",
+            "name": "Ezreal",
+            "boardIndex": 26,
+            "items": [
+              {
+                "apiName": "DA_LastWhisper",
+                "name": "Last Whisper"
+              },
+              {
+                "apiName": "DA_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "DA_RedBuff",
+                "name": "Red Buff"
+              }
+            ],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Azir",
+            "name": "Azir",
+            "boardIndex": 21,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_GnarSmall",
+            "name": "Gnar",
+            "boardIndex": 18,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Yorick",
+            "name": "Yorick",
+            "boardIndex": 0,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Elderwood18_Lifeblossom",
+            "name": "Elderwood 18_Lifeblossom",
+            "boardIndex": 17,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Sett",
+            "name": "Sett",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Elderwood18_StonebarkTree",
+            "name": "Elderwood 18_Stonebark Tree",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "DA_Karma18",
+            "name": "Karma",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Yorick",
+            "name": "Yorick",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Yunara",
+            "name": "Yunara",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Azir",
+            "name": "Azir",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "DA_WorththeWaitII",
+            "name": "Worththe Wait II"
+          },
+          {
+            "apiName": "DA_18_CaretakersAlly",
+            "name": "Caretakers Ally"
+          },
+          {
+            "apiName": "DA_KickStart",
+            "name": "Kick Start"
+          },
+          {
+            "apiName": "DA_Swordsmith",
+            "name": "Swordsmith"
+          },
+          {
+            "apiName": "DA_GlassCannon_Silver",
+            "name": "Glass Cannon_Silver"
+          },
+          {
+            "apiName": "DA_SwordOverflow",
+            "name": "Sword Overflow"
+          },
+          {
+            "apiName": "DA_HeroicGrabBag",
+            "name": "Heroic Grab Bag"
+          },
+          {
+            "apiName": "DA_SoloPlate",
+            "name": "Solo Plate"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "DA_SpearOfShojin",
+            "name": "Spear of Shojin"
+          },
+          {
+            "apiName": "DA_GargoyleStoneplate",
+            "name": "Gargoyle Stoneplate"
+          },
+          {
+            "apiName": "DA_Deathblade",
+            "name": "Deathblade"
+          },
+          {
+            "apiName": "DA_Component_SparringGloves",
+            "name": "Component_Sparring Gloves"
+          }
+        ],
+        "main_champion": {
+          "apiName": "DA_18_Yunara",
+          "name": "Yunara",
+          "cost": 2
+        },
+        "tip": "Play when you have lots of copies of Yunara with sword items. Leftover AD on Ezreal. Can also play 3* Leblanc / Ahri 2* as an AP duo carry if you have the items for it. Play Azir + Reksai on 6 before you find Ezreal + Sett. Level for more executioners.",
+        "difficulty": "MEDIUM",
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:59:04.259971Z"
       }
     },
     {
@@ -4162,8 +3772,8 @@
         },
         "tip": "Best with Sprykin emblem and lots of copies of Teemo early. Sacrifice a 3* unit (ideally Kobuko) to give Rek'Sai big stats. Can also tank Rammus 3 if very rich / high rolling. Kog'maw provides free Shred / Sunder.",
         "difficulty": "EASY",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:10.289558Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:59:05.664591Z"
       }
     },
     {
@@ -4316,6 +3926,10 @@
           {
             "apiName": "DA_PandorasBench",
             "name": "Pandoras Bench"
+          },
+          {
+            "apiName": "DA_DeadlierCaps",
+            "name": "Deadlier Caps"
           }
         ],
         "carousel": [
@@ -4343,8 +3957,8 @@
         },
         "tip": "Very strong with Dawncore and Ludens as well. Sacrifice a 3* unit for maximum Blackthorn stats.",
         "difficulty": "EASY",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:11.463822Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:59:07.088765Z"
       }
     },
     {
@@ -4560,222 +4174,8 @@
         },
         "tip": "With Cursed Crown, we can go for the big 8 unit 3-star Solar bonus. Roll on 5 for 1 costs and 6 for the 2 costs. Sell LB and Elise if you need bench space.",
         "difficulty": "EASY",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:12.619594Z"
-      }
-    },
-    {
-      "name": "Unrivaled Reroll",
-      "tier": "S",
-      "slug": "set-18-unrivaled-reroll",
-      "trend": "",
-      "carry": "?",
-      "match_traits": [],
-      "detail": {
-        "units": [
-          {
-            "apiName": "DA_Elderwood18_Lifeblossom",
-            "name": "Elderwood 18_Lifeblossom",
-            "boardIndex": 25,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_Elderwood18_StonebarkTree",
-            "name": "Elderwood 18_Stonebark Tree",
-            "boardIndex": 13,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_LeBlanc",
-            "name": "LeBlanc",
-            "boardIndex": 27,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Diana",
-            "name": "Diana",
-            "boardIndex": 26,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Hecarim",
-            "name": "Hecarim",
-            "boardIndex": 3,
-            "items": [
-              {
-                "apiName": "DA_WarmogsArmor",
-                "name": "Warmog's Armor"
-              },
-              {
-                "apiName": "DA_GargoyleStoneplate",
-                "name": "Gargoyle Stoneplate"
-              },
-              {
-                "apiName": "DA_SpiritVisage",
-                "name": "Spirit Visage"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_KhaZix",
-            "name": "Kha'Zix",
-            "boardIndex": 15,
-            "items": [
-              {
-                "apiName": "DA_HandOfJustice",
-                "name": "Hand of Justice"
-              },
-              {
-                "apiName": "DA_RabadonsDeathcap",
-                "name": "Rabadon's Deathcap"
-              },
-              {
-                "apiName": "DA_EdgeOfNight",
-                "name": "Edge of Night"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Rengar",
-            "name": "Rengar",
-            "boardIndex": 14,
-            "items": [
-              {
-                "apiName": "DA_EdgeOfNight",
-                "name": "Edge of Night"
-              },
-              {
-                "apiName": "DA_TitansResolve",
-                "name": "Titan's Resolve"
-              },
-              {
-                "apiName": "DA_GuinsoosRageblade",
-                "name": "Guinsoo's Rageblade"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Ezreal",
-            "name": "Ezreal",
-            "boardIndex": 22,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Aphelios",
-            "name": "Aphelios",
-            "boardIndex": 21,
-            "items": [
-              {
-                "apiName": "DA_LastWhisper",
-                "name": "Last Whisper"
-              },
-              {
-                "apiName": "DA_RedBuff",
-                "name": "Red Buff"
-              }
-            ],
-            "stars": 1
-          }
-        ],
-        "early_comp": [
-          {
-            "apiName": "DA_18_KhaZix",
-            "name": "Kha'Zix",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Rengar",
-            "name": "Rengar",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Kobuko",
-            "name": "Kobuko",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_RekSai",
-            "name": "Rek'Sai",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "augments": [
-          {
-            "apiName": "DA_18_RivalsAugment",
-            "name": "Rivals Augment"
-          },
-          {
-            "apiName": "DA_HeroicGrabBagPlus",
-            "name": "Heroic Grab Bag Plus"
-          },
-          {
-            "apiName": "DA_HeroicGrabBagPlusPlus",
-            "name": "Heroic Grab Bag Plus Plus"
-          },
-          {
-            "apiName": "DA_Swordsmith",
-            "name": "Swordsmith"
-          },
-          {
-            "apiName": "DA_18_BigGrabBag",
-            "name": "Big Grab Bag"
-          },
-          {
-            "apiName": "DA_GoldenGamblePlus",
-            "name": "Golden Gamble Plus"
-          },
-          {
-            "apiName": "DA_SmallGrabBag",
-            "name": "Small Grab Bag"
-          },
-          {
-            "apiName": "DA_SalvageBinPlus",
-            "name": "Salvage Bin Plus"
-          }
-        ],
-        "carousel": [
-          {
-            "apiName": "DA_EdgeOfNight",
-            "name": "Edge of Night"
-          },
-          {
-            "apiName": "DA_Component_BFSword",
-            "name": "Component_BFSword"
-          },
-          {
-            "apiName": "DA_Component_ChainVest",
-            "name": "Component_Chain Vest"
-          },
-          {
-            "apiName": "DA_Component_NeedlesslyLargeRod",
-            "name": "Component_Needlessly Large Rod"
-          }
-        ],
-        "main_champion": {
-          "apiName": "DA_18_KhaZix",
-          "name": "Kha'Zix",
-          "cost": 3
-        },
-        "tip": "Ideally, Khazix gains Ravager > Executioner > Rapidfire > Spellweaver with takedowns. ",
-        "difficulty": "CONDITIONAL",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:13.781958Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:59:08.494701Z"
       }
     },
     {
@@ -4987,8 +4387,8 @@
         },
         "tip": "Hard flex composition, but very strong when played well. Any emblem start is fine. Get Khazix 10 takedowns for ravager evolution while gathering the early 2-8 trait cashouts in the midgame. The key interval to plan for is 10 traits for the Tactician Crown -> pivot to legendaries or go for even more cashouts if healthy.",
         "difficulty": "HARD",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:14.954835Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:59:09.932955Z"
       }
     },
     {
@@ -5013,13 +4413,6 @@
             "boardIndex": 17,
             "items": [],
             "stars": 1
-          },
-          {
-            "apiName": "DA_Vi18",
-            "name": "Vi",
-            "boardIndex": 10,
-            "items": [],
-            "stars": 3
           },
           {
             "apiName": "DA_18_Rammus",
@@ -5087,6 +4480,13 @@
               }
             ],
             "stars": 1
+          },
+          {
+            "apiName": "DA_Vi18",
+            "name": "Vi",
+            "boardIndex": 10,
+            "items": [],
+            "stars": 3
           }
         ],
         "early_comp": [
@@ -5098,15 +4498,15 @@
             "stars": 1
           },
           {
-            "apiName": "DA_18_Xayah",
-            "name": "Xayah",
+            "apiName": "DA_18_Varus",
+            "name": "Varus",
             "boardIndex": null,
             "items": [],
             "stars": 1
           },
           {
-            "apiName": "DA_18_Varus",
-            "name": "Varus",
+            "apiName": "DA_18_Xayah",
+            "name": "Xayah",
             "boardIndex": null,
             "items": [],
             "stars": 1
@@ -5178,13 +4578,227 @@
         },
         "tip": "Only play when you have Fae emblem. Stacking 4 Fae ASAP is important so you can get a gold engine. Can also tank Vi primary if you can't find Rammus. Execute Primal > Item Primal unless very far ahead / win streaking.",
         "difficulty": "MEDIUM",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:16.112902Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:59:11.414855Z"
+      }
+    },
+    {
+      "name": "Unrivaled Reroll",
+      "tier": "A",
+      "slug": "set-18-unrivaled-reroll",
+      "trend": "",
+      "carry": "?",
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "DA_Elderwood18_Lifeblossom",
+            "name": "Elderwood 18_Lifeblossom",
+            "boardIndex": 25,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_Elderwood18_StonebarkTree",
+            "name": "Elderwood 18_Stonebark Tree",
+            "boardIndex": 13,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_LeBlanc",
+            "name": "LeBlanc",
+            "boardIndex": 27,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Diana",
+            "name": "Diana",
+            "boardIndex": 26,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Hecarim",
+            "name": "Hecarim",
+            "boardIndex": 3,
+            "items": [
+              {
+                "apiName": "DA_WarmogsArmor",
+                "name": "Warmog's Armor"
+              },
+              {
+                "apiName": "DA_GargoyleStoneplate",
+                "name": "Gargoyle Stoneplate"
+              },
+              {
+                "apiName": "DA_SpiritVisage",
+                "name": "Spirit Visage"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_KhaZix",
+            "name": "Kha'Zix",
+            "boardIndex": 15,
+            "items": [
+              {
+                "apiName": "DA_HandOfJustice",
+                "name": "Hand of Justice"
+              },
+              {
+                "apiName": "DA_RabadonsDeathcap",
+                "name": "Rabadon's Deathcap"
+              },
+              {
+                "apiName": "DA_EdgeOfNight",
+                "name": "Edge of Night"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Rengar",
+            "name": "Rengar",
+            "boardIndex": 14,
+            "items": [
+              {
+                "apiName": "DA_EdgeOfNight",
+                "name": "Edge of Night"
+              },
+              {
+                "apiName": "DA_TitansResolve",
+                "name": "Titan's Resolve"
+              },
+              {
+                "apiName": "DA_GuinsoosRageblade",
+                "name": "Guinsoo's Rageblade"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Ezreal",
+            "name": "Ezreal",
+            "boardIndex": 22,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Aphelios",
+            "name": "Aphelios",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "DA_LastWhisper",
+                "name": "Last Whisper"
+              },
+              {
+                "apiName": "DA_RedBuff",
+                "name": "Red Buff"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "DA_18_KhaZix",
+            "name": "Kha'Zix",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Rengar",
+            "name": "Rengar",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Kobuko",
+            "name": "Kobuko",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_RekSai",
+            "name": "Rek'Sai",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "DA_18_RivalsAugment",
+            "name": "Rivals Augment"
+          },
+          {
+            "apiName": "DA_HeroicGrabBagPlus",
+            "name": "Heroic Grab Bag Plus"
+          },
+          {
+            "apiName": "DA_HeroicGrabBagPlusPlus",
+            "name": "Heroic Grab Bag Plus Plus"
+          },
+          {
+            "apiName": "DA_Swordsmith",
+            "name": "Swordsmith"
+          },
+          {
+            "apiName": "DA_18_BigGrabBag",
+            "name": "Big Grab Bag"
+          },
+          {
+            "apiName": "DA_GoldenGamblePlus",
+            "name": "Golden Gamble Plus"
+          },
+          {
+            "apiName": "DA_SmallGrabBag",
+            "name": "Small Grab Bag"
+          },
+          {
+            "apiName": "DA_SalvageBinPlus",
+            "name": "Salvage Bin Plus"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "DA_EdgeOfNight",
+            "name": "Edge of Night"
+          },
+          {
+            "apiName": "DA_Component_BFSword",
+            "name": "Component_BFSword"
+          },
+          {
+            "apiName": "DA_Component_ChainVest",
+            "name": "Component_Chain Vest"
+          },
+          {
+            "apiName": "DA_Component_NeedlesslyLargeRod",
+            "name": "Component_Needlessly Large Rod"
+          }
+        ],
+        "main_champion": {
+          "apiName": "DA_18_KhaZix",
+          "name": "Kha'Zix",
+          "cost": 3
+        },
+        "tip": "Ideally, Khazix gains Ravager > Executioner > Rapidfire > Spellweaver with takedowns. ",
+        "difficulty": "CONDITIONAL",
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:59:12.793723Z"
       }
     },
     {
       "name": "Fae Tristana Copy",
-      "tier": "A",
+      "tier": "B",
       "slug": "set-18-fae-tristana-copy",
       "trend": "",
       "carry": "?",
@@ -5282,13 +4896,6 @@
         ],
         "early_comp": [
           {
-            "apiName": "DA_18_Rengar",
-            "name": "Rengar",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
             "apiName": "DA_18_Rakan",
             "name": "Rakan",
             "boardIndex": null,
@@ -5308,9 +4915,49 @@
             "boardIndex": null,
             "items": [],
             "stars": 1
+          },
+          {
+            "apiName": "DA_18_Rengar",
+            "name": "Rengar",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
           }
         ],
-        "augments": [],
+        "augments": [
+          {
+            "apiName": "DA_SpreadingRoots",
+            "name": "Spreading Roots"
+          },
+          {
+            "apiName": "DA_SpreadingRootsPlus",
+            "name": "Spreading Roots Plus"
+          },
+          {
+            "apiName": "DA_18_BranchingOut",
+            "name": "Branching Out"
+          },
+          {
+            "apiName": "DA_18_BranchingOutPlus",
+            "name": "Branching Out Plus"
+          },
+          {
+            "apiName": "DA_TheTraitTree",
+            "name": "The Trait Tree"
+          },
+          {
+            "apiName": "DA_HeroicGrabBagPlusPlus",
+            "name": "Heroic Grab Bag Plus Plus"
+          },
+          {
+            "apiName": "DA_LegionOfThrees",
+            "name": "Legion Of Threes"
+          },
+          {
+            "apiName": "DA_18_BigGrabBag",
+            "name": "Big Grab Bag"
+          }
+        ],
         "carousel": [
           {
             "apiName": "DA_GuinsoosRageblade",
@@ -5336,14 +4983,14 @@
         },
         "tip": "Only play when you have emblem for Rengar. Stacking 4 Fae ASAP is important so you can get a gold engine. Can also tank Lillia primary if you can't find Rammus. Can flex in Primal as well if you have emblem.",
         "difficulty": "MEDIUM",
-        "patch": "17.9",
-        "scraped_at": "2026-08-26T17:01:17.294619Z"
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:59:14.349743Z"
       }
     }
   ],
   "augments": {
     "set": 18,
-    "synced_at": "2026-08-26T17:00:47.186240Z",
+    "synced_at": "2026-09-04T09:22:11.592822Z",
     "source_url": "https://tftacademy.com/api/tierlist/augments?set=18",
     "entries": [
       {
@@ -5359,8 +5006,8 @@
         "name": "Advanced Loan+",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -5369,8 +5016,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -5379,8 +5026,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "B",
-          "All": "A",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "A"
         }
       },
       {
@@ -5397,8 +5044,8 @@
         "name": "Backline Blueprint",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -5415,8 +5062,8 @@
         "name": "Band of Thieves",
         "slot": "silver",
         "ratings": {
-          "4-2": "A",
           "2-1": "A",
+          "4-2": "A",
           "3-2": "A",
           "All": "A"
         }
@@ -5435,8 +5082,8 @@
         "name": "Band of Thieves II+",
         "slot": "prismatic",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -5453,9 +5100,9 @@
         "name": "Baron's Lair",
         "slot": "prismatic",
         "ratings": {
-          "4-2": "A",
-          "All": "A",
-          "3-2": "S"
+          "4-2": "S",
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -5463,8 +5110,8 @@
         "name": "Beast Within",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -5472,8 +5119,8 @@
         "name": "Beast Within",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -5500,8 +5147,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -5510,8 +5157,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "S",
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -5520,7 +5167,7 @@
         "slot": "prismatic",
         "ratings": {
           "2-1": "B",
-          "All": "A"
+          "All": "B"
         }
       },
       {
@@ -5528,8 +5175,8 @@
         "name": "Birthday Reunion",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -5537,8 +5184,8 @@
         "name": "Blossom's Call",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "B"
         }
       },
       {
@@ -5546,8 +5193,8 @@
         "name": "Bodyguard Training",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -5555,8 +5202,8 @@
         "name": "Bonus Gift",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -5564,8 +5211,8 @@
         "name": "Bonus Gift+",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -5573,8 +5220,8 @@
         "name": "Booster Pack",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -5582,8 +5229,8 @@
         "name": "Booster Pack+",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -5610,8 +5257,8 @@
         "name": "Branching Out",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -5629,8 +5276,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "C"
+          "3-2": "C",
+          "All": "C"
         }
       },
       {
@@ -5639,8 +5286,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -5684,8 +5331,8 @@
         "name": "Capital Gains II",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -5702,8 +5349,8 @@
         "name": "Caretaker's Favor",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -5731,8 +5378,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -5741,8 +5388,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -5751,8 +5398,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -5787,8 +5434,8 @@
         "name": "Chosen of the Sun",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -5796,8 +5443,8 @@
         "name": "Clear Mind",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "B"
         }
       },
       {
@@ -5806,8 +5453,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "C",
-          "All": "B",
-          "3-2": "C"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -5815,8 +5462,8 @@
         "name": "Cluttered Mind",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "A"
         }
       },
       {
@@ -5824,8 +5471,8 @@
         "name": "Cognitive Overload",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -5874,15 +5521,6 @@
         }
       },
       {
-        "api_name": "DA_18_FloraFatalisAugment",
-        "name": "Consuming Flora",
-        "slot": "gold",
-        "ratings": {
-          "All": "S",
-          "2-1": "S"
-        }
-      },
-      {
         "api_name": "DA_18_FloraFatalisAugmentPlus",
         "name": "Consuming Flora",
         "slot": "gold",
@@ -5891,12 +5529,21 @@
         }
       },
       {
+        "api_name": "DA_18_FloraFatalisAugment",
+        "name": "Consuming Flora",
+        "slot": "gold",
+        "ratings": {
+          "2-1": "S",
+          "All": "S"
+        }
+      },
+      {
         "api_name": "DA_CookingPot",
         "name": "Cooking Pot",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -5905,8 +5552,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "S",
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -5924,8 +5571,8 @@
         "name": "Coven Acolyte",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -5942,9 +5589,9 @@
         "name": "Cry Me A River",
         "slot": "gold",
         "ratings": {
-          "All": "B",
           "3-2": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -5952,9 +5599,9 @@
         "name": "Cursed Crown",
         "slot": "prismatic",
         "ratings": {
+          "3-2": "A",
           "2-1": "B",
-          "All": "B",
-          "3-2": "A"
+          "All": "B"
         }
       },
       {
@@ -5963,8 +5610,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -5973,8 +5620,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -5982,9 +5629,9 @@
         "name": "Dark Ritual",
         "slot": "gold",
         "ratings": {
-          "All": "B",
           "3-2": "A",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -6003,14 +5650,6 @@
         "ratings": {
           "2-1": "S",
           "All": "S"
-        }
-      },
-      {
-        "api_name": "DA_DoubleTrouble",
-        "name": "Double Trouble",
-        "slot": "gold",
-        "ratings": {
-          "2-1": "B"
         }
       },
       {
@@ -6036,8 +5675,8 @@
         "name": "Early Learnings",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "B"
         }
       },
       {
@@ -6045,8 +5684,8 @@
         "name": "Electrocharge I",
         "slot": "silver",
         "ratings": {
-          "4-2": "S",
           "2-1": "A",
+          "4-2": "S",
           "3-2": "A",
           "All": "A"
         }
@@ -6057,9 +5696,9 @@
         "slot": "gold",
         "ratings": {
           "4-2": "A",
-          "All": "B",
           "3-2": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -6068,9 +5707,9 @@
         "slot": "gold",
         "ratings": {
           "4-2": "B",
-          "All": "B",
           "3-2": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -6078,8 +5717,8 @@
         "name": "Epic Rolldown",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6087,8 +5726,8 @@
         "name": "Epoch",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -6096,8 +5735,8 @@
         "name": "Epoch+",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6106,8 +5745,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6124,8 +5763,8 @@
         "name": "Explosive Growth",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -6151,8 +5790,8 @@
         "name": "FOURcing",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6233,8 +5872,8 @@
         "name": "Frontline Foundation",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -6251,8 +5890,8 @@
         "name": "Gain 21 Gold",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -6261,8 +5900,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -6290,8 +5929,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "S",
-          "All": "A",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "A"
         }
       },
       {
@@ -6299,7 +5938,7 @@
         "name": "Going Long",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "C",
+          "2-1": "B",
           "All": "B"
         }
       },
@@ -6308,8 +5947,8 @@
         "name": "Gold Destiny",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -6317,8 +5956,8 @@
         "name": "Gold Destiny+",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -6335,8 +5974,8 @@
         "name": "Golden Gamble+",
         "slot": "prismatic",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6373,8 +6012,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6382,8 +6021,8 @@
         "name": "Hard Bargain",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -6411,8 +6050,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -6420,8 +6059,8 @@
         "name": "Heart of Steel",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -6438,8 +6077,8 @@
         "name": "Heroic Grab Bag",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -6447,8 +6086,8 @@
         "name": "Heroic Grab Bag+",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "B"
         }
       },
       {
@@ -6466,8 +6105,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "B"
         }
       },
       {
@@ -6475,8 +6114,8 @@
         "name": "Hustler",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "B"
         }
       },
       {
@@ -6484,8 +6123,8 @@
         "name": "Infinity Protection",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -6493,8 +6132,8 @@
         "name": "Invested+",
         "slot": "prismatic",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6511,8 +6150,8 @@
         "name": "Investment Strategy I",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -6539,8 +6178,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6548,9 +6187,9 @@
         "name": "Item Extraction",
         "slot": "gold",
         "ratings": {
-          "All": "S",
           "3-2": "S",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -6558,8 +6197,8 @@
         "name": "Item Grab Bag I",
         "slot": "silver",
         "ratings": {
-          "4-2": "A",
           "2-1": "A",
+          "4-2": "A",
           "3-2": "A",
           "All": "A"
         }
@@ -6570,8 +6209,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6580,8 +6219,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6608,8 +6247,8 @@
         "name": "Late Game Scaling",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -6635,8 +6274,8 @@
         "name": "Legion Of Threes",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -6654,7 +6293,7 @@
         "slot": "prismatic",
         "ratings": {
           "2-1": "A",
-          "All": "S"
+          "All": "A"
         }
       },
       {
@@ -6681,8 +6320,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "All": "B",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "B"
         }
       },
       {
@@ -6690,8 +6329,8 @@
         "name": "Luxury Subscription",
         "slot": "prismatic",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -6699,8 +6338,8 @@
         "name": "Magic Roll",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "B"
         }
       },
       {
@@ -6718,9 +6357,9 @@
         "name": "Makeshift Armor II",
         "slot": "gold",
         "ratings": {
-          "All": "B",
           "3-2": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -6755,8 +6394,8 @@
         "name": "Min-Max",
         "slot": "prismatic",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6774,8 +6413,8 @@
         "name": "Money Hungry",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -6783,8 +6422,8 @@
         "name": "Money Hungry+",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "A"
         }
       },
       {
@@ -6801,8 +6440,8 @@
         "name": "NO SCOUT NO PIVOT",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -6811,9 +6450,9 @@
         "slot": "gold",
         "ratings": {
           "4-2": "B",
-          "All": "B",
           "3-2": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -6821,8 +6460,8 @@
         "name": "Nesting Anvils",
         "slot": "prismatic",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6843,6 +6482,15 @@
         }
       },
       {
+        "api_name": "DA_NestingDollsPlus",
+        "name": "Nesting Dolls",
+        "slot": "prismatic",
+        "ratings": {
+          "3-2": "B",
+          "All": "B"
+        }
+      },
+      {
         "api_name": "DA_NestingDolls",
         "name": "Nesting Dolls",
         "slot": "prismatic",
@@ -6851,23 +6499,14 @@
         }
       },
       {
-        "api_name": "DA_NestingDollsPlus",
-        "name": "Nesting Dolls",
-        "slot": "prismatic",
-        "ratings": {
-          "All": "C",
-          "3-2": "B"
-        }
-      },
-      {
         "api_name": "DA_18_RiftbeastTraitAugment",
         "name": "Omega Riftbeast",
         "slot": "gold",
         "ratings": {
           "4-2": "A",
-          "All": "A",
           "3-2": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -6876,8 +6515,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "S",
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6913,8 +6552,8 @@
         "name": "Pandora's Items I",
         "slot": "silver",
         "ratings": {
-          "4-2": "B",
           "2-1": "S",
+          "4-2": "B",
           "3-2": "A",
           "All": "S"
         }
@@ -6925,9 +6564,9 @@
         "slot": "gold",
         "ratings": {
           "4-2": "B",
-          "All": "A",
           "3-2": "B",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -6935,9 +6574,9 @@
         "name": "Pandora's Items III",
         "slot": "prismatic",
         "ratings": {
+          "3-2": "A",
           "2-1": "S",
-          "All": "S",
-          "3-2": "A"
+          "All": "S"
         }
       },
       {
@@ -6964,8 +6603,8 @@
         "name": "Patient Study",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -6973,8 +6612,8 @@
         "name": "Pilfer",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -6983,8 +6622,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -6993,9 +6632,9 @@
         "slot": "gold",
         "ratings": {
           "4-2": "A",
-          "All": "S",
           "3-2": "S",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -7012,8 +6651,8 @@
         "name": "Prismatic Destiny+",
         "slot": "prismatic",
         "ratings": {
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -7021,9 +6660,9 @@
         "name": "Prismatic Ticket",
         "slot": "prismatic",
         "ratings": {
+          "3-2": "A",
           "2-1": "B",
-          "All": "A",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -7031,9 +6670,9 @@
         "name": "Promised Protection",
         "slot": "gold",
         "ratings": {
-          "All": "A",
           "3-2": "B",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -7051,8 +6690,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "S",
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -7061,9 +6700,9 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
+          "3-2": "A",
           "2-1": "A",
-          "All": "A",
-          "3-2": "A"
+          "All": "A"
         }
       },
       {
@@ -7080,9 +6719,9 @@
         "name": "Replication",
         "slot": "gold",
         "ratings": {
-          "All": "A",
           "3-2": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -7118,8 +6757,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -7127,8 +6766,8 @@
         "name": "Riftbeast Trait Augment Stampede",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "B"
         }
       },
       {
@@ -7146,8 +6785,8 @@
         "name": "Salvage Bin",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -7156,8 +6795,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -7165,9 +6804,9 @@
         "name": "Seraphim's Staff",
         "slot": "gold",
         "ratings": {
-          "All": "S",
           "3-2": "S",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -7175,8 +6814,8 @@
         "name": "Shimmerscale Essence",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "2-1": "C",
+          "All": "C"
         }
       },
       {
@@ -7229,8 +6868,8 @@
         "name": "Slammin'",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -7238,8 +6877,8 @@
         "name": "Slammin'+",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -7261,17 +6900,6 @@
         }
       },
       {
-        "api_name": "DA_18_SprykinAugment",
-        "name": "Small Furry Friend",
-        "slot": "gold",
-        "ratings": {
-          "4-2": "B",
-          "All": "B",
-          "3-2": "B",
-          "2-1": "B"
-        }
-      },
-      {
         "api_name": "DA_SmallGrabBag",
         "name": "Small Grab Bag",
         "slot": "silver",
@@ -7286,8 +6914,8 @@
         "name": "Solo Leveling",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -7295,9 +6923,9 @@
         "name": "Solo Plate",
         "slot": "gold",
         "ratings": {
-          "All": "S",
           "3-2": "S",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -7305,9 +6933,9 @@
         "name": "Soul Awakening",
         "slot": "prismatic",
         "ratings": {
-          "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "4-2": "A",
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -7315,8 +6943,8 @@
         "name": "Speedy Double Kill",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -7324,9 +6952,9 @@
         "name": "Spirit Of Redemption",
         "slot": "gold",
         "ratings": {
-          "All": "B",
           "3-2": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -7334,8 +6962,8 @@
         "name": "Spreading Roots",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -7343,8 +6971,8 @@
         "name": "Spreading Roots+",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -7371,8 +6999,8 @@
         "name": "Sun and Moon",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -7389,8 +7017,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -7399,8 +7027,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "S",
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -7417,9 +7045,9 @@
         "name": "TONS of Stats!",
         "slot": "prismatic",
         "ratings": {
-          "4-2": "S",
-          "All": "S",
-          "3-2": "S"
+          "4-2": "A",
+          "3-2": "S",
+          "All": "A"
         }
       },
       {
@@ -7446,8 +7074,8 @@
         "name": "The Golden Dragon",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -7464,8 +7092,8 @@
         "name": "The Tower",
         "slot": "silver",
         "ratings": {
-          "4-2": "B",
           "2-1": "B",
+          "4-2": "B",
           "3-2": "B",
           "All": "B"
         }
@@ -7484,8 +7112,8 @@
         "name": "The Trait Tree+",
         "slot": "prismatic",
         "ratings": {
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -7493,8 +7121,8 @@
         "name": "Time Skip",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -7503,8 +7131,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "B",
-          "All": "A",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "A"
         }
       },
       {
@@ -7512,8 +7140,8 @@
         "name": "Trade Sector",
         "slot": "gold",
         "ratings": {
-          "All": "S",
-          "2-1": "S"
+          "2-1": "S",
+          "All": "S"
         }
       },
       {
@@ -7521,8 +7149,8 @@
         "name": "Trade Sector+",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -7530,9 +7158,9 @@
         "name": "Trait Ladder",
         "slot": "prismatic",
         "ratings": {
+          "3-2": "S",
           "2-1": "S",
-          "All": "S",
-          "3-2": "S"
+          "All": "S"
         }
       },
       {
@@ -7551,9 +7179,9 @@
         "slot": "gold",
         "ratings": {
           "4-2": "A",
-          "All": "A",
           "3-2": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -7561,9 +7189,9 @@
         "name": "Unrivaled",
         "slot": "gold",
         "ratings": {
-          "All": "A",
           "3-2": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -7581,8 +7209,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "All": "A",
-          "3-2": "A"
+          "3-2": "A",
+          "All": "A"
         }
       },
       {
@@ -7601,8 +7229,8 @@
         "slot": "gold",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -7611,8 +7239,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "B",
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -7621,8 +7249,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "S",
-          "All": "S",
-          "3-2": "S"
+          "3-2": "S",
+          "All": "S"
         }
       },
       {
@@ -7630,8 +7258,8 @@
         "name": "Warpath",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "2-1": "B"
+          "2-1": "B",
+          "All": "B"
         }
       },
       {
@@ -7648,8 +7276,8 @@
         "name": "Weight The Worth",
         "slot": "gold",
         "ratings": {
-          "All": "B",
-          "3-2": "B"
+          "3-2": "B",
+          "All": "B"
         }
       },
       {
@@ -7675,8 +7303,8 @@
         "name": "Worth the Wait",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -7693,8 +7321,8 @@
         "name": "Woven Magic",
         "slot": "gold",
         "ratings": {
-          "All": "A",
-          "2-1": "A"
+          "2-1": "A",
+          "All": "A"
         }
       },
       {
@@ -7705,6 +7333,745 @@
           "2-1": "S",
           "All": "S"
         }
+      }
+    ]
+  },
+  "items": {
+    "set": 18,
+    "synced_at": "2026-09-04T09:22:11.696454Z",
+    "source_url": "https://tftacademy.com/api/tierlist/items?set=18",
+    "entries": [
+      {
+        "api_name": "DA_Artifact_AegisOfDawn",
+        "name": "Aegis of Dawn",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_Artifact_AegisOfDusk",
+        "name": "Aegis of Dusk",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_Artifact_BlightingJewel",
+        "name": "Blighting Jewel",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_Artifact_Dawncore",
+        "name": "Dawncore",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_Artifact_EternalPact",
+        "name": "Eternal Pact",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_Artifact_Fishbones",
+        "name": "Fishbones",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Artifact_NavoriFlickerblade",
+        "name": "Flickerblades",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_Artifact_ForbiddenIdol",
+        "name": "Forbidden Idol",
+        "kind": "artifact",
+        "tier": "C"
+      },
+      {
+        "api_name": "DA_Artifact_GamblersBlade",
+        "name": "Gambler's Blade",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Artifact_GoldCollector",
+        "name": "Gold Collector",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_Artifact_HellfireHatchet",
+        "name": "Hellfire Hatchet",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Artifact_HorizonFocus",
+        "name": "Horizon Focus",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_Artifact_InfinityForce",
+        "name": "Infinity Force",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_Artifact_LichBane",
+        "name": "Lich Bane",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Artifact_LightshieldCrest",
+        "name": "Lightshield Crest",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_Artifact_LudensTempest",
+        "name": "Luden's Tempest",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Artifact_Manazane",
+        "name": "Manazane",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_Artifact_Mittens",
+        "name": "Mittens",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Artifact_MogulsMail",
+        "name": "Mogul'sMail",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Artifact_RapidFireCannon",
+        "name": "Rapid Firecannon",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Artifact_SeekersArmguard",
+        "name": "Seeker's Armguard",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_Artifact_SilvermereDawn",
+        "name": "Silvermere Dawn",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_Artifact_StatikkShiv",
+        "name": "Statikk Shiv",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_Item_Artifact_TalismanOfAscension",
+        "name": "Talisman of Ascension",
+        "kind": "artifact",
+        "tier": "C"
+      },
+      {
+        "api_name": "DA_Artifact_TheIndomitable",
+        "name": "The Indomitable",
+        "kind": "artifact",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_Artifact_TitanicHydra",
+        "name": "Titanic Hydra",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Artifact_VoidGauntlet",
+        "name": "Void Gauntlet",
+        "kind": "artifact",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Artifact_WitsEnd",
+        "name": "Wit's End",
+        "kind": "artifact",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_Artifact_ZhonyasParadox",
+        "name": "Zhonya's Paradox",
+        "kind": "artifact",
+        "tier": "C"
+      },
+      {
+        "api_name": "DA_AdaptiveHelm",
+        "name": "Adaptive Helm",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_ArchangelsStaff",
+        "name": "Archangel's Staff",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_Bloodthirster",
+        "name": "Bloodthirster",
+        "kind": "craftable",
+        "tier": "C"
+      },
+      {
+        "api_name": "DA_BlueBuff",
+        "name": "Blue Buff",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_BrambleVest",
+        "name": "Bramble Vest",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Crownguard",
+        "name": "Crownguard",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Deathblade",
+        "name": "Deathblade",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_DragonsClaw",
+        "name": "Dragon's Claw",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_EdgeOfNight",
+        "name": "Edge of Night",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_Evenshroud",
+        "name": "Evenshroud",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_GargoyleStoneplate",
+        "name": "Gargoyle Stoneplate",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_GiantSlayer",
+        "name": "Giant Slayer",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_GuinsoosRageblade",
+        "name": "Guinsoo's Rageblade",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_HandOfJustice",
+        "name": "Hand Of Justice",
+        "kind": "craftable",
+        "tier": "C"
+      },
+      {
+        "api_name": "DA_HextechGunblade",
+        "name": "Hextech Gunblade",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_InfinityEdge",
+        "name": "Infinity Edge",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_IonicSpark",
+        "name": "Ionic Spark",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_JeweledGauntlet",
+        "name": "Jeweled Gauntlet",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_KrakensFury",
+        "name": "Kraken's Fury",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_LastWhisper",
+        "name": "Last Whisper",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_Morellonomicon",
+        "name": "Morellonomicon",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_NashorsTooth",
+        "name": "Nashor's Tooth",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_ProtectorsVow",
+        "name": "Protector's Vow",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_Quicksilver",
+        "name": "Quicksilver",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_RabadonsDeathcap",
+        "name": "Rabadon's Deathcap",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_RedBuff",
+        "name": "Red Buff",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_SpearOfShojin",
+        "name": "Spear of Shojin",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_SpiritVisage",
+        "name": "Spirit Visage",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_SteadfastHeart",
+        "name": "Steadfast Heart",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_SteraksGage",
+        "name": "Sterak's Gage",
+        "kind": "craftable",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_StrikersFlail",
+        "name": "Striker's Flail",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_SunfireCape",
+        "name": "Sunfire Cape",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_ThiefsGloves",
+        "name": "Thief's Gloves",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_TitansResolve",
+        "name": "Titan's Resolve",
+        "kind": "craftable",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_VoidStaff",
+        "name": "Void Staff",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_WarmogsArmor",
+        "name": "Warmogs Armor",
+        "kind": "craftable",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_18_EmblemBlackthorn",
+        "name": "Blackthorn Emblem",
+        "kind": "emblem",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_18_EmblemBlossom",
+        "name": "Blossom Emblem",
+        "kind": "emblem",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_18_EmblemBrawler",
+        "name": "Brawler Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_18_EmblemCoven",
+        "name": "Coven Emblem",
+        "kind": "emblem",
+        "tier": "C"
+      },
+      {
+        "api_name": "DA_18_EmblemDefender",
+        "name": "Defender Emblem",
+        "kind": "emblem",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_18_EmblemElderwood",
+        "name": "Elderwood Emblem",
+        "kind": "emblem",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_18_EmblemExecutioner",
+        "name": "Executioner Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_18_EmblemFae",
+        "name": "Fae Emblem",
+        "kind": "emblem",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_18_EmblemFloraFatalisAugment",
+        "name": "Flora Fatalis Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_18_EmblemFloraFatalis",
+        "name": "Flora Fatalis Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_18_EmblemHunter",
+        "name": "Hunter Emblem",
+        "kind": "emblem",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_18_EmblemInferno",
+        "name": "Inferno Emblem",
+        "kind": "emblem",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_18_EmblemInvoker",
+        "name": "Invoker Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_18_EmblemJuggernaut",
+        "name": "Juggernaut Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_18_EmblemLunar",
+        "name": "Lunar Emblem",
+        "kind": "emblem",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_18_EmblemPrimal",
+        "name": "Primal Emblem",
+        "kind": "emblem",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_18_EmblemRapidfire",
+        "name": "Rapidfire Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_18_EmblemSlayer",
+        "name": "Ravager Emblem",
+        "kind": "emblem",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_18_EmblemSpellweaver",
+        "name": "Spellweaver Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_18_EmblemSprykin",
+        "name": "Sprykin Emblem",
+        "kind": "emblem",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_18_EmblemVanguard",
+        "name": "Vanguard Emblem",
+        "kind": "emblem",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_AdaptiveHelm_Radiant",
+        "name": "Radiant Adaptive Helm",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_ArchangelsStaffRadiant",
+        "name": "Radiant Archangel's Staff",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_BloodthirsterRadiant",
+        "name": "Radiant Bloodthirster",
+        "kind": "radiant",
+        "tier": "C"
+      },
+      {
+        "api_name": "DA_BlueBuffRadiant",
+        "name": "Radiant Blue Buff",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_BrambleVestRadiant",
+        "name": "Radiant Bramble Vest",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_CrownguardRadiant",
+        "name": "Radiant Crownguard",
+        "kind": "radiant",
+        "tier": "C"
+      },
+      {
+        "api_name": "DA_DeathbladeRadiant",
+        "name": "Radiant Deathblade",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_DragonsClawRadiant",
+        "name": "Radiant Dragon's Claw",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_EdgeOfNightRadiant",
+        "name": "Radiant Edge of Night",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_EvenshroudRadiant",
+        "name": "Radiant Evenshroud",
+        "kind": "radiant",
+        "tier": "C"
+      },
+      {
+        "api_name": "DA_GargoyleStoneplate_Radiant",
+        "name": "Radiant Gargoyle Stoneplate",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_GiantSlayer_Radiant",
+        "name": "Radiant Giant Slayer",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_GuinsoosRagebladeRadiant",
+        "name": "Radiant Guinsoo's Rageblade",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_HandOfJusticeRadiant",
+        "name": "Radiant Hand of Justice",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_HextechGunbladeRadiant",
+        "name": "Radiant Hextech Gunblade",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_InfinityEdgeRadiant",
+        "name": "Radiant Infinity Edge",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_IonicSparkRadiant",
+        "name": "Radiant Ionic Spark",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_JeweledGauntletRadiant",
+        "name": "Radiant Jeweled Gauntlet",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_KrakensFury_Radiant",
+        "name": "Radiant Kraken's Fury",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_LastWhisperRadiant",
+        "name": "Radiant Last Whisper",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_MorellonomiconRadiant",
+        "name": "Radiant Morellonomicon",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_NashorsToothRadiant",
+        "name": "Radiant Nashor's Tooth",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_ProtectorsVowRadiant",
+        "name": "Radiant Protector's Vow",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_QuicksilverRadiant",
+        "name": "Radiant Quicksilver",
+        "kind": "radiant",
+        "tier": "C"
+      },
+      {
+        "api_name": "DA_RabadonsDeathcap_Radiant",
+        "name": "Radiant Rabadon's Deathcap",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_RedBuffRadiant",
+        "name": "Radiant Red Buff",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_SpearOfShojinRadiant",
+        "name": "Radiant Spear of Shojin",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_SpiritVisage_Radiant",
+        "name": "Radiant Spirit Visage",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_SteadfastHeartRadiant",
+        "name": "Radiant Steadfast Heart",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_SteraksGageRadiant",
+        "name": "Radiant Sterak's Gage",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_StrikersFlailRadiant",
+        "name": "Radiant Striker's Flail",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_SunfireCape_Radiant",
+        "name": "Radiant Sunfire Cape",
+        "kind": "radiant",
+        "tier": "B"
+      },
+      {
+        "api_name": "DA_ThiefsGlovesRadiant",
+        "name": "Radiant Thief's Gloves",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_TitansResolve_Radiant",
+        "name": "Radiant Titan's Resolve",
+        "kind": "radiant",
+        "tier": "S"
+      },
+      {
+        "api_name": "DA_VoidStaffRadiant",
+        "name": "Radiant Void Staff",
+        "kind": "radiant",
+        "tier": "A"
+      },
+      {
+        "api_name": "DA_WarmogsArmorRadiant",
+        "name": "Radiant Warmog's Armor",
+        "kind": "radiant",
+        "tier": "A"
       }
     ]
   }
