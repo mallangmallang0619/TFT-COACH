@@ -4,11 +4,18 @@ A real-time Teamfight Tactics coaching overlay that captures your game screen, d
 
 ## Architecture
 
-Uses an Electron shell that hosts a React frontend. The React frontend connects to the Python computer-vision pipeline over a WebSocket.
+Electron owns both the normal Control Center and the transparent React overlay.
+It starts the Python computer-vision backend on an available local port and
+passes that WebSocket address to both windows through the preload bridge.
 
 ```
-TFT client ──screen capture──► Python backend ──ws://localhost:8765──► React UI (Electron overlay)
-                 (mss)          detect + coach
+TFT.exe ──direct/fallback capture──► Python detector + coach
+                                           │
+                              dynamic localhost WebSocket
+                                           │
+                          Electron-managed React application
+                               ├── Control Center
+                               └── in-game overlay
 ```
 
 ## Components
@@ -37,19 +44,32 @@ TFT client ──screen capture──► Python backend ──ws://localhost:876
 
 ### Electron Overlay (`electron/`)
 
- File          | Purpose                                           
----------------|---------------------------------------------------
- `main.js`     | Creates transparent, always-on-top overlay window 
- `preload.js`  | Exposes IPC bridge to renderer                    
+ File                      | Purpose
+---------------------------|---------------------------------------------------
+ `main.js`                 | Owns Control Center, overlay, IPC, hotkeys, and lifecycle
+ `backendManager.js`       | Starts, monitors, restarts, and stops the Python backend
+ `supportTools.js`         | Runs diagnostics and creates privacy-scoped support ZIPs
+ `applicationLifecycle.js` | Implements acknowledged, clean application shutdown
+ `preload.js`              | Exposes the restricted native API to React
 
 The repository currently provides a developer-run Electron overlay rather than
 a self-contained public installer. See the
 [desktop application roadmap](docs/APPLICATION_ROADMAP.md) for the packaging,
-backend lifecycle, installer, and release plan.
+backend lifecycle, installer, and release plan. The prioritized
+[improvement plan](docs/IMPROVEMENT_PLAN.md) covers product reliability,
+packaging, detection evaluation, and future game-state features.
 
 ### React Frontend (`frontend/`)
 
-Adapted from the prototype — receives game state via WebSocket and renders coaching UI.
+The frontend receives game state over WebSocket and selects its window-specific
+view from the launch URL:
+
+ File                   | Purpose
+------------------------|------------------------------------------------------
+ `src/App.jsx`          | Transparent in-game coaching overlay
+ `src/ControlCenter.jsx`| Normal out-of-game management and support interface
+ `src/useCoachSocket.js`| Shared live backend connection and command hook
+ `src/backendConnection.js` | Validates Electron-provided local WebSocket details
 
 ## Setup
 
@@ -109,6 +129,20 @@ outside the game to show or hide the overlay, restart detection, run an annotate
 diagnostic capture, open logs or screenshots, and export a support ZIP containing
 recent diagnostic images, logs, and model metadata. Closing the Control Center
 minimizes it to the taskbar; use **Quit TFT Coach** to stop the entire application.
+
+### Release verification and packaging
+
+```bash
+npm run verify       # Node tests + model contract + frontend build + Python suite
+npm run check:model  # Validate production model metadata only
+npm run package      # Build an NSIS installer only when standalone inputs exist
+```
+
+Standalone packaging is intentionally guarded. Until the PyInstaller backend
+and bundled Tesseract runtime are present, `npm run package` exits with the
+missing inputs instead of producing an Electron shell that cannot detect TFT.
+Follow [Milestones 2–3 of the improvement plan](docs/IMPROVEMENT_PLAN.md) to
+complete the first installable Windows build.
 
 The overlay is click-through ("ghost mode") by default so game clicks pass
 underneath — **hover over the panel to interact with it**; move the cursor

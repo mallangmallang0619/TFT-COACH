@@ -17,8 +17,9 @@
     "test": "node --test electron/*.test.js frontend/src/*.test.js",
     "test:electron": "node --test electron/*.test.js",
     "test:frontend": "node --test frontend/src/*.test.js",
-    "verify": "npm test && npm run build:frontend && python backend/test_system.py",
-    "package": "electron-builder"
+    "check:model": "node scripts/releaseReadiness.js --model-only",
+    "verify": "npm test && npm run check:model && npm run build:frontend && python backend/test_system.py",
+    "package": "npm run build:frontend && node scripts/releaseReadiness.js && electron-builder --win nsis"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
