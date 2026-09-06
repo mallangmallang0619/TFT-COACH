@@ -25,6 +25,7 @@ import cv2
 import numpy as np
 
 from config import ASSETS_DIR
+from inference_runtime import cpu_session_options
 
 logger = logging.getLogger(__name__)
 
@@ -290,7 +291,8 @@ class UnitClassifier:
                 meta.get("board_min_confidence", default_board_floor)
             )
             self._session = ort.InferenceSession(
-                str(model_path), providers=["CPUExecutionProvider"]
+                str(model_path), sess_options=cpu_session_options(),
+                providers=["CPUExecutionProvider"]
             )
         except Exception as e:
             logger.warning(f"Could not load unit classifier: {e}")

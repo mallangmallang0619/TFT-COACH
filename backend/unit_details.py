@@ -14,6 +14,7 @@ import datetime
 import re
 import time
 from collections.abc import Callable
+from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -22,6 +23,7 @@ import cv2
 import numpy as np
 
 from config import ASSETS_DIR
+from inference_runtime import cpu_session_options
 from game_data import ACTIVE_SET_NUMBER, COMPONENT_NAMES
 from unit_classifier import FULL_SPRITE_RESIZE_MODE, preprocess
 
@@ -250,9 +252,9 @@ class EquippedItemTemplateMatcher:
     ):
         self.min_confidence = float(min_confidence)
         self.min_margin = float(min_margin)
-        self._template_cache: dict[
+        self._template_cache: OrderedDict[
             tuple[int, tuple], tuple[list[str], np.ndarray]
-        ] = {}
+        ] = OrderedDict()
 
     @staticmethod
     def _combined_templates(
@@ -282,13 +284,18 @@ class EquippedItemTemplateMatcher:
         key = (size, signature)
         cached = self._template_cache.get(key)
         if cached is not None:
+            self._template_cache.move_to_end(key)
             return cached
         names = [name for name, _image in sorted(templates.items())]
         matrix = np.stack([
             _normalized_icon_descriptor(templates[name], size)
             for name in names
         ])
-        self._template_cache = {key: (names, matrix)}
+        self._template_cache[key] = (names, matrix)
+        # Different board rows and bench crops produce different icon sizes.
+        # Keep their matrices, but bound memory across resolution/catalog changes.
+        if len(self._template_cache) > 8:
+            self._template_cache.popitem(last=False)
         return names, matrix
 
     def classify_item_strips(
@@ -454,7 +461,8 @@ class _OptionalDetailClassifier:
             self._mean = np.array(metadata.get("mean", [0.485, 0.456, 0.406]), dtype=np.float32).reshape(3, 1, 1)
             self._std = np.array(metadata.get("std", [0.229, 0.224, 0.225]), dtype=np.float32).reshape(3, 1, 1)
             self._session = ort.InferenceSession(
-                str(model_path), providers=["CPUExecutionProvider"]
+                str(model_path), sess_options=cpu_session_options(),
+                providers=["CPUExecutionProvider"]
             )
             self._input_name = self._session.get_inputs()[0].name
             self.available = True

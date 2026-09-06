@@ -119,6 +119,40 @@ class UnitDetailDecodeTests(unittest.TestCase):
 
 
 class EquippedItemTemplateTests(unittest.TestCase):
+    def test_alternating_icon_sizes_reuse_descriptors(self):
+        from unittest.mock import patch
+        import unit_details
+
+        icons = {"A": np.random.default_rng(7).integers(
+            0, 256, (40, 40, 3), dtype=np.uint8
+        )}
+        matcher = EquippedItemTemplateMatcher()
+        with patch.object(
+            unit_details, "_normalized_icon_descriptor",
+            wraps=unit_details._normalized_icon_descriptor,
+        ) as descriptor:
+            first = matcher._template_matrix(icons, 24)
+            matcher._template_matrix(icons, 31)
+            again = matcher._template_matrix(icons, 24)
+            self.assertEqual(descriptor.call_count, 2)
+            self.assertIs(first[1], again[1])
+            # Replacing artwork must invalidate the cached descriptor.
+            icons["A"] = np.zeros((40, 40, 3), dtype=np.uint8)
+            replaced = matcher._template_matrix(icons, 24)
+            self.assertIsNot(first[1], replaced[1])
+
+    def test_template_cache_is_bounded_and_preserves_scores(self):
+        templates = {"A": np.random.default_rng(8).integers(
+            0, 256, (40, 40, 3), dtype=np.uint8
+        )}
+        matcher = EquippedItemTemplateMatcher()
+        for size in range(20, 40):
+            actual = matcher._template_matrix(templates, size)
+            fresh = EquippedItemTemplateMatcher()._template_matrix(templates, size)
+            self.assertEqual(actual[0], fresh[0])
+            np.testing.assert_array_equal(actual[1], fresh[1])
+        self.assertLessEqual(len(matcher._template_cache), 8)
+
     def test_item_strip_is_split_into_three_complete_icon_slots(self):
         strip = np.zeros((66, 122, 3), dtype=np.uint8)
         for index, value in enumerate((60, 130, 220)):
