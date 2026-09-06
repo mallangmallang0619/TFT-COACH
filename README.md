@@ -585,6 +585,33 @@ Unknown X-tier lines default to hidden until an explicit enabling rule is added.
 ### Augment Screen Detection
 Detects the augment selection overlay and reads augment names via OCR.
 
+### CPU usage and inference benchmarks
+
+Live ONNX classifiers use four CPU threads with idle spinning disabled, so
+workers sleep between capture updates. Equipped-item templates retain up to
+eight icon-size matrices to avoid rebuilding them as board and bench crop
+sizes alternate. These settings require an app restart and no model retraining.
+
+Gold, shop names, stage, HP, and level OCR also reuse results while their image
+regions remain unchanged. Visible changes trigger a fresh read; gold and shop
+are refreshed together for purchase tracking. Unchanged successful reads are
+audited every 12–24 analyzed frames (about 6–12 seconds at 2 FPS). Unreadable
+values retry at the original shorter intervals. Phase changes, resolution
+changes, and HUD layout changes trigger fresh reads as well.
+
+With reviewed champion crops available locally, compare default ONNX settings
+against 1, 2, and 4 threads:
+
+```powershell
+python scripts/benchmark_inference.py --samples 24 --repeats 15
+```
+
+The command reports batch latency, process CPU time, idle CPU time, and whether
+top predictions match the default runtime. It uses the current model and samples
+across labeled folders in `backend/_training/set18`; use `--crops PATH` for a
+different labeled dataset. This is a crop replay benchmark, not a measurement
+of total live application CPU usage or classifier accuracy.
+
 ## Development Roadmap
 
 - [x] Architecture scaffold

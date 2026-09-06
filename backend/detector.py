@@ -350,6 +350,7 @@ class Detector:
         self._level_cache_age = 10**6
         self._hud_layout_cache = "unknown"
         self._previous_phase = GamePhase.NOT_IN_GAME
+        self._ocr_watch_cache: dict[str, tuple[tuple, list[np.ndarray]]] = {}
 
         # Gold/shop OCR and component template matching are much more costly
         # than unit inference. At 2 FPS, running all three every frame kept the
@@ -401,6 +402,7 @@ class Detector:
         self._previous_phase = state.phase
 
         if state.phase == GamePhase.NOT_IN_GAME:
+            self._ocr_watch_cache.clear()
             self._last_hp = None   # new game → drop the HP anchor
             self._lobby_cache = [-1] * 8
             self._lobby_age = 10**6
@@ -503,24 +505,79 @@ class Detector:
 
         return state
 
+    def _ocr_watch_regions(self, frame: np.ndarray, key: str) -> list[np.ndarray]:
+        """Watch the actual OCR inputs, including normal/Trials layout fallbacks."""
+        h, w = frame.shape[:2]
+
+        def roi(name):
+            x, y, rw, rh = getattr(self.rois, name).to_pixels(w, h)
+            return frame[y:y+rh, x:x+rw]
+
+        def band(bounds):
+            x1, y1, x2, y2 = bounds
+            return frame[int(y1*h):int(y2*h), int(x1*w):int(x2*w)]
+
+        if key == "gold":
+            return [roi("gold"), roi("gold_standard")]
+        if key == "stage":
+            return [roi("stage")]
+        if key == "level":
+            return [band(self._LEVEL_SCAN)]
+        if key == "hp":
+            return [band(self._PLAYER_HP_SCAN), band(self._PLAYER_LIST_STRIP), roi("player_hp")]
+        g = ShopGeometry()
+        return [band((g.cards_x0-g.name_pad_x, g.name_y0,
+                      g.cards_x0+5*g.card_pitch, g.name_y1))]
+
+    def _ocr_should_read(self, key, frame, age, interval, force=False, valid=True):
+        """Refresh changed pixels immediately; periodically audit unchanged reads.
+
+        Compare native-size grayscale crops so small digit changes survive.
+        Ignore only very small intensity noise. Baselines follow OCR reads,
+        not every observation, so gradual changes accumulate and trigger a read.
+        """
+        if frame is None:  # Legacy synthetic callers without image data.
+            return force or age >= interval
+        if not hasattr(self, "_ocr_watch_cache"):
+            self._ocr_watch_cache = {}
+        crops = self._ocr_watch_regions(frame, key)
+        if any(crop.size == 0 for crop in crops):
+            return force or age >= interval
+        gray = [cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY) for crop in crops]
+        identity = (frame.shape, getattr(self, "_hud_layout_cache", "unknown"))
+        previous = self._ocr_watch_cache.get(key)
+        changed = previous is None or previous[0] != identity
+        if not changed:
+            changed = any(
+                old.shape != new.shape or np.any(cv2.absdiff(old, new) > 8)
+                for old, new in zip(previous[1], gray)
+            )
+        due = force or changed or age >= (max(12, interval * 3) if valid else interval)
+        if due:
+            self._ocr_watch_cache[key] = (identity, gray)
+        return due
+
     def _read_cached_hud(
         self, frame: np.ndarray, phase_changed: bool = False
     ) -> tuple[str, float, int, int]:
-        """Refresh slow HUD values periodically and on phase transitions."""
+        """Read changed HUD regions immediately and audit cached values periodically."""
         self._stage_cache_age += 1
         self._player_hp_cache_age += 1
         self._level_cache_age += 1
 
-        if phase_changed or self._stage_cache_age >= self.STAGE_REFRESH_FRAMES:
+        if self._ocr_should_read("stage", frame, self._stage_cache_age,
+                                 self.STAGE_REFRESH_FRAMES, phase_changed,
+                                 self._stage_cache[0] not in ("?", "")):
             self._stage_cache = self._ocr_stage(frame)
             self._stage_cache_age = 0
-        if (
-            phase_changed
-            or self._player_hp_cache_age >= self.PLAYER_HP_REFRESH_FRAMES
-        ):
+        if self._ocr_should_read("hp", frame, self._player_hp_cache_age,
+                                 self.PLAYER_HP_REFRESH_FRAMES, phase_changed,
+                                 self._player_hp_cache >= 0):
             self._player_hp_cache = self._ocr_player_hp(frame)
             self._player_hp_cache_age = 0
-        if phase_changed or self._level_cache_age >= self.LEVEL_REFRESH_FRAMES:
+        if self._ocr_should_read("level", frame, self._level_cache_age,
+                                 self.LEVEL_REFRESH_FRAMES, phase_changed,
+                                 self._level_cache >= 0):
             level, layout = self._ocr_level_and_layout(frame)
             self._level_cache = level
             if layout != "unknown":
@@ -541,14 +598,25 @@ class Detector:
         list[DetectedComponent],
         tuple[list[Optional[str]], list[Optional[str]]],
     ]:
-        """Read expensive economy UI at useful rates rather than every frame."""
+        """Refresh changed economy text together; keep component scans scheduled."""
         self._gold_cache_age += 1
         self._components_cache_age += 1
         if include_shop:
             self._shop_cache_age += 1
 
-        if phase_changed or self._gold_cache_age >= self.GOLD_REFRESH_FRAMES:
+        gold_due = self._ocr_should_read(
+            "gold", frame, self._gold_cache_age, self.GOLD_REFRESH_FRAMES,
+            phase_changed, self._gold_cache >= 0 and not getattr(self, "_gold_ocr_failed", False),
+        )
+        shop_due = include_shop and self._ocr_should_read(
+            "shop", frame, self._shop_cache_age, self.SHOP_REFRESH_FRAMES,
+            phase_changed, any(self._shop_cache[0]) or any(self._shop_cache[1]),
+        )
+        # Purchase tracking needs gold and shop from the same observation.
+        # Refresh both when either changes (including rerolls and Wisp names).
+        if gold_due or shop_due:
             gold = self._ocr_gold(frame)
+            self._gold_ocr_failed = gold < 0
             if gold >= 0:
                 self._gold_cache = gold
             self._gold_cache_age = 0
@@ -558,9 +626,7 @@ class Detector:
         ):
             self._components_cache = self._detect_components(frame)
             self._components_cache_age = 0
-        if include_shop and (
-            phase_changed or self._shop_cache_age >= self.SHOP_REFRESH_FRAMES
-        ):
+        if include_shop and (gold_due or shop_due):
             self._shop_cache = self._detect_shop(frame, include_wisps=True)
             self._shop_cache_age = 0
 
