@@ -1,7 +1,7 @@
 {
   "patch": "18.1d",
-  "synced_at": "2026-09-04T09:22:26.572074Z",
-  "last_checked_at": "2026-09-04T09:22:26.572082Z",
+  "synced_at": "2026-09-06T06:40:31.248055Z",
+  "last_checked_at": "2026-09-06T06:40:32.964987Z",
   "source_url": "https://tftacademy.com/tierlist/comps",
   "comps": [
     {
@@ -876,202 +876,6 @@
       }
     },
     {
-      "name": "Defender Cassio",
-      "tier": "A",
-      "slug": "set-18-defender-cassio",
-      "trend": "",
-      "carry": "?",
-      "match_traits": [],
-      "detail": {
-        "units": [
-          {
-            "apiName": "DA_18_Leona",
-            "name": "Leona",
-            "boardIndex": 2,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Ornn",
-            "name": "Ornn",
-            "boardIndex": 1,
-            "items": [],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Shen",
-            "name": "Shen",
-            "boardIndex": 3,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Cassiopeia",
-            "name": "Cassiopeia",
-            "boardIndex": 27,
-            "items": [
-              {
-                "apiName": "DA_SpearOfShojin",
-                "name": "Spear of Shojin"
-              },
-              {
-                "apiName": "DA_HextechGunblade",
-                "name": "Hextech Gunblade"
-              },
-              {
-                "apiName": "DA_ArchangelsStaff",
-                "name": "Archangel's Staff"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_Fiddlesticks18",
-            "name": "Fiddlesticks",
-            "boardIndex": 4,
-            "items": [
-              {
-                "apiName": "DA_TitansResolve",
-                "name": "Titan's Resolve"
-              },
-              {
-                "apiName": "DA_AdaptiveHelm",
-                "name": "Adaptive Helm"
-              },
-              {
-                "apiName": "DA_Crownguard",
-                "name": "Crownguard"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Rammus",
-            "name": "Rammus",
-            "boardIndex": 5,
-            "items": [
-              {
-                "apiName": "DA_IonicSpark",
-                "name": "Ionic Spark"
-              },
-              {
-                "apiName": "DA_SunfireCape",
-                "name": "Sunfire Cape"
-              },
-              {
-                "apiName": "DA_SteadfastHeart",
-                "name": "Steadfast Heart"
-              }
-            ],
-            "stars": 3
-          },
-          {
-            "apiName": "DA_18_Lillia",
-            "name": "Lillia",
-            "boardIndex": 0,
-            "items": [
-              {
-                "apiName": "DA_ThiefsGloves",
-                "name": "Thief's Gloves"
-              }
-            ],
-            "stars": 1
-          }
-        ],
-        "early_comp": [
-          {
-            "apiName": "DA_Karma18",
-            "name": "Karma",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Leona",
-            "name": "Leona",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_Ornn",
-            "name": "Ornn",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          },
-          {
-            "apiName": "DA_18_LeBlanc",
-            "name": "LeBlanc",
-            "boardIndex": null,
-            "items": [],
-            "stars": 1
-          }
-        ],
-        "augments": [
-          {
-            "apiName": "DA_Ascension",
-            "name": "Ascension"
-          },
-          {
-            "apiName": "DA_18_FloraFatalisAugment",
-            "name": "Flora Fatalis Augment"
-          },
-          {
-            "apiName": "DA_SpiritOfRedemption",
-            "name": "Spirit Of Redemption"
-          },
-          {
-            "apiName": "DA_ItsMeBaby",
-            "name": "Its Me Baby"
-          },
-          {
-            "apiName": "DA_WovenMagic",
-            "name": "Woven Magic"
-          },
-          {
-            "apiName": "DA_HeroicGrabBagPlusPlus",
-            "name": "Heroic Grab Bag Plus Plus"
-          },
-          {
-            "apiName": "DA_FlowingTears",
-            "name": "Flowing Tears"
-          },
-          {
-            "apiName": "DA_CookingPot",
-            "name": "Cooking Pot"
-          }
-        ],
-        "carousel": [
-          {
-            "apiName": "DA_SpearOfShojin",
-            "name": "Spear of Shojin"
-          },
-          {
-            "apiName": "DA_HextechGunblade",
-            "name": "Hextech Gunblade"
-          },
-          {
-            "apiName": "DA_Component_ChainVest",
-            "name": "Component_Chain Vest"
-          },
-          {
-            "apiName": "DA_Component_NeedlesslyLargeRod",
-            "name": "Component_Needlessly Large Rod"
-          }
-        ],
-        "main_champion": {
-          "apiName": "DA_18_Cassiopeia",
-          "name": "Cassiopeia",
-          "cost": 3
-        },
-        "tip": "Very BIS dependent. Can play from Coven Cashout. Can also play for Ornn 3 to potentially farm Artifacts. Always play 6 Defender. Duo carry on 8 is any 4 or 5 cost AP carry. Titans on fiddle because we have no other use for bow.",
-        "difficulty": "EASY",
-        "patch": "18.1d",
-        "scraped_at": "2026-09-02T20:58:47.292361Z"
-      }
-    },
-    {
       "name": "Adaptor Reroll Copy",
       "tier": "A",
       "slug": "set-18-adaptor-reroll-copy",
@@ -1278,6 +1082,202 @@
         "difficulty": "MEDIUM",
         "patch": "18.1d",
         "scraped_at": "2026-09-02T20:58:48.822043Z"
+      }
+    },
+    {
+      "name": "Defender Cassio",
+      "tier": "B",
+      "slug": "set-18-defender-cassio",
+      "trend": "",
+      "carry": "?",
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "DA_18_Leona",
+            "name": "Leona",
+            "boardIndex": 2,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Ornn",
+            "name": "Ornn",
+            "boardIndex": 1,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Shen",
+            "name": "Shen",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Cassiopeia",
+            "name": "Cassiopeia",
+            "boardIndex": 27,
+            "items": [
+              {
+                "apiName": "DA_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "DA_HextechGunblade",
+                "name": "Hextech Gunblade"
+              },
+              {
+                "apiName": "DA_ArchangelsStaff",
+                "name": "Archangel's Staff"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_Fiddlesticks18",
+            "name": "Fiddlesticks",
+            "boardIndex": 4,
+            "items": [
+              {
+                "apiName": "DA_TitansResolve",
+                "name": "Titan's Resolve"
+              },
+              {
+                "apiName": "DA_AdaptiveHelm",
+                "name": "Adaptive Helm"
+              },
+              {
+                "apiName": "DA_Crownguard",
+                "name": "Crownguard"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Rammus",
+            "name": "Rammus",
+            "boardIndex": 5,
+            "items": [
+              {
+                "apiName": "DA_IonicSpark",
+                "name": "Ionic Spark"
+              },
+              {
+                "apiName": "DA_SunfireCape",
+                "name": "Sunfire Cape"
+              },
+              {
+                "apiName": "DA_SteadfastHeart",
+                "name": "Steadfast Heart"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Lillia",
+            "name": "Lillia",
+            "boardIndex": 0,
+            "items": [
+              {
+                "apiName": "DA_ThiefsGloves",
+                "name": "Thief's Gloves"
+              }
+            ],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "DA_Karma18",
+            "name": "Karma",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Leona",
+            "name": "Leona",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Ornn",
+            "name": "Ornn",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_LeBlanc",
+            "name": "LeBlanc",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "DA_Ascension",
+            "name": "Ascension"
+          },
+          {
+            "apiName": "DA_18_FloraFatalisAugment",
+            "name": "Flora Fatalis Augment"
+          },
+          {
+            "apiName": "DA_SpiritOfRedemption",
+            "name": "Spirit Of Redemption"
+          },
+          {
+            "apiName": "DA_ItsMeBaby",
+            "name": "Its Me Baby"
+          },
+          {
+            "apiName": "DA_WovenMagic",
+            "name": "Woven Magic"
+          },
+          {
+            "apiName": "DA_HeroicGrabBagPlusPlus",
+            "name": "Heroic Grab Bag Plus Plus"
+          },
+          {
+            "apiName": "DA_FlowingTears",
+            "name": "Flowing Tears"
+          },
+          {
+            "apiName": "DA_CookingPot",
+            "name": "Cooking Pot"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "DA_SpearOfShojin",
+            "name": "Spear of Shojin"
+          },
+          {
+            "apiName": "DA_HextechGunblade",
+            "name": "Hextech Gunblade"
+          },
+          {
+            "apiName": "DA_Component_ChainVest",
+            "name": "Component_Chain Vest"
+          },
+          {
+            "apiName": "DA_Component_NeedlesslyLargeRod",
+            "name": "Component_Needlessly Large Rod"
+          }
+        ],
+        "main_champion": {
+          "apiName": "DA_18_Cassiopeia",
+          "name": "Cassiopeia",
+          "cost": 3
+        },
+        "tip": "Very BIS dependent. Can play from Coven Cashout. Can also play for Ornn 3 to potentially farm Artifacts. Always play 6 Defender. Duo carry on 8 is any 4 or 5 cost AP carry. Titans on fiddle because we have no other use for bow.",
+        "difficulty": "EASY",
+        "patch": "18.1d",
+        "scraped_at": "2026-09-02T20:58:47.292361Z"
       }
     },
     {
@@ -2516,6 +2516,197 @@
         "difficulty": "EASY",
         "patch": "18.1d",
         "scraped_at": "2026-09-02T20:58:57.124572Z"
+      }
+    },
+    {
+      "name": "Solar Melee",
+      "tier": "C",
+      "slug": "set-18-solar-melee",
+      "trend": "",
+      "carry": "?",
+      "match_traits": [],
+      "detail": {
+        "units": [
+          {
+            "apiName": "DA_18_Akali_AD",
+            "name": "Akali",
+            "boardIndex": 14,
+            "items": [
+              {
+                "apiName": "DA_JeweledGauntlet",
+                "name": "Jeweled Gauntlet"
+              },
+              {
+                "apiName": "DA_HandOfJustice",
+                "name": "Hand of Justice"
+              },
+              {
+                "apiName": "DA_EdgeOfNight",
+                "name": "Edge of Night"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Camille",
+            "name": "Camille",
+            "boardIndex": 15,
+            "items": [
+              {
+                "apiName": "DA_SteraksGage",
+                "name": "Sterak's Gage"
+              },
+              {
+                "apiName": "DA_Quicksilver",
+                "name": "Quicksilver"
+              },
+              {
+                "apiName": "DA_InfinityEdge",
+                "name": "Infinity Edge"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Leona",
+            "name": "Leona",
+            "boardIndex": 17,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Varus",
+            "name": "Varus",
+            "boardIndex": 21,
+            "items": [
+              {
+                "apiName": "DA_SpearOfShojin",
+                "name": "Spear of Shojin"
+              },
+              {
+                "apiName": "DA_LastWhisper",
+                "name": "Last Whisper"
+              },
+              {
+                "apiName": "DA_InfinityEdge",
+                "name": "Infinity Edge"
+              }
+            ],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Ornn",
+            "name": "Ornn",
+            "boardIndex": 3,
+            "items": [],
+            "stars": 3
+          },
+          {
+            "apiName": "DA_18_Kayle",
+            "name": "Kayle",
+            "boardIndex": 27,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Sejuani",
+            "name": "Sejuani",
+            "boardIndex": 20,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "early_comp": [
+          {
+            "apiName": "DA_18_Akali_AD",
+            "name": "Akali",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Camille",
+            "name": "Camille",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Ornn",
+            "name": "Ornn",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          },
+          {
+            "apiName": "DA_18_Leona",
+            "name": "Leona",
+            "boardIndex": null,
+            "items": [],
+            "stars": 1
+          }
+        ],
+        "augments": [
+          {
+            "apiName": "DA_PandorasBench",
+            "name": "Pandoras Bench"
+          },
+          {
+            "apiName": "DA_PrismaticTicket",
+            "name": "Prismatic Ticket"
+          },
+          {
+            "apiName": "DA_NoScoutNoPivot",
+            "name": "No Scout No Pivot"
+          },
+          {
+            "apiName": "DA_EarlyLearnings",
+            "name": "Early Learnings"
+          },
+          {
+            "apiName": "DA_WorththeWait",
+            "name": "Worththe Wait"
+          },
+          {
+            "apiName": "DA_LuckyGlovesPlus",
+            "name": "Lucky Gloves Plus"
+          },
+          {
+            "apiName": "DA_SoloPlate",
+            "name": "Solo Plate"
+          },
+          {
+            "apiName": "DA_CursedCrown",
+            "name": "Cursed Crown"
+          }
+        ],
+        "carousel": [
+          {
+            "apiName": "DA_InfinityEdge",
+            "name": "Infinity Edge"
+          },
+          {
+            "apiName": "DA_GargoyleStoneplate",
+            "name": "Gargoyle Stoneplate"
+          },
+          {
+            "apiName": "DA_Component_SparringGloves",
+            "name": "Component_Sparring Gloves"
+          },
+          {
+            "apiName": "DA_Component_BFSword",
+            "name": "Component_BFSword"
+          }
+        ],
+        "main_champion": {
+          "apiName": "DA_18_Akali_AD",
+          "name": "Akali",
+          "cost": 1
+        },
+        "tip": "Akali can be AD or AP (Flex IE/JG) Itemize Tank + 3star melee first -> 2nd melee -> Varus items. Only go for Kayle and Sej 3 with lots of money. Can  Swap out Ornn for Yorick/Rakan.",
+        "difficulty": "EASY",
+        "patch": "18.1d",
+        "scraped_at": "2026-09-06T06:40:32.964978Z"
       }
     },
     {
@@ -4990,7 +5181,7 @@
   ],
   "augments": {
     "set": 18,
-    "synced_at": "2026-09-04T09:22:11.592822Z",
+    "synced_at": "2026-09-06T07:45:19.992055Z",
     "source_url": "https://tftacademy.com/api/tierlist/augments?set=18",
     "entries": [
       {
@@ -5015,8 +5206,8 @@
         "name": "Arcane Viktor-y",
         "slot": "gold",
         "ratings": {
-          "4-2": "A",
           "3-2": "A",
+          "4-2": "A",
           "All": "A"
         }
       },
@@ -5025,8 +5216,8 @@
         "name": "Ascension",
         "slot": "gold",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
+          "4-2": "B",
           "All": "A"
         }
       },
@@ -5053,8 +5244,8 @@
         "name": "Backup Bows",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -5062,10 +5253,10 @@
         "name": "Band of Thieves",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "4-2": "A",
           "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A",
+          "4-2": "A"
         }
       },
       {
@@ -5073,8 +5264,8 @@
         "name": "Band of Thieves II",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -5082,8 +5273,8 @@
         "name": "Band of Thieves II+",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -5101,8 +5292,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "S",
-          "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "3-2": "S"
         }
       },
       {
@@ -5147,8 +5338,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "B",
-          "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -5156,8 +5347,8 @@
         "name": "Big Grab Bag",
         "slot": "gold",
         "ratings": {
-          "4-2": "S",
           "3-2": "S",
+          "4-2": "S",
           "All": "S"
         }
       },
@@ -5166,8 +5357,8 @@
         "name": "Birthday Present",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -5247,9 +5438,9 @@
         "name": "Boxing Lessons",
         "slot": "silver",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "4-2": "B"
         }
       },
       {
@@ -5257,8 +5448,8 @@
         "name": "Branching Out",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -5275,8 +5466,8 @@
         "name": "Bronze For Life I",
         "slot": "gold",
         "ratings": {
-          "4-2": "B",
           "3-2": "C",
+          "4-2": "B",
           "All": "C"
         }
       },
@@ -5286,8 +5477,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "B",
-          "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -5295,8 +5486,8 @@
         "name": "Buried Treasures III",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -5313,8 +5504,8 @@
         "name": "Called Shot",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -5322,8 +5513,8 @@
         "name": "Capital Gains I",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -5340,8 +5531,8 @@
         "name": "Caretaker's Ally",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -5358,8 +5549,8 @@
         "name": "Carve a Path",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -5367,9 +5558,9 @@
         "name": "Celestial Blessing I",
         "slot": "silver",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "4-2": "B"
         }
       },
       {
@@ -5377,8 +5568,8 @@
         "name": "Celestial Blessing II",
         "slot": "gold",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
+          "4-2": "B",
           "All": "B"
         }
       },
@@ -5387,9 +5578,9 @@
         "name": "Celestial Blessing III",
         "slot": "prismatic",
         "ratings": {
-          "4-2": "B",
-          "3-2": "B",
-          "All": "B"
+          "4-2": "C",
+          "All": "C",
+          "3-2": "C"
         }
       },
       {
@@ -5397,8 +5588,8 @@
         "name": "Challengers Grace",
         "slot": "gold",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
+          "4-2": "B",
           "All": "B"
         }
       },
@@ -5407,8 +5598,8 @@
         "name": "Champ Delivery",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -5425,8 +5616,8 @@
         "name": "Champ Delivery++",
         "slot": "silver",
         "ratings": {
-          "4-2": "A",
-          "All": "A"
+          "All": "A",
+          "4-2": "A"
         }
       },
       {
@@ -5452,8 +5643,8 @@
         "name": "Clockwork Accelerator",
         "slot": "gold",
         "ratings": {
-          "4-2": "C",
           "3-2": "B",
+          "4-2": "C",
           "All": "B"
         }
       },
@@ -5480,8 +5671,8 @@
         "name": "Cognitive Tax",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -5498,8 +5689,8 @@
         "name": "Comeback Story",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -5516,16 +5707,8 @@
         "name": "Component Quest",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
-        }
-      },
-      {
-        "api_name": "DA_18_FloraFatalisAugmentPlus",
-        "name": "Consuming Flora",
-        "slot": "gold",
-        "ratings": {
-          "3-2": "S"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -5535,6 +5718,14 @@
         "ratings": {
           "2-1": "S",
           "All": "S"
+        }
+      },
+      {
+        "api_name": "DA_18_FloraFatalisAugmentPlus",
+        "name": "Consuming Flora",
+        "slot": "gold",
+        "ratings": {
+          "3-2": "S"
         }
       },
       {
@@ -5552,8 +5743,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "S",
-          "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "3-2": "S"
         }
       },
       {
@@ -5561,9 +5752,9 @@
         "name": "Corrosion",
         "slot": "silver",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "4-2": "B"
         }
       },
       {
@@ -5580,8 +5771,8 @@
         "name": "Crafted Crafting",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -5589,8 +5780,8 @@
         "name": "Cry Me A River",
         "slot": "gold",
         "ratings": {
-          "3-2": "B",
           "2-1": "B",
+          "3-2": "B",
           "All": "B"
         }
       },
@@ -5599,9 +5790,9 @@
         "name": "Cursed Crown",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "A",
+          "All": "B",
           "2-1": "B",
-          "All": "B"
+          "3-2": "A"
         }
       },
       {
@@ -5609,8 +5800,8 @@
         "name": "Cybernetic Implants",
         "slot": "gold",
         "ratings": {
-          "4-2": "A",
           "3-2": "A",
+          "4-2": "A",
           "All": "A"
         }
       },
@@ -5619,8 +5810,8 @@
         "name": "Cybernetic Uplink",
         "slot": "gold",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
+          "4-2": "B",
           "All": "B"
         }
       },
@@ -5629,8 +5820,8 @@
         "name": "Dark Ritual",
         "slot": "gold",
         "ratings": {
-          "3-2": "A",
           "2-1": "B",
+          "3-2": "A",
           "All": "B"
         }
       },
@@ -5639,8 +5830,8 @@
         "name": "Deadlier Blades",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -5648,8 +5839,8 @@
         "name": "Deadlier Caps",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -5684,10 +5875,10 @@
         "name": "Electrocharge I",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "4-2": "S",
           "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A",
+          "4-2": "S"
         }
       },
       {
@@ -5695,9 +5886,9 @@
         "name": "Electrocharge II",
         "slot": "gold",
         "ratings": {
-          "4-2": "A",
-          "3-2": "B",
           "2-1": "B",
+          "3-2": "B",
+          "4-2": "A",
           "All": "B"
         }
       },
@@ -5706,9 +5897,9 @@
         "name": "Embiggen",
         "slot": "gold",
         "ratings": {
-          "4-2": "B",
-          "3-2": "B",
           "2-1": "B",
+          "3-2": "B",
+          "4-2": "B",
           "All": "B"
         }
       },
@@ -5744,8 +5935,8 @@
         "name": "Exclusive Customization",
         "slot": "gold",
         "ratings": {
-          "4-2": "A",
           "3-2": "A",
+          "4-2": "A",
           "All": "A"
         }
       },
@@ -5754,8 +5945,8 @@
         "name": "Expedition",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -5781,8 +5972,8 @@
         "name": "Extra Buckles",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -5808,9 +5999,9 @@
         "name": "Find Your Center",
         "slot": "silver",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "4-2": "B"
         }
       },
       {
@@ -5818,8 +6009,8 @@
         "name": "Flexible",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -5835,8 +6026,8 @@
         "name": "Flowing Tears",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -5844,9 +6035,9 @@
         "name": "Focused Fire",
         "slot": "silver",
         "ratings": {
-          "4-2": "A",
           "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "4-2": "A"
         }
       },
       {
@@ -5854,8 +6045,8 @@
         "name": "Forge A Friend",
         "slot": "silver",
         "ratings": {
-          "4-2": "S",
-          "All": "A"
+          "All": "A",
+          "4-2": "S"
         }
       },
       {
@@ -5863,8 +6054,8 @@
         "name": "Forged In Strength",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -5881,8 +6072,8 @@
         "name": "Future Focused",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -5900,8 +6091,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -5918,9 +6109,9 @@
         "name": "Glass Cannon I",
         "slot": "silver",
         "ratings": {
-          "4-2": "S",
           "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "4-2": "S"
         }
       },
       {
@@ -5928,8 +6119,8 @@
         "name": "Glass Cannon II",
         "slot": "gold",
         "ratings": {
-          "4-2": "S",
           "3-2": "S",
+          "4-2": "S",
           "All": "A"
         }
       },
@@ -5938,8 +6129,8 @@
         "name": "Going Long",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -5965,8 +6156,8 @@
         "name": "Golden Gamble",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -5974,8 +6165,8 @@
         "name": "Golden Gamble+",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -5992,8 +6183,8 @@
         "name": "Good For Something I",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -6001,9 +6192,9 @@
         "name": "Group Hug I",
         "slot": "silver",
         "ratings": {
-          "4-2": "A",
           "3-2": "A",
-          "All": "B"
+          "All": "B",
+          "4-2": "A"
         }
       },
       {
@@ -6011,8 +6202,8 @@
         "name": "Group Hug II",
         "slot": "gold",
         "ratings": {
-          "4-2": "A",
           "3-2": "A",
+          "4-2": "A",
           "All": "A"
         }
       },
@@ -6030,8 +6221,8 @@
         "name": "Hard Commit",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -6039,9 +6230,9 @@
         "name": "Healing Orbs I",
         "slot": "silver",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "4-2": "B"
         }
       },
       {
@@ -6049,8 +6240,8 @@
         "name": "Healing Orbs II",
         "slot": "gold",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
+          "4-2": "B",
           "All": "B"
         }
       },
@@ -6068,8 +6259,8 @@
         "name": "Hedge Fund",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -6105,8 +6296,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "3-2": "A",
-          "All": "B"
+          "All": "B",
+          "3-2": "A"
         }
       },
       {
@@ -6132,8 +6323,8 @@
         "name": "Invested+",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -6159,8 +6350,8 @@
         "name": "Investment Strategy II",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -6168,8 +6359,8 @@
         "name": "Iron Assets",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -6177,8 +6368,8 @@
         "name": "It's Me, Baby",
         "slot": "gold",
         "ratings": {
-          "4-2": "A",
           "3-2": "A",
+          "4-2": "A",
           "All": "A"
         }
       },
@@ -6187,8 +6378,8 @@
         "name": "Item Extraction",
         "slot": "gold",
         "ratings": {
-          "3-2": "S",
           "2-1": "S",
+          "3-2": "S",
           "All": "S"
         }
       },
@@ -6197,10 +6388,10 @@
         "name": "Item Grab Bag I",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "4-2": "A",
           "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A",
+          "4-2": "A"
         }
       },
       {
@@ -6208,8 +6399,8 @@
         "name": "Jeweled Lotus I",
         "slot": "gold",
         "ratings": {
-          "4-2": "A",
           "3-2": "A",
+          "4-2": "A",
           "All": "A"
         }
       },
@@ -6219,8 +6410,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -6228,8 +6419,8 @@
         "name": "Kick Start",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -6237,9 +6428,9 @@
         "name": "Kingslayer",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
           "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -6265,8 +6456,8 @@
         "name": "Latent Forge",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -6283,8 +6474,8 @@
         "name": "Level Up!",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -6292,8 +6483,8 @@
         "name": "Living Forge",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -6301,8 +6492,8 @@
         "name": "Loaded Dice",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "A"
+          "All": "A",
+          "2-1": "B"
         }
       },
       {
@@ -6310,8 +6501,8 @@
         "name": "Lucky Gloves",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -6320,8 +6511,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "3-2": "A",
-          "All": "B"
+          "All": "B",
+          "3-2": "A"
         }
       },
       {
@@ -6329,8 +6520,8 @@
         "name": "Luxury Subscription",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -6347,9 +6538,9 @@
         "name": "Makeshift Armor I",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
           "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "A"
         }
       },
       {
@@ -6357,8 +6548,8 @@
         "name": "Makeshift Armor II",
         "slot": "gold",
         "ratings": {
-          "3-2": "B",
           "2-1": "B",
+          "3-2": "B",
           "All": "B"
         }
       },
@@ -6394,8 +6585,8 @@
         "name": "Min-Max",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -6403,9 +6594,9 @@
         "name": "Missed Connections",
         "slot": "silver",
         "ratings": {
-          "4-2": "S",
           "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "4-2": "S"
         }
       },
       {
@@ -6449,9 +6640,9 @@
         "name": "Nature's Shelter",
         "slot": "gold",
         "ratings": {
-          "4-2": "B",
-          "3-2": "B",
           "2-1": "B",
+          "3-2": "B",
+          "4-2": "B",
           "All": "B"
         }
       },
@@ -6460,8 +6651,8 @@
         "name": "Nesting Anvils",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -6486,8 +6677,8 @@
         "name": "Nesting Dolls",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -6503,9 +6694,9 @@
         "name": "Omega Riftbeast",
         "slot": "gold",
         "ratings": {
-          "4-2": "A",
-          "3-2": "A",
           "2-1": "A",
+          "3-2": "A",
+          "4-2": "A",
           "All": "A"
         }
       },
@@ -6515,8 +6706,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "S",
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -6524,8 +6715,8 @@
         "name": "One, Two, Five!",
         "slot": "silver",
         "ratings": {
-          "4-2": "A",
-          "All": "B"
+          "All": "B",
+          "4-2": "A"
         }
       },
       {
@@ -6533,8 +6724,8 @@
         "name": "Ones Two Three",
         "slot": "silver",
         "ratings": {
-          "2-1": "C",
-          "All": "C"
+          "All": "C",
+          "2-1": "C"
         }
       },
       {
@@ -6542,9 +6733,9 @@
         "name": "Pandora's Bench",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
           "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -6552,10 +6743,10 @@
         "name": "Pandora's Items I",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "4-2": "B",
           "3-2": "A",
-          "All": "S"
+          "All": "S",
+          "2-1": "S",
+          "4-2": "B"
         }
       },
       {
@@ -6563,9 +6754,9 @@
         "name": "Pandora's Items II",
         "slot": "gold",
         "ratings": {
-          "4-2": "B",
-          "3-2": "B",
           "2-1": "A",
+          "3-2": "B",
+          "4-2": "B",
           "All": "A"
         }
       },
@@ -6574,9 +6765,9 @@
         "name": "Pandora's Items III",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "A",
+          "All": "S",
           "2-1": "S",
-          "All": "S"
+          "3-2": "A"
         }
       },
       {
@@ -6584,9 +6775,9 @@
         "name": "Partial Ascension",
         "slot": "silver",
         "ratings": {
-          "4-2": "A",
           "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "4-2": "A"
         }
       },
       {
@@ -6594,8 +6785,8 @@
         "name": "Patience Is A Virtue",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "A"
+          "All": "A",
+          "2-1": "S"
         }
       },
       {
@@ -6621,8 +6812,8 @@
         "name": "Plot Armor",
         "slot": "gold",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
+          "4-2": "B",
           "All": "B"
         }
       },
@@ -6631,9 +6822,9 @@
         "name": "Portable Forge",
         "slot": "gold",
         "ratings": {
-          "4-2": "A",
-          "3-2": "S",
           "2-1": "S",
+          "3-2": "S",
+          "4-2": "A",
           "All": "S"
         }
       },
@@ -6642,8 +6833,8 @@
         "name": "Prismatic Destiny",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -6651,8 +6842,8 @@
         "name": "Prismatic Destiny+",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "3-2": "S"
         }
       },
       {
@@ -6660,9 +6851,9 @@
         "name": "Prismatic Ticket",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "A",
+          "All": "A",
           "2-1": "B",
-          "All": "A"
+          "3-2": "A"
         }
       },
       {
@@ -6670,8 +6861,8 @@
         "name": "Promised Protection",
         "slot": "gold",
         "ratings": {
-          "3-2": "B",
           "2-1": "A",
+          "3-2": "B",
           "All": "A"
         }
       },
@@ -6680,8 +6871,8 @@
         "name": "Quick Streaks",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -6690,8 +6881,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "S",
-          "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "3-2": "S"
         }
       },
       {
@@ -6700,9 +6891,9 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "3-2": "A",
+          "All": "A",
           "2-1": "A",
-          "All": "A"
+          "3-2": "A"
         }
       },
       {
@@ -6719,8 +6910,8 @@
         "name": "Replication",
         "slot": "gold",
         "ratings": {
-          "3-2": "A",
           "2-1": "A",
+          "3-2": "A",
           "All": "A"
         }
       },
@@ -6729,8 +6920,8 @@
         "name": "Residual Magic",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -6747,8 +6938,8 @@
         "name": "Residual Magic ++",
         "slot": "silver",
         "ratings": {
-          "4-2": "A",
-          "All": "A"
+          "All": "A",
+          "4-2": "A"
         }
       },
       {
@@ -6757,8 +6948,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "B",
-          "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -6775,9 +6966,9 @@
         "name": "Rolling For Days",
         "slot": "silver",
         "ratings": {
-          "4-2": "S",
           "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "4-2": "S"
         }
       },
       {
@@ -6794,8 +6985,8 @@
         "name": "Salvage Bin+",
         "slot": "gold",
         "ratings": {
-          "4-2": "A",
           "3-2": "A",
+          "4-2": "A",
           "All": "A"
         }
       },
@@ -6804,8 +6995,8 @@
         "name": "Seraphim's Staff",
         "slot": "gold",
         "ratings": {
-          "3-2": "S",
           "2-1": "S",
+          "3-2": "S",
           "All": "S"
         }
       },
@@ -6814,8 +7005,8 @@
         "name": "Shimmerscale Essence",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "C",
-          "All": "C"
+          "All": "C",
+          "2-1": "C"
         }
       },
       {
@@ -6823,8 +7014,8 @@
         "name": "Shopping Spree",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -6832,8 +7023,8 @@
         "name": "Silver Destiny",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -6850,8 +7041,8 @@
         "name": "Silver Destiny++",
         "slot": "silver",
         "ratings": {
-          "4-2": "S",
-          "All": "S"
+          "All": "S",
+          "4-2": "S"
         }
       },
       {
@@ -6859,8 +7050,8 @@
         "name": "Silver Spoon",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -6886,8 +7077,8 @@
         "name": "Slice of Life",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -6895,8 +7086,8 @@
         "name": "Slightly Magic Roll",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -6904,9 +7095,9 @@
         "name": "Small Grab Bag",
         "slot": "silver",
         "ratings": {
-          "4-2": "S",
           "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "4-2": "S"
         }
       },
       {
@@ -6923,8 +7114,8 @@
         "name": "Solo Plate",
         "slot": "gold",
         "ratings": {
-          "3-2": "S",
           "2-1": "S",
+          "3-2": "S",
           "All": "S"
         }
       },
@@ -6934,8 +7125,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -6952,8 +7143,8 @@
         "name": "Spirit Of Redemption",
         "slot": "gold",
         "ratings": {
-          "3-2": "B",
           "2-1": "B",
+          "3-2": "B",
           "All": "B"
         }
       },
@@ -6989,9 +7180,9 @@
         "name": "Stand United",
         "slot": "silver",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "4-2": "B"
         }
       },
       {
@@ -7017,8 +7208,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "B",
-          "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -7027,8 +7218,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "S",
-          "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "3-2": "S"
         }
       },
       {
@@ -7046,8 +7237,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "3-2": "S",
-          "All": "A"
+          "All": "A",
+          "3-2": "S"
         }
       },
       {
@@ -7055,8 +7246,8 @@
         "name": "Tactician's Kitchen",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -7064,9 +7255,9 @@
         "name": "Team Building",
         "slot": "silver",
         "ratings": {
-          "2-1": "A",
           "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "A"
         }
       },
       {
@@ -7092,10 +7283,10 @@
         "name": "The Tower",
         "slot": "silver",
         "ratings": {
-          "2-1": "B",
-          "4-2": "B",
           "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B",
+          "4-2": "B"
         }
       },
       {
@@ -7103,8 +7294,8 @@
         "name": "The Trait Tree",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -7112,8 +7303,8 @@
         "name": "The Trait Tree+",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "3-2": "S"
         }
       },
       {
@@ -7130,8 +7321,8 @@
         "name": "Tons of Stats!",
         "slot": "gold",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
+          "4-2": "B",
           "All": "A"
         }
       },
@@ -7158,9 +7349,9 @@
         "name": "Trait Ladder",
         "slot": "prismatic",
         "ratings": {
-          "3-2": "S",
+          "All": "S",
           "2-1": "S",
-          "All": "S"
+          "3-2": "S"
         }
       },
       {
@@ -7168,9 +7359,9 @@
         "name": "Twin Guardians",
         "slot": "silver",
         "ratings": {
-          "4-2": "S",
           "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "4-2": "S"
         }
       },
       {
@@ -7178,9 +7369,9 @@
         "name": "U.R.F",
         "slot": "gold",
         "ratings": {
-          "4-2": "A",
-          "3-2": "A",
           "2-1": "A",
+          "3-2": "A",
+          "4-2": "A",
           "All": "A"
         }
       },
@@ -7189,8 +7380,8 @@
         "name": "Unrivaled",
         "slot": "gold",
         "ratings": {
-          "3-2": "A",
           "2-1": "A",
+          "3-2": "A",
           "All": "A"
         }
       },
@@ -7199,8 +7390,8 @@
         "name": "Upward Mobility",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "B",
-          "All": "B"
+          "All": "B",
+          "2-1": "B"
         }
       },
       {
@@ -7209,8 +7400,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "A",
-          "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "3-2": "A"
         }
       },
       {
@@ -7218,9 +7409,9 @@
         "name": "Verticality I",
         "slot": "silver",
         "ratings": {
-          "4-2": "A",
           "3-2": "A",
-          "All": "A"
+          "All": "A",
+          "4-2": "A"
         }
       },
       {
@@ -7228,8 +7419,8 @@
         "name": "Verticality II",
         "slot": "gold",
         "ratings": {
-          "4-2": "B",
           "3-2": "B",
+          "4-2": "B",
           "All": "B"
         }
       },
@@ -7239,8 +7430,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "B",
-          "3-2": "B",
-          "All": "B"
+          "All": "B",
+          "3-2": "B"
         }
       },
       {
@@ -7249,8 +7440,8 @@
         "slot": "prismatic",
         "ratings": {
           "4-2": "S",
-          "3-2": "S",
-          "All": "S"
+          "All": "S",
+          "3-2": "S"
         }
       },
       {
@@ -7267,8 +7458,8 @@
         "name": "We Stick Together",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "A",
-          "All": "A"
+          "All": "A",
+          "2-1": "A"
         }
       },
       {
@@ -7294,8 +7485,8 @@
         "name": "Wisp Rebate+",
         "slot": "silver",
         "ratings": {
-          "4-2": "S",
-          "All": "S"
+          "All": "S",
+          "4-2": "S"
         }
       },
       {
@@ -7312,8 +7503,8 @@
         "name": "Worth the Wait II",
         "slot": "prismatic",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       },
       {
@@ -7330,15 +7521,15 @@
         "name": "Young and Wild and Free",
         "slot": "silver",
         "ratings": {
-          "2-1": "S",
-          "All": "S"
+          "All": "S",
+          "2-1": "S"
         }
       }
     ]
   },
   "items": {
     "set": 18,
-    "synced_at": "2026-09-04T09:22:11.696454Z",
+    "synced_at": "2026-09-06T07:45:20.087279Z",
     "source_url": "https://tftacademy.com/api/tierlist/items?set=18",
     "entries": [
       {

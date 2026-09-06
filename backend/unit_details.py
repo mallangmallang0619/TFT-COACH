@@ -261,11 +261,24 @@ class EquippedItemTemplateMatcher:
         item_templates: dict[str, np.ndarray],
         component_templates: dict[str, np.ndarray],
     ) -> dict[str, np.ndarray]:
-        combined = {
-            str(name): image
-            for name, image in item_templates.items()
-            if image is not None and image.size > 0
+        from game_data import ITEM_RECIPES, LIVE_ITEM_TIERS, norm_item_key
+
+        canonical = {
+            norm_item_key(entry["name"]): entry["name"]
+            for entry in LIVE_ITEM_TIERS.values()
         }
+        canonical.update({norm_item_key(entry["name"]): entry["name"] for entry in ITEM_RECIPES})
+        combined = {}
+        # Aliases are one identity, not two competing predictions. Prefer the
+        # canonical artwork when both filenames exist. Radiant/artifact names
+        # remain distinct keys and still participate in the ambiguity check.
+        for name, image in sorted(item_templates.items(), key=lambda pair: (
+            pair[0] != canonical.get(norm_item_key(pair[0]), pair[0]), pair[0]
+        )):
+            if image is not None and image.size > 0:
+                key = norm_item_key(name)
+                display_name = canonical.setdefault(key, str(name))
+                combined.setdefault(display_name, image)
         for component_id, image in component_templates.items():
             name = COMPONENT_NAMES.get(str(component_id), str(component_id))
             if image is not None and image.size > 0:

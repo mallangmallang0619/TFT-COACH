@@ -403,6 +403,9 @@ class Detector:
 
         if state.phase == GamePhase.NOT_IN_GAME:
             self._ocr_watch_cache.clear()
+            self._trait_panel_observation = None
+            self._trait_cache = None
+            self._trait_rows_cache = None
             self._last_hp = None   # new game → drop the HP anchor
             self._lobby_cache = [-1] * 8
             self._lobby_age = 10**6
@@ -1743,6 +1746,24 @@ class Detector:
             count = 1
             title_y = float(group["center_y"])
             breakpoints = (TRAITS.get(name) or {}).get("breakpoints") or [1]
+            # Inactive rows explicitly show current/required below the name.
+            # This is stronger evidence than a separate badge OCR pass, which
+            # can read neighboring letter strokes as another plausible digit.
+            progress_count = None
+            for candidate in groups[group_index + 1:]:
+                if not 0.011*h <= candidate["center_y"] - title_y <= 0.030*h:
+                    continue
+                progress_text = " ".join(
+                    token[4] for token in sorted(candidate["tokens"], key=lambda t: t[0])
+                    if 0.065*w <= token[0] <= 0.095*w
+                )
+                progress_match = re.fullmatch(r"([0-9Il|])\s*/\s*(\d+)", progress_text.strip())
+                if progress_match:
+                    raw_current, required = progress_match.groups()
+                    current = 1 if raw_current in "Il|" else int(raw_current)
+                    if int(required) == breakpoints[0] and 0 <= current < int(required):
+                        progress_count = current
+                        break
             # Activated rows display the current count in a badge immediately
             # left of the title. Read that before the lower breakpoint text;
             # e.g. Adaptor 3 has "2 / 3 / 4" below it, and taking the first
@@ -1794,7 +1815,9 @@ class Detector:
             # isolated digit and then mistakes a later breakpoint (for
             # example Juggernaut's 4) for the live count.  Re-read the exact
             # badge after the title row gives us its vertical center.
-            if breakpoints == [1]:
+            if progress_count is not None:
+                count = progress_count
+            elif breakpoints == [1]:
                 # Unique traits always contribute exactly one; their tiny
                 # 1/1 text is especially prone to being read as 9 or 171.
                 count = 1
@@ -1806,7 +1829,7 @@ class Detector:
                     int(0.052 * w):int(0.072 * w),
                 ]
                 badge_text = self._ocr_region(badge, whitelist="0123456789")
-                badge_match = re.search(r"([1-9])", badge_text)
+                badge_match = re.fullmatch(r"([1-9])", badge_text.strip())
                 if badge_match:
                     badge_count = int(badge_match.group(1))
                     # The latest live diagnosis read an inactive Inferno 1/2
@@ -1858,6 +1881,21 @@ class Detector:
 
         h, w = frame.shape[:2]
         p = TraitPanel()
+
+        # A changed count/name must invalidate both text and glyph caches.
+        # Observe only the left trait text column, excluding item icons and
+        # the arena. Keep the baseline until a meaningful change accumulates.
+        panel = frame[int(.20*h):int(.72*h), int(.055*w):int(.14*w)]
+        if panel.size:
+            observed = cv2.cvtColor(panel, cv2.COLOR_BGR2GRAY)
+            previous = getattr(self, "_trait_panel_observation", None)
+            if (previous is None or previous.shape != observed.shape
+                    or np.any(cv2.absdiff(previous, observed) > 8)):
+                self._trait_cache = None
+                self._trait_rows_cache = None
+                self._trait_cache_age = 0
+                self._trait_rows_age = 0
+                self._trait_panel_observation = observed
 
         # The Set 18 text is substantially more reliable than fixed-position
         # glyph matching and follows the panel when its row count shifts.
