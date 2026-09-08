@@ -136,7 +136,7 @@ _PATCH_RE = re.compile(
 )
 
 # Each comp-card link looks like:
-#   <a href="/tierlist/comps/set17/dark-star">Dark Star</a>
+#   <a href="/tierlist/comps/set18/solar-kayle">Solar Kayle</a>
 # Tier sections wrap groups of these links and carry an `S-Tier`,
 # `A-Tier`, etc. label. We walk the document linearly, remembering the
 # most-recently-seen tier label and tagging every link found inside it.
@@ -152,18 +152,18 @@ _TIER_LABEL_RE = re.compile(
     """
 )
 # Listing-page anchors only carry an icon grid — no plain comp name in the
-# `<a>` body. The slug itself is the stable identifier (e.g. set-17-dark-star
-# → "Dark Star"), so we match on href only and derive the name from the slug.
+# `<a>` body. The slug itself is the stable identifier (e.g. set-18-solar-kayle
+# → "Solar Kayle"), so we match on href only and derive the name from the slug.
 _COMP_LINK_RE = re.compile(
     r"""href=["']/tierlist/comps/(?P<slug>[^"'/]+)["']""",
     re.IGNORECASE,
 )
-# Strip a leading "set-<N>-" (e.g. "set-17-", "set-13a-") from a slug.
+# Strip a leading "set-<N>-" (e.g. "set-18-", "set-13a-") from a slug.
 _SET_PREFIX_RE = re.compile(r"^set-?\d+[a-z]?-", re.IGNORECASE)
 
 
 def _slug_to_display_name(slug: str) -> str:
-    """Convert 'set-17-dark-star' into a display name like 'Dark Star'."""
+    """Convert 'set-18-solar-kayle' into a display name like 'Solar Kayle'."""
     base = _SET_PREFIX_RE.sub("", slug)
     return " ".join(part.capitalize() for part in base.split("-") if part)
 
@@ -224,14 +224,14 @@ def parse_comps(html: str) -> list[dict]:
 
 # ── Comp-detail parsing ───────────────────────────────────────────────────────
 #
-# Each comp's detail page (e.g. /tierlist/comps/set-17-dark-star) is server-
+# Each comp's detail page (e.g. /tierlist/comps/set-18-solar-kayle) is server-
 # rendered as a SvelteKit `__sveltekit_*` script with a JS object literal
 # holding every field the page renders: finalComp, earlyComp, mainChampion,
 # augments, augmentsTip, carousel, difficulty, etc. We pull what we need with
 # targeted regexes against the relevant sub-array so we never have to evaluate
 # the JS or run a headless browser.
 
-# Strip a leading set-prefix like "TFT17_" or "TFT_Item_"/"TFT_Augment_".
+# Strip a leading set-prefix like "TFT18_" or "TFT_Item_"/"TFT_Augment_".
 _API_PREFIX_RE = re.compile(
     r"^(?:TFT\d*(?:_(?:Item|Augment))?_|DA_(?:18_)?)",
     re.IGNORECASE,
@@ -240,10 +240,7 @@ _API_PREFIX_RE = re.compile(
 # Display-name overrides keyed by the prefix-stripped apiName, lowercased.
 # TFT Academy ships some units under internal codenames that don't match the
 # in-game champion name; map them here so the scrape stays human-readable.
-# 'TFT17_IvernMinion' is the in-game champion Meepsie.
-_APINAME_OVERRIDES = {
-    "ivernminion": "Meepsie",
-}
+_APINAME_OVERRIDES = {}
 # Insert a space at lower→upper transitions and letter→digit transitions, so
 # "TahmKench" → "Tahm Kench" and "MakeshiftArmor1" → "Makeshift Armor 1".
 _CAMEL_SPLIT_RE = re.compile(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Za-z])(?=\d)")
@@ -277,8 +274,8 @@ def _build_canonical_index() -> dict[str, str]:
     Build the reverse lookup from game_data on first use. Each canonical
     name gets multiple keys: with apostrophes removed, with apostrophes
     replaced by space, and the lowercased forms of each. This catches the
-    inconsistent apiName casing Riot ships ('TFT17_Belveth' vs
-    'TFT17_RekSai') and the apostrophes the scrape always drops.
+    inconsistent apiName casing Riot ships ('TFT_Belveth' vs
+    'TFT_RekSai') and the apostrophes the scrape always drops.
     """
     import game_data
 
@@ -324,7 +321,7 @@ def canonical_name(name: str) -> str:
 
 def _human_name(api_name: str) -> str:
     """
-    Turn an apiName like 'TFT17_TahmKench' into a human label, then resolve
+    Turn an apiName like 'TFT_TahmKench' into a human label, then resolve
     that label to its canonical game_data spelling (with apostrophes) when
     possible. Falls back to the camelCase-split label for unknown names.
     """
@@ -569,7 +566,7 @@ _SLUG_SET_NUMBER_RE = re.compile(r"^set-?(\d+)", re.IGNORECASE)
 def current_set_number(cache: Optional[dict] = None) -> int:
     """
     Derive the live TFT set number from the cached comp slugs
-    ('set-17-dark-star' → 17), so a new set is picked up without a code
+    ('set-18-solar-kayle' → 18), so a new set is picked up without a code
     change. Falls back to CURRENT_SET_NUMBER when no slugs are available.
     """
     if cache is None:

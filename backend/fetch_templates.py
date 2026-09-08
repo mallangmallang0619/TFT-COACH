@@ -52,7 +52,7 @@ REQUEST_TIMEOUT = 15
 # HUD glyphs the detector needs to match.
 CDRAGON_TFT_DATA = "https://raw.communitydragon.org/latest/cdragon/tft/en_us.json"
 CDRAGON_GAME_BASE = "https://raw.communitydragon.org/latest/game/"
-# Fallback TFT set (matches the "set-17-…" comp slugs and TFT17_ apiNames)
+# Fallback TFT set (matches the current roster in set18_data.py)
 # used only when auto-detection against the CDragon payload fails.
 CURRENT_SET = "18"
 

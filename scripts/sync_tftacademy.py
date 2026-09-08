@@ -14,7 +14,7 @@ script is for ad-hoc manual use:
     python scripts/sync_tftacademy.py --write --details
         # also fetch each comp's detail page (units, items, augments).
         # Sequential + rate-limited so it can take ~30s on a cold cache.
-    python scripts/sync_tftacademy.py --detail set-17-dark-star
+    python scripts/sync_tftacademy.py --detail set-18-solar-kayle
         # dry-run a single comp detail page and print parsed output.
 
 Augment tier lists are synced from TFT Academy's JSON API
@@ -163,7 +163,7 @@ def main() -> int:
         "--detail",
         metavar="SLUG",
         help=(
-            "Dry-run a single comp detail page (e.g. 'set-17-dark-star'). "
+            "Dry-run a single comp detail page (e.g. 'set-18-solar-kayle'). "
             "Prints the parsed output and exits without touching the cache."
         ),
     )

@@ -32,13 +32,7 @@ import simulate_screenshot as sim
 logger = logging.getLogger(__name__)
 
 # Default rotation: a spread of S/A/B/C comps that all have champion templates.
-DEFAULT_COMPS = [
-    "set-17-the-big-bang-meepsie",
-    "set-17-gnar-printer",
-    "set-17-samira-knock-up-copy",
-    "set-17-dark-star",
-    "set-17-invader-zed",
-]
+DEFAULT_COMPS = sim.default_comp_slugs()
 
 # Per-board "ground-truth" HUD stats. The synthetic frame has no real HUD digits
 # for OCR to read, so we stamp plausible values onto the state after detection,

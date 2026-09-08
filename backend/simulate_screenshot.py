@@ -11,11 +11,11 @@ It can build a board from a named comp in the TFT Academy cache, or from an
 explicit "Name:stars@boardIndex" list.
 
 Usage:
-    # Synthesize the "Big Bang Meepsie" comp and run detection + coaching
-    python backend/simulate_screenshot.py --comp set-17-the-big-bang-meepsie
+    # Synthesize the "Soraka Flex" comp and run detection + coaching
+    python backend/simulate_screenshot.py --comp set-18-soraka-flex
 
     # Explicit units
-    python backend/simulate_screenshot.py --units "Meepsie:3@13,Pyke:3@23,Vex:1@0"
+    python backend/simulate_screenshot.py --units "Soraka:2@24,Shen:2@3,Ornn:2@4"
 
 Outputs (under backend/_debug/):
     sim_frame.png         the synthesized screenshot fed to the detector
@@ -240,6 +240,19 @@ def synthesize_frame(
     for name, row, col in placed:
         logger.debug(f"    {name:<16} @ row{row} col{col}")
     return frame
+
+
+def default_comp_slugs() -> list[str]:
+    """Choose usable current-set boards from the local comp cache."""
+    from game_data import ACTIVE_SET_NUMBER, CHAMPIONS
+    data = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
+    prefix = f"set-{ACTIVE_SET_NUMBER}-"
+    return [c["slug"] for c in data.get("comps", [])
+            if c.get("slug", "").startswith(prefix)
+            and (c.get("detail") or {}).get("units")
+            and all(u.get("name") in CHAMPIONS
+                    for u in c["detail"]["units"]
+                    if u.get("boardIndex") is not None)][:5]
 
 
 def units_from_comp(slug: str) -> tuple[list[dict], str]:
