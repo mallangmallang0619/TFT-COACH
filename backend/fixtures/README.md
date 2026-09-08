@@ -13,11 +13,11 @@ detector against. Each fixture is a pair:
 ```json
 {
   "source": "real | synthetic",
-  "comp": "set-17-... (optional, for synthetic)",
+  "comp": "set-18-... (optional, for synthetic)",
   "realism": "none | light | heavy (optional, for synthetic)",
   "board": [
-    { "name": "Meepsie", "row": 1, "col": 6 },
-    { "name": "Pyke",    "row": 3, "col": 2 }
+    { "name": "Soraka", "row": 1, "col": 6 },
+    { "name": "Shen",    "row": 3, "col": 2 }
   ]
 }
 ```
@@ -34,6 +34,6 @@ match (e.g. Galio) should be omitted.
 3. Hand-write `my_game_4-2.json` listing the champions on the board.
 4. Run `python backend/eval_detection.py --fixtures`.
 
-The synthetic `*__light.png` / `*__heavy.png` files here were generated with
-`--save-fixtures` as examples; real screenshots are what actually validate the
-detector. Regenerate or delete the synthetic ones freely.
+Generate current-set synthetic boards with `--save-fixtures`. Historical
+Set 17 fixtures have been removed; `set18_trait_panel_standard.png` remains
+as the current-set trait OCR regression fixture.

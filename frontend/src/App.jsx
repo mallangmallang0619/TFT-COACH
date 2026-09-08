@@ -20,7 +20,7 @@ const COMPONENTS = [
 ];
 
 // Icon map — kept local since backend doesn't store UI icons.
-// Matches every item currently in game_data.py (Set 17).
+// Matches every item currently in game_data.py.
 const ITEM_ICONS = {
   "Deathblade": "🗡️",
   "Hextech Gunblade": "💉",

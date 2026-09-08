@@ -292,7 +292,7 @@ class GameROIs:
 # ── Trait Panel ───────────────────────────────────────────────────────────────
 # The active-trait list on the left HUD. Each row shows a tier-tinted trait
 # symbol (matched against assets/templates/traits/) followed by the count and
-# name. Geometry calibrated against fixtures/tft_screenshot.png; the symbol
+# name. The symbol
 # column x and row pitch are stable, the start_y shifts a little with trait count.
 
 @dataclass

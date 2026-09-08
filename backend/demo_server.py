@@ -64,14 +64,14 @@ COMPONENTS = [
     "negatron_cloak", "recurve_bow", "tear", "sparring_gloves",
 ]
 
-# Build the champion pool from the live Set 17 CHAMPIONS dict so the demo
+# Build the champion pool from the current-set CHAMPIONS dict so the demo
 # generates units that the synergy/comp-detection code actually understands.
 # We classify role from traits — units with tank traits go frontline, units
 # with carry-flagged traits go backline.
 def _build_champion_pool():
     from game_data import CHAMPIONS
-    tank_traits  = {"Bastion", "Brawler", "Vanguard"}
-    carry_traits = {"Sniper", "Fateweaver", "Rogue", "Conduit", "Replicator"}
+    tank_traits  = {"Defender", "Brawler", "Vanguard", "Juggernaut"}
+    carry_traits = {"Hunter", "Rapidfire", "Spellweaver", "Invoker", "Executioner"}
     pool = []
     for name, data in CHAMPIONS.items():
         traits = set(data.get("traits", []))
@@ -86,22 +86,15 @@ def _build_champion_pool():
 
 CHAMPION_POOL = _build_champion_pool()
 
-# Real set-17 augment names (present in the synced TFT Academy augment tier
+# Example augment names (present in the synced TFT Academy augment tier
 # list) so demo-mode augment rounds exercise the live ratings database.
 AUGMENTS = [
     ("Carve a Path", "Silver", "combat"),
-    ("Best Friends I", "Silver", "combat"),
     ("Boxing Lessons", "Silver", "combat"),
     ("Band of Thieves", "Silver", "items"),
-    ("Component Grab Bag", "Silver", "items"),
-    ("Bonk!", "Silver", "combat"),
-    ("Cosmic Restart", "Gold", "econ"),
-    ("A Magic Roll", "Gold", "econ"),
-    ("Aura Farming", "Gold", "combat"),
-    ("Pandora's Items", "Gold", "items"),
     ("Birthday Present", "Prismatic", "combat"),
-    ("Buried Treasures", "Prismatic", "items"),
 ]
+
 
 SCENARIOS = [
     {

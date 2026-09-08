@@ -16,7 +16,7 @@ and a confidence histogram. Two case sources:
 
 Usage:
     python backend/eval_detection.py                      # default comps, all levels
-    python backend/eval_detection.py --comps set-17-dark-star --levels none,heavy
+    python backend/eval_detection.py --comps set-18-solar-kayle --levels none,heavy
     python backend/eval_detection.py --fixtures            # score real fixtures too
     python backend/eval_detection.py --save-fixtures light # write labeled fixtures
 
@@ -233,9 +233,7 @@ def save_fixtures(slugs: list[str], templates: TemplateStore,
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--comps",
-                    default="set-17-the-big-bang-meepsie,set-17-gnar-printer,"
-                            "set-17-samira-knock-up-copy,set-17-dark-star,"
-                            "set-17-invader-zed",
+                    default=",".join(sim.default_comp_slugs()),
                     help="comma-separated comp slugs to synthesize")
     ap.add_argument("--levels", default=",".join(sim.PRESET_ORDER),
                     help="comma-separated realism presets to evaluate")

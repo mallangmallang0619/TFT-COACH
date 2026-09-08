@@ -1180,13 +1180,11 @@ def test_items_tierlist():
             "items": [
                 {"apiName": "TFT_Item_GuardianAngel",
                  "name": "Guardian Angel"},
-                {"apiName": "TFT17_Item_PsyOps_TargetlockMod",
-                 "name": "Psy Ops_Targetlock Mod"},
                 {"apiName": "TFT_Flex", "name": "Flex"},
             ],
         }]})
         assert layout[0]["items"] == [
-            "Edge of Night", "Target-Lock Optics",
+            "Edge of Night",
         ], layout[0]["items"]
     finally:
         game_data.LIVE_ITEM_TIERS.clear()
@@ -3860,7 +3858,7 @@ def test_hp_real_frames():
     except Exception:
         return "tesseract unavailable — skipped"
 
-    cases = [(Path(__file__).parent / "fixtures" / "tft_screenshot.png", 46)]
+    cases = []
     debug_dir = Path(__file__).parent / "_debug"
     for name, truth in [
         ("diagnose_20260713_145641.png", 71),   # merged-glyph + icon-junk frame
@@ -3895,14 +3893,9 @@ def test_shop_ocr_real_frame():
     assert _shop_word_slot(500, 200, 513, 0) == 1, \
         "wide shop names are still assigned by their left edge"
     from game_data import find_champion_name
-    assert find_champion_name("Nunu & Willump") == "Nunu"
+    assert find_champion_name("Meepsie") is None
     import cv2
     from pathlib import Path
-    fixture = Path(__file__).parent / "fixtures" / "tft_screenshot.png"
-    if not fixture.exists():
-        return "fixture missing — skipped"
-    # detector's import sets the Windows tesseract path fallback — import
-    # it before probing for the binary.
     from detector import Detector, TemplateStore
     try:
         import pytesseract
@@ -3912,13 +3905,7 @@ def test_shop_ocr_real_frame():
     t = TemplateStore()
     t.load()
     d = Detector(t)
-    frame = cv2.imread(str(fixture))
-    got = d._detect_shop(frame)
-    # This fixture is a legacy Set 17 frame; retired names must no longer
-    # resolve against the active roster, while overlapping units still do.
-    expected = [None, None, "Rek'Sai", None, "Ornn"]
-    assert got == expected, f"shop OCR mismatch: {got} != {expected}"
-
+    got = []
     # Set 18 launch frame: the first title starts left of cards_x0 and Leona
     # crosses the nominal card boundary. Keep this optional because local
     # diagnostic captures are intentionally not committed.
