@@ -45,7 +45,8 @@ from board_crops import extract_board_unit_crops
 
 logger = logging.getLogger("diagnose")
 
-DEBUG_DIR = Path(__file__).parent / "_debug"
+from app_paths import PATHS
+DEBUG_DIR = PATHS.diagnostics
 
 ROI_COLORS = {
     "stage":          (0, 255, 255),   # yellow

@@ -10,6 +10,7 @@ function buildDiagnosticLaunch({
   isPackaged,
   pythonCommand = process.env.TFT_COACH_PYTHON || "python",
   resourcesPath,
+  userDataPath,
 }) {
   return {
     command: isPackaged
@@ -20,14 +21,14 @@ function buildDiagnosticLaunch({
       : [path.join(appPath, "backend", "diagnose_capture.py")],
     options: {
       cwd: isPackaged ? path.join(resourcesPath, "backend") : appPath,
-      env: { ...process.env, PYTHONUNBUFFERED: "1" },
+      env: { ...process.env, PYTHONUNBUFFERED: "1", ...(userDataPath ? { TFT_COACH_USER_DATA: userDataPath } : {}) },
       shell: false,
       windowsHide: true,
     },
   };
 }
 
-function getSupportPaths({ appPath, userDataPath }) {
+function getSupportPaths({ appPath, userDataPath, resourcesPath }) {
   return {
     diagnosticDirs: [
       path.join(appPath, "backend", "_debug"),
@@ -38,7 +39,7 @@ function getSupportPaths({ appPath, userDataPath }) {
       path.join(userDataPath, "logs"),
     ],
     metadataFiles: [
-      path.join(appPath, "assets", "models", "unit_classifier.json"),
+      path.join(resourcesPath || appPath, "assets", "models", "unit_classifier.json"),
     ],
   };
 }

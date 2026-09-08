@@ -33,7 +33,8 @@ from unit_details import UnitDetailCollector
 
 logger = logging.getLogger(__name__)
 
-TRAINING_DIR = Path(__file__).parent / "_training" / f"set{ACTIVE_SET_NUMBER}"
+from app_paths import PATHS
+TRAINING_DIR = PATHS.training / f"set{ACTIVE_SET_NUMBER}"
 BENCH_SLOTS = 9
 
 # Bench slots are compared frame-to-frame as small grayscale thumbnails:

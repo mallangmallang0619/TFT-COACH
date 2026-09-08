@@ -48,8 +48,9 @@ logger = logging.getLogger(__name__)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CACHE_PATH = PROJECT_ROOT / "assets" / "tftacademy_cache.json"
+from app_paths import PATHS, cache_path
+PROJECT_ROOT = PATHS.resources
+CACHE_PATH = cache_path("tftacademy_cache.json")
 
 COMPS_URL = "https://tftacademy.com/tierlist/comps"
 COMP_DETAIL_URL_TEMPLATE = "https://tftacademy.com/tierlist/comps/{slug}"

@@ -15,6 +15,7 @@ import re
 import shutil
 import sys
 import time
+from app_paths import PATHS
 from pathlib import Path
 from typing import Optional
 
@@ -38,7 +39,10 @@ try:
     # On Windows the installer puts tesseract.exe in Program Files without
     # adding it to PATH for already-running shells; point pytesseract at the
     # standard location if the plain command isn't resolvable.
-    if sys.platform == "win32" and not shutil.which("tesseract"):
+    if PATHS.frozen:
+        pytesseract.pytesseract.tesseract_cmd = str(PATHS.resources / "tesseract/tesseract.exe")
+        os.environ["TESSDATA_PREFIX"] = str(PATHS.resources / "tesseract/tessdata")
+    elif sys.platform == "win32" and not shutil.which("tesseract"):
         _tess_exe = Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe")
         if _tess_exe.exists():
             pytesseract.pytesseract.tesseract_cmd = str(_tess_exe)

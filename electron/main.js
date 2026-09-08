@@ -456,6 +456,7 @@ registerQuitHandler(ipcMain, () => {
 function currentSupportPaths() {
   return getSupportPaths({
     appPath: app.getAppPath(),
+    resourcesPath: app.isPackaged ? process.resourcesPath : undefined,
     userDataPath: app.getPath("userData"),
   });
 }
@@ -491,6 +492,7 @@ ipcMain.handle("export-support-bundle", async () => {
 ipcMain.handle("run-diagnostic", () => new Promise((resolve) => {
   const launch = buildDiagnosticLaunch({
     appPath: app.getAppPath(),
+    userDataPath: app.getPath("userData"),
     isPackaged: app.isPackaged,
     resourcesPath: process.resourcesPath,
   });

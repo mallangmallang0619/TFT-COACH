@@ -22,8 +22,10 @@
     "test:electron": "node --test electron/*.test.js",
     "test:frontend": "node --test frontend/src/*.test.js",
     "check:model": "node scripts/releaseReadiness.js --model-only",
-    "verify": "npm test && npm run check:model && npm run build:frontend && python backend/test_unit_details.py && python backend/test_ocr_cache.py && python backend/test_detection_regressions.py && python backend/test_unit_detail_sorter.py && python backend/test_train_unit_details.py && python backend/test_system.py",
-    "package": "npm run build:frontend && node scripts/releaseReadiness.js && electron-builder --win nsis"
+    "verify": "npm test && npm run check:model && npm run build:frontend && python backend/test_app_paths.py && python backend/test_unit_details.py && python backend/test_ocr_cache.py && python backend/test_detection_regressions.py && python backend/test_unit_detail_sorter.py && python backend/test_train_unit_details.py && python backend/test_system.py",
+    "test:packaged": "python scripts/smoke_packaged.py",
+    "build:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build_windows.ps1",
+    "package": "npm run build:backend && npm run build:frontend && node scripts/releaseReadiness.js && electron-builder --win nsis --x64 --publish never"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
@@ -46,13 +48,23 @@
       "frontend/dist/**/*"
     ],
     "extraResources": [
-      "assets/**/*"
+      { "from": "assets", "to": "assets", "filter": ["templates/**/*", "models/unit_classifier.*", "models/star_level_classifier.*", "models/equipped_item_classifier.*", "tftacademy_cache.json", "tactics_cache.json"] },
+      { "from": "packaging/dist/tft-coach-backend", "to": "backend" },
+      { "from": "packaging/tesseract", "to": "tesseract" }
     ],
     "mac": {
       "target": "dmg"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "deleteAppDataOnUninstall": false
     },
     "linux": {
       "target": "AppImage"
