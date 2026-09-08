@@ -20,6 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from config import LOG_LEVEL, LogLevel
+from app_paths import PATHS
 
 
 def setup_logging(debug: bool = False):
@@ -32,7 +33,7 @@ def setup_logging(debug: bool = False):
     console = logging.StreamHandler()
     console.setFormatter(formatter)
 
-    log_dir = Path(__file__).parent / "_logs"
+    log_dir = PATHS.logs
     log_dir.mkdir(parents=True, exist_ok=True)
     session_log = RotatingFileHandler(
         log_dir / "tft-coach.log",
@@ -88,6 +89,7 @@ def main():
         help="Seconds to show each board in --sim mode (default: 6)"
     )
     parser.add_argument("--port", type=int, default=None, help="WebSocket port override")
+    parser.add_argument("--self-test", action="store_true", help="Verify bundled models, OCR, and data paths")
     parser.add_argument(
         "--diagnose", action="store_true",
         help="Capture one annotated diagnostic frame and exit",
@@ -96,6 +98,10 @@ def main():
 
     setup_logging(debug=args.debug)
     logger = logging.getLogger("tft-coach")
+
+    if args.self_test:
+        from app_self_test import run
+        return run()
 
     if args.diagnose:
         from diagnose_capture import main as diagnose_main
@@ -115,7 +121,7 @@ def main():
     # re-running fetch_templates.py no longer leaves the frontend on emoji.
     try:
         from fetch_templates import sync_frontend_icons
-        copied = sync_frontend_icons()
+        copied = 0 if PATHS.frozen else sync_frontend_icons()
         if copied:
             logger.info(f"Synced {copied} item/component icons to the frontend")
     except Exception as e:

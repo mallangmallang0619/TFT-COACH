@@ -66,7 +66,7 @@ function buildBackendLaunch({
     ? path.join(resourcesPath, "backend", "tft-coach-backend.exe")
     : pythonCommand;
   const args = isPackaged
-    ? ["--port", String(port)]
+    ? [...(modeArg ? [modeArg] : []), "--port", String(port)]
     : [
         path.join(appPath, "backend", "main.py"),
         ...(modeArg ? [modeArg] : []),

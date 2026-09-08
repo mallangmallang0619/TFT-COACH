@@ -1,5 +1,11 @@
 # TFT Coach Improvement Plan
 
+> September 7 update: the local Windows NSIS installer, bundled Python/ONNX/OCR
+> runtime, writable user-data paths, and packaged-runtime smoke test are now
+> implemented. The assessment below records the original planning baseline.
+> See [Windows build status](WINDOWS_BUILD.md) for current validation and the
+> remaining clean-machine, signing, licensing, and CI work.
+
 ## Objective
 
 Turn the current developer-run overlay into a dependable Windows application

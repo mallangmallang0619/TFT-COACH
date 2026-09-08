@@ -107,3 +107,8 @@ backend/_training/
 backend/_training_rejected/
 frontend/public/game_icons/
 assets/models/experiments/
+packaging/.venv/
+packaging/build/
+packaging/dist/
+packaging/tesseract/
+packaging/smoke-data/

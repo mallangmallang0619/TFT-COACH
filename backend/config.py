@@ -19,7 +19,8 @@ from enum import Enum
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
-PROJECT_ROOT = Path(__file__).parent.parent
+from app_paths import PATHS
+PROJECT_ROOT = PATHS.resources
 ASSETS_DIR = PROJECT_ROOT / "assets"
 TEMPLATE_DIR = ASSETS_DIR / "templates"
 COMPONENT_TEMPLATE_DIR = TEMPLATE_DIR / "components"
@@ -393,4 +394,4 @@ class LogLevel(Enum):
 
 LOG_LEVEL = LogLevel.INFO
 LOG_DETECTION_FRAMES = False  # Save annotated frames for debugging
-LOG_FRAME_DIR = PROJECT_ROOT / "debug_frames"
+LOG_FRAME_DIR = PATHS.diagnostics / "frames" if PATHS.frozen else PROJECT_ROOT / "debug_frames"

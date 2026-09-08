@@ -17,8 +17,9 @@ from game_data import CHAMPIONS
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CACHE_PATH = PROJECT_ROOT / "assets" / "tactics_cache.json"
+from app_paths import PATHS, cache_path
+PROJECT_ROOT = PATHS.resources
+CACHE_PATH = cache_path("tactics_cache.json")
 UNITS_URL = "https://tactics.tools/units/sett/latest"
 USER_AGENT = "TFT-Coach/1.0 unit-stats cache"
 HTTP_TIMEOUT_SECONDS = 12

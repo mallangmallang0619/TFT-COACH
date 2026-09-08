@@ -30,9 +30,8 @@ from unit_classifier import FULL_SPRITE_RESIZE_MODE, preprocess
 logger = logging.getLogger(__name__)
 
 MODELS_DIR = ASSETS_DIR / "models"
-DETAIL_TRAINING_DIR = (
-    Path(__file__).parent / "_training" / f"set{ACTIVE_SET_NUMBER}_details"
-)
+from app_paths import PATHS
+DETAIL_TRAINING_DIR = PATHS.training / f"set{ACTIVE_SET_NUMBER}_details"
 _SAFE_SOURCE = re.compile(r"[^a-zA-Z0-9_-]+")
 
 
