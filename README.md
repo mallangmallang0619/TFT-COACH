@@ -12,7 +12,7 @@ requiring terminal commands during a game.
 
 ## Install the Windows app
 
-If you have a tester build, open **TFT Coach Setup 0.1.0.exe**, choose an
+If you have a tester build, open **TFT Coach Setup 0.1.0-beta.1.exe**, choose an
 installation folder, and follow the wizard. Launch **TFT Coach** from the
 desktop or Start menu. The Control Center starts detection automatically;
 open TFT and enter a game when ready. No Python, Node.js, Tesseract installation,

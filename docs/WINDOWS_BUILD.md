@@ -30,7 +30,7 @@ be supplied to that script with `-TesseractDirectory PATH`.
 
 Outputs:
 
-- `dist-electron/TFT Coach Setup 0.1.0.exe`: installer to give a tester.
+- `dist-electron/TFT Coach Setup 0.1.0-beta.1.exe`: installer to give a tester.
 - `dist-electron/win-unpacked/TFT Coach.exe`: directly runnable app, provided
   the entire `win-unpacked` directory stays together.
 - `packaging/dist/tft-coach-backend/`: intermediate backend bundle.
@@ -64,3 +64,8 @@ after checking the connection. It does not require or play a game.
 
 Successful packaging is not a claim that the existing item, champion, or trait
 detector is perfect. Continue reporting gameplay mismatches with diagnostics.
+
+## Beta distribution
+
+See [beta distribution](BETA_DISTRIBUTION.md) for versioned download preparation,
+checksums, dependency notices, and the public prerelease checklist.

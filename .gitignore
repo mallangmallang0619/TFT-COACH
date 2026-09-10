@@ -112,3 +112,5 @@ packaging/build/
 packaging/dist/
 packaging/tesseract/
 packaging/smoke-data/
+
+packaging/notices/
