@@ -6,7 +6,7 @@ diagnostic capture.
 
 ## Download and install
 
-Download **TFT Coach Setup 0.1.0-beta.1.exe**, run it, and choose an installation
+Download **TFT-Coach-Setup-0.1.0-beta.1.exe**, run it, and choose an installation
 folder. Launch TFT Coach from the desktop or Start menu, then enter a TFT game.
 Python, Node.js, and Tesseract are bundled; you do not need to install them.
 

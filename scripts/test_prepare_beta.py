@@ -2,10 +2,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from prepare_beta import write_checksums, verify_checksums
+from prepare_beta import write_checksums, verify_checksums, installer_download_name
 
 
 class ReleaseChecksumsTests(unittest.TestCase):
+    def test_installer_download_name_survives_github_upload(self):
+        self.assertEqual(installer_download_name("0.1.0-beta.1"),
+                         "TFT-Coach-Setup-0.1.0-beta.1.exe")
+
     def test_release_files_with_spaces_roundtrip_and_tampering_fails(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
